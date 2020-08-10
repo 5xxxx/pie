@@ -1,3 +1,39 @@
+/*
+
+Example:
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+	"tugrik"
+)
+
+func main() {
+	t, err := tugrik.NewTugrik()
+	t.SetURI("mongodb://127.0.0.1:27017")
+	if err != nil {
+		panic(err)
+	}
+
+	err = t.Connect(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	t.SetDatabase("xxxx")
+	var user User
+	err = t.Filter("nickName", "淳朴的润土").FindOne(&user)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(user)
+
+}
+*/
+
 package tugrik
 
 import (
