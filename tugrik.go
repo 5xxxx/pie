@@ -17,6 +17,71 @@ type Tugrik struct {
 	clientOpts []*options.ClientOptions
 }
 
+func (e *Tugrik) Distinct(doc interface{}, columns string) ([]interface{}, error) {
+	session := e.NewSession()
+	return session.Distinct(doc, columns)
+}
+
+func (e *Tugrik) FindOne(doc interface{}) error {
+	session := e.NewSession()
+	return session.FindOne(doc)
+}
+
+func (e *Tugrik) FindAll(docs interface{}) error {
+	session := e.NewSession()
+	return session.FindAll(docs)
+}
+
+func (e *Tugrik) RegexFilter(key, pattern string) *Session {
+	session := e.NewSession()
+	return session.RegexFilter(key, pattern)
+}
+
+func (e *Tugrik) Asc(colNames ...string) *Session {
+	session := e.NewSession()
+	return session.Asc(colNames...)
+}
+
+func (e *Tugrik) Eq(key string, value interface{}) *Session {
+	session := e.NewSession()
+	return session.Eq(key, value)
+}
+
+func (e *Tugrik) Ne(key string, ne interface{}) *Session {
+	session := e.NewSession()
+	return session.Gt(key, ne)
+}
+
+func (e *Tugrik) Nin(key string, nin interface{}) *Session {
+	session := e.NewSession()
+	return session.Nin(key, nin)
+}
+
+func (e *Tugrik) Nor(filter Session) *Session {
+	session := e.NewSession()
+	return session.Nor(filter)
+}
+
+func (e *Tugrik) Exists(key string, exists bool, filter ...*Session) *Session {
+	session := e.NewSession()
+	return session.Exists(key, exists, filter...)
+}
+
+func (e *Tugrik) Type(key string, t interface{}) *Session {
+	session := e.NewSession()
+	return session.Gt(key, t)
+}
+
+func (e *Tugrik) Expr(filter Session) *Session {
+	session := e.NewSession()
+	return session.Expr(filter)
+}
+
+func (e *Tugrik) Regex(key string, value interface{}) *Session {
+	session := e.NewSession()
+	return session.Regex(key, value)
+}
+
 func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
 
@@ -119,7 +184,7 @@ func (e *Tugrik) Skip(skip int64) *Session {
 	return session.Limit(skip)
 }
 
-func (e *Tugrik) Count(i ...interface{}) (int64, error) {
+func (e *Tugrik) Count(i interface{}) (int64, error) {
 	session := e.NewSession()
 	return session.Count(i)
 }

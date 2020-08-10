@@ -49,25 +49,22 @@ func (s *Session) Distinct(doc interface{}, columns string) ([]interface{}, erro
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
-func (s Session) FindOne(doc interface{}) (bool, error) {
+func (s Session) FindOne(doc interface{}) error {
 	coll, err := s.getStructColl(doc)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	result := coll.FindOne(context.Background(), s.m, s.findOneOptions...)
 	if err = result.Err(); err != nil {
-		if err == mongo.ErrNilDocument || err == mongo.ErrNoDocuments {
-			return false, nil
-		}
-		return false, err
+		return err
 	}
 
 	if err = result.Decode(doc); err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 // Find executes a find command and returns a Cursor over the matching documents in the collection.

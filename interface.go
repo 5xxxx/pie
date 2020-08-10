@@ -14,7 +14,7 @@ type Interface interface {
 	Distinct(doc interface{}, columns string) ([]interface{}, error)
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collection.
-	FindOne(doc interface{}) (bool, error)
+	FindOne(doc interface{}) error
 
 	// Find executes a find command and returns a Cursor over the matching documents in the collection.
 	FindAll(rowsSlicePtr interface{}) error
