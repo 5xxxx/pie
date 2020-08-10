@@ -5,11 +5,29 @@ tugrik 是对[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 二�
 ### 连接到数据库
 
 ```
-e, err := tugrik.NewEngine(context.Background(), options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
+t := tugrik.NewTugrik(options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
+
+or
+
+t.SetURI("mongodb://127.0.0.1:27017")
+
 if err != nil {
     fmt.Println(err)
 }
-e.SetDatabase("muxindb_dev")
+t.SetDatabase("xxx")
+
+err = t.Connect(context.Background())
+if err != nil {
+    panic(err)
+}
+
+var user User
+err = t.Filter("nickName", "淳朴的润土").FindOne(&user)
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(user)
 ```
 
 ### 数据定义
@@ -26,11 +44,10 @@ type User struct {
 
 ```
 var user User
-user.ID = primitive.NewObjectID().Hex()
 user.Username = "小明"
 user.MobileNumber = "138xxxx"
 
-err := engine().Insert(&user)
+err := tugrik.Insert(&user)
 if err != nil {
     fmt.Println(err)
 }
@@ -40,7 +57,7 @@ if err != nil {
 
 ```
 var u User
-_, err := engine().Filter("username", "小明").Get(&u)
+_, err := tugrik.Filter("username", "小明").Get(&u)
 if err != nil {
     panic(err)
 }
@@ -51,7 +68,7 @@ if err != nil {
 ```
 u := new(User)
 u.Username = "hahhahahah"
-err := engine().Filter("mobileNumber", "138xxxxx").Id(u.Id).Update(u)
+err := tugrik.Filter("mobileNumber", "138xxxxx").Id(u.Id).Update(u)
 if err != nil {
     fmt.Println(err)
 }
@@ -62,7 +79,7 @@ if err != nil {
 ```
 u := new(User)
 u.MobileNumber = "138xxxxx"
-err := engine().Id(u.Id).Delete(u)
+err := tugrik.Id(u.Id).Delete(u)
 if err != nil {
     fmt.Println(err)
 }
@@ -73,7 +90,7 @@ if err != nil {
 ```
 u := new(User)
 u.MobileNumber = "138xxxxx"
-err := engine().DeleteMany(u)
+err := tugrik.DeleteMany(u)
 if err != nil {
     fmt.Println(err)
 }

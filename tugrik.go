@@ -84,11 +84,15 @@ func (e *Tugrik) Regex(key string, value interface{}) *Session {
 
 func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
-
+	client, err := mongo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
 	parser := NewParser(mapper, mapper)
 	tugrik := &Tugrik{
 		clientOpts: opts,
 		parser:     parser,
+		client:     client,
 	}
 	return tugrik, nil
 }
@@ -96,6 +100,10 @@ func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
 func (e *Tugrik) Connect(ctx context.Context) (err error) {
 	e.client, err = mongo.Connect(ctx, e.clientOpts...)
 	return err
+}
+
+func (e *Tugrik) Disconnect(ctx context.Context) error {
+	return e.client.Disconnect(ctx)
 }
 
 func (e *Tugrik) SetDatabase(db string) {

@@ -174,11 +174,6 @@ func (s *Session) RegexFilter(key, pattern string) *Session {
 	return s
 }
 
-////func (s *Session) Exec(sqlOrArgs ...interface{}) (sql.Result, error) {
-////	panic("implement me")
-////}
-////
-
 func (s *Session) ID(id interface{}) *Session {
 	if id == nil {
 		return s
