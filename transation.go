@@ -30,7 +30,7 @@ func (t Tugrik) TransactionWithOptions(ctx context.Context, opt *options.Session
 	if err = f(ctx); err != nil {
 		return session.AbortTransaction(ctx)
 	}
-
+	defer session.EndSession(context.Background())
 	return session.CommitTransaction(ctx)
 }
 

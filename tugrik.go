@@ -24,7 +24,7 @@ func main() {
 	}
 	t.SetDatabase("xxxx")
 	var user User
-	err = t.Filter("nickName", "淳朴的润土").FindOne(&user)
+	err = t.filter("nickName", "淳朴的润土").FindOne(&user)
 	if err != nil {
 		panic(err)
 	}
@@ -38,9 +38,12 @@ package tugrik
 
 import (
 	"context"
+	"errors"
 	"github.com/NSObjects/tugrik/names"
+	"github.com/NSObjects/tugrik/schemas"
+	"reflect"
+	"strings"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -51,6 +54,30 @@ type Tugrik struct {
 	parser     *Parser
 	db         string
 	clientOpts []*options.ClientOptions
+}
+
+func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
+	mapper := names.NewCacheMapper(new(names.SnakeMapper))
+	client, err := mongo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+	parser := NewParser(mapper, mapper)
+	tugrik := &Tugrik{
+		clientOpts: opts,
+		parser:     parser,
+		client:     client,
+	}
+	return tugrik, nil
+}
+
+func (e *Tugrik) Connect(ctx context.Context) (err error) {
+	e.client, err = mongo.Connect(ctx, e.clientOpts...)
+	return err
+}
+
+func (e *Tugrik) Disconnect(ctx context.Context) error {
+	return e.client.Disconnect(ctx)
 }
 
 func (e *Tugrik) Distinct(doc interface{}, columns string) ([]interface{}, error) {
@@ -93,12 +120,12 @@ func (e *Tugrik) Nin(key string, nin interface{}) *Session {
 	return session.Nin(key, nin)
 }
 
-func (e *Tugrik) Nor(filter Session) *Session {
+func (e *Tugrik) Nor(c Condition) *Session {
 	session := e.NewSession()
-	return session.Nor(filter)
+	return session.Nor(c)
 }
 
-func (e *Tugrik) Exists(key string, exists bool, filter ...*Session) *Session {
+func (e *Tugrik) Exists(key string, exists bool, filter ...Condition) *Session {
 	session := e.NewSession()
 	return session.Exists(key, exists, filter...)
 }
@@ -108,7 +135,7 @@ func (e *Tugrik) Type(key string, t interface{}) *Session {
 	return session.Gt(key, t)
 }
 
-func (e *Tugrik) Expr(filter Session) *Session {
+func (e *Tugrik) Expr(filter Condition) *Session {
 	session := e.NewSession()
 	return session.Expr(filter)
 }
@@ -116,30 +143,6 @@ func (e *Tugrik) Expr(filter Session) *Session {
 func (e *Tugrik) Regex(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Regex(key, value)
-}
-
-func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
-	mapper := names.NewCacheMapper(new(names.SnakeMapper))
-	client, err := mongo.NewClient(opts...)
-	if err != nil {
-		return nil, err
-	}
-	parser := NewParser(mapper, mapper)
-	tugrik := &Tugrik{
-		clientOpts: opts,
-		parser:     parser,
-		client:     client,
-	}
-	return tugrik, nil
-}
-
-func (e *Tugrik) Connect(ctx context.Context) (err error) {
-	e.client, err = mongo.Connect(ctx, e.clientOpts...)
-	return err
-}
-
-func (e *Tugrik) Disconnect(ctx context.Context) error {
-	return e.client.Disconnect(ctx)
 }
 
 func (e *Tugrik) SetDatabase(db string) {
@@ -190,7 +193,7 @@ func (e *Tugrik) In(key string, value interface{}) *Session {
 	return session
 }
 
-func (e *Tugrik) And(filter Session) *Session {
+func (e *Tugrik) And(filter Condition) *Session {
 	session := e.NewSession()
 	session.And(filter)
 	return session
@@ -202,7 +205,7 @@ func (e *Tugrik) Not(key string, value interface{}) *Session {
 	return session
 }
 
-func (e *Tugrik) Or(filter Session) *Session {
+func (e *Tugrik) Or(filter Condition) *Session {
 	session := e.NewSession()
 	session.Or(filter)
 	return session
@@ -260,5 +263,83 @@ func (e *Tugrik) DeleteMany(filter interface{}) error {
 }
 
 func (e *Tugrik) NewSession() *Session {
-	return &Session{engine: e, m: bson.M{}}
+	return NewSession(e)
+}
+
+func (e *Tugrik) Aggregate() *Aggregate {
+	return NewAggregate(e)
+}
+
+func (s *Tugrik) getStructColl(doc interface{}) (*mongo.Collection, error) {
+	beanValue := reflect.ValueOf(doc)
+	if beanValue.Kind() != reflect.Ptr {
+		return nil, errors.New("needs a pointer to a value")
+	} else if beanValue.Elem().Kind() == reflect.Ptr {
+		return nil, errors.New("a pointer to a pointer is not allowed")
+	}
+
+	if beanValue.Elem().Kind() != reflect.Struct {
+		return nil, errors.New("needs a struct pointer")
+	}
+	t, err := s.parser.Parse(beanValue)
+	if err != nil {
+		return nil, err
+	}
+	coll := s.Collection(t.Name)
+	return coll, nil
+}
+
+func (s *Tugrik) getSliceColl(doc interface{}) (*mongo.Collection, error) {
+	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
+
+	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
+		return nil, errors.New("needs a pointer to a slice or a map")
+	}
+
+	var t *schemas.Collection
+	var err error
+	if sliceValue.Kind() == reflect.Slice {
+		sliceElementType := sliceValue.Type().Elem()
+		if sliceElementType.Kind() == reflect.Struct {
+			pv := reflect.New(sliceElementType)
+			t, err = s.parser.Parse(pv)
+		}
+	} else {
+		t, err = s.parser.Parse(sliceValue)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	coll := s.Collection(t.Name)
+	return coll, nil
+}
+
+func (s *Tugrik) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
+	beanValue := reflect.ValueOf(doc)
+	if beanValue.Kind() != reflect.Ptr {
+		return nil, errors.New("needs a pointer to a value")
+	} else if beanValue.Elem().Kind() == reflect.Ptr {
+		return nil, errors.New("a pointer to a pointer is not allowed")
+	}
+
+	if beanValue.Elem().Kind() != reflect.Struct {
+		return nil, errors.New("needs a struct pointer")
+	}
+	t, err := s.parser.Parse(beanValue)
+	if err != nil {
+		return nil, err
+	}
+	docTyp := t.Type
+	for i := 0; i < docTyp.NumField(); i++ {
+		field := docTyp.Field(i)
+		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
+			//s.e = append(s.e, Session("_id", beanValue.Field(i).Interface()))
+			break
+		}
+	}
+
+	coll := s.Collection(t.Name)
+	return coll, nil
 }

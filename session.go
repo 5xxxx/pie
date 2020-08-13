@@ -12,20 +12,13 @@ package tugrik
 
 import (
 	"context"
-	"errors"
-	"reflect"
-	"strings"
-
-	"github.com/NSObjects/tugrik/schemas"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Session struct {
-	m              bson.M
+	filter         Condition
 	engine         *Tugrik
 	findOneOptions []*options.FindOneOptions
 	findOptions    []*options.FindOptions
@@ -37,26 +30,26 @@ type Session struct {
 	distinctOpts   []*options.DistinctOptions
 }
 
-func NewFilter(engine *Tugrik) *Session {
-	return &Session{engine: engine}
+func NewSession(engine *Tugrik) *Session {
+	return &Session{engine: engine, filter: DefaultCondition()}
 }
 
 func (s *Session) Distinct(doc interface{}, columns string) ([]interface{}, error) {
-	coll, err := s.getSliceColl(doc)
+	coll, err := s.engine.getSliceColl(doc)
 	if err != nil {
 		return nil, err
 	}
-	return coll.Distinct(context.TODO(), columns, s.m, s.distinctOpts...)
+	return coll.Distinct(context.TODO(), columns, s.filter.Filters(), s.distinctOpts...)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
 func (s *Session) FindOne(doc interface{}) error {
-	coll, err := s.getStructColl(doc)
+	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
 
-	result := coll.FindOne(context.Background(), s.m, s.findOneOptions...)
+	result := coll.FindOne(context.Background(), s.filter.Filters(), s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -70,11 +63,11 @@ func (s *Session) FindOne(doc interface{}) error {
 
 // Find executes a find command and returns a Cursor over the matching documents in the collection.
 func (s *Session) FindAll(rowsSlicePtr interface{}) error {
-	coll, err := s.getSliceColl(rowsSlicePtr)
+	coll, err := s.engine.getSliceColl(rowsSlicePtr)
 	if err != nil {
 		return err
 	}
-	cursor, err := coll.Find(context.Background(), s.m, s.findOptions...)
+	cursor, err := coll.Find(context.Background(), s.filter.Filters(), s.findOptions...)
 	if err != nil {
 		return err
 	}
@@ -88,7 +81,7 @@ func (s *Session) FindAll(rowsSlicePtr interface{}) error {
 
 // InsertOne executes an insert command to insert a single document into the collection.
 func (s *Session) InsertOne(doc interface{}) error {
-	coll, err := s.getStructColl(doc)
+	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
@@ -98,7 +91,7 @@ func (s *Session) InsertOne(doc interface{}) error {
 
 // InsertMany executes an insert command to insert multiple documents into the collection.
 func (s *Session) InsertMany(docs []interface{}) error {
-	coll, err := s.getSliceColl(docs)
+	coll, err := s.engine.getSliceColl(docs)
 	if err != nil {
 		return err
 	}
@@ -109,21 +102,21 @@ func (s *Session) InsertMany(docs []interface{}) error {
 
 // DeleteOne executes a delete command to delete at most one document from the collection.
 func (s *Session) DeleteOne(doc interface{}) error {
-	coll, err := s.getStructColl(doc)
+	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.DeleteOne(context.Background(), s.m, s.deleteOpts...)
+	_, err = coll.DeleteOne(context.Background(), s.filter.Filters(), s.deleteOpts...)
 	return err
 }
 
 // DeleteMany executes a delete command to delete documents from the collection.
 func (s *Session) DeleteMany(doc interface{}) error {
-	coll, err := s.getStructColl(doc)
+	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.DeleteMany(context.Background(), s.m, s.deleteOpts...)
+	_, err = coll.DeleteMany(context.Background(), s.filter.Filters(), s.deleteOpts...)
 	return err
 }
 
@@ -139,55 +132,41 @@ func (s *Session) Skip(i int64) *Session {
 }
 
 func (s *Session) Count(i interface{}) (int64, error) {
-	coll, err := s.getStructColl(i)
+	coll, err := s.engine.getStructColl(i)
 	if err != nil {
 		return 0, err
 	}
-	return coll.CountDocuments(context.Background(), s.m, s.countOpts...)
+	return coll.CountDocuments(context.Background(), s.filter.Filters(), s.countOpts...)
 }
 
 func (s *Session) Update(bean interface{}) error {
-	coll, err := s.getStructColl(bean)
+	coll, err := s.engine.getStructColl(bean)
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateOne(context.Background(), s.m, bson.M{"$set": insertOmitemptyTag(bean)})
+	_, err = coll.UpdateOne(context.Background(), s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)})
 
 	return err
 }
 
 //todo update many
 func (s *Session) UpdateMany(bean interface{}) error {
-	coll, err := s.getSliceColl(bean)
+	coll, err := s.engine.getSliceColl(bean)
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateMany(context.Background(), s.m, bson.M{"$set": bean})
+	_, err = coll.UpdateMany(context.Background(), s.filter.Filters(), bson.M{"$set": bean})
 
 	return err
 }
 
 func (s *Session) RegexFilter(key, pattern string) *Session {
-	s.m[key] = primitive.Regex{
-		Pattern: pattern,
-		Options: "i",
-	}
+	s.filter.RegexFilter(key, pattern)
 	return s
 }
 
 func (s *Session) ID(id interface{}) *Session {
-	if id == nil {
-		return s
-	}
-	switch id.(type) {
-	case string:
-		objectId, _ := primitive.ObjectIDFromHex(id.(string))
-		s.m["_id"] = objectId
-	case primitive.ObjectID:
-		s.m["_id"] = id
-	default:
-		panic("id type must be string or primitive.ObjectID")
-	}
+	s.filter.ID(id)
 	return s
 }
 
@@ -231,23 +210,19 @@ func (s *Session) Filter(key string, value interface{}) *Session {
 // Equals an Array Value
 //{ tags: [ "A", "B" ] }
 func (s *Session) Eq(key string, value interface{}) *Session {
-	s.m[key] = value
+	s.filter.Eq(key, value)
 	return s
 }
 
 //{field: {$gt: value} } >
 func (s *Session) Gt(key string, gt interface{}) *Session {
-	s.m[key] = bson.M{
-		"$gt": gt,
-	}
+	s.filter.Gt(key, gt)
 	return s
 }
 
 //{ qty: { $gte: 20 } } >=
 func (s *Session) Gte(key string, gte interface{}) *Session {
-	s.m[key] = bson.M{
-		"$gte": gte,
-	}
+	s.filter.Gte(key, gte)
 	return s
 }
 
@@ -255,41 +230,31 @@ func (s *Session) Gte(key string, gte interface{}) *Session {
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
 func (s *Session) In(key string, in interface{}) *Session {
-	s.m[key] = bson.M{
-		"$in": in,
-	}
+	s.filter.In(key, in)
 	return s
 }
 
 //{field: {$lt: value} } <
 func (s *Session) Lt(key string, lt interface{}) *Session {
-	s.m[key] = bson.M{
-		"$lt": lt,
-	}
+	s.filter.Lt(key, lt)
 	return s
 }
 
 //{ field: { $lte: value} } <=
 func (s *Session) Lte(key string, lte interface{}) *Session {
-	s.m[key] = bson.M{
-		"$lte": lte,
-	}
+	s.filter.Lte(key, lte)
 	return s
 }
 
 //{field: {$ne: value} } !=
 func (s *Session) Ne(key string, ne interface{}) *Session {
-	s.m[key] = bson.M{
-		"$ne": ne,
-	}
+	s.filter.Ne(key, ne)
 	return s
 }
 
 //{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
 func (s *Session) Nin(key string, nin interface{}) *Session {
-	s.m[key] = bson.M{
-		"$nin": nin,
-	}
+	s.filter.Nin(key, nin)
 	return s
 }
 
@@ -298,8 +263,8 @@ func (s *Session) Nin(key string, nin interface{}) *Session {
 //        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
 //        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 // ]
-func (s *Session) And(filter Session) *Session {
-	s.m["$and"] = filter.a()
+func (s *Session) And(c Condition) *Session {
+	s.filter.And(c)
 	return s
 
 }
@@ -308,36 +273,26 @@ func (s *Session) And(filter Session) *Session {
 //not and Regular Expressions
 //{ item: { $not: /^p.*/ } }
 func (s *Session) Not(key string, not interface{}) *Session {
-	s.m[key] = bson.M{
-		"$not": not,
-	}
+	s.filter.Not(key, not)
 	return s
 }
 
 // { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 // { sale: true }, { sale: { $exists: false } } ] }
 // price != 1.99 || sale != true || sale exists || sale exists
-func (s *Session) Nor(filter Session) *Session {
-	s.m["$nor"] = filter.a()
+func (s *Session) Nor(c Condition) *Session {
+	s.filter.Nor(c)
 	return s
 }
 
 // { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-func (s *Session) Or(filter Session) *Session {
-	s.m["$or"] = filter.a()
+func (s *Session) Or(c Condition) *Session {
+	s.filter.Or(c)
 	return s
 }
 
-func (s *Session) Exists(key string, exists bool, filter ...*Session) *Session {
-	m := bson.M{
-		"$exists": exists,
-	}
-	for _, v := range filter {
-		for fk, fv := range v.m {
-			m[fk] = fv
-		}
-	}
-	s.m[key] = m
+func (s *Session) Exists(key string, exists bool, filter ...Condition) *Session {
+	s.filter.Exists(key, exists, filter...)
 	return s
 }
 
@@ -347,9 +302,7 @@ func (s *Session) Exists(key string, exists bool, filter ...*Session) *Session {
 // db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 // return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
 func (s *Session) Type(key string, t interface{}) *Session {
-	s.m[key] = bson.M{
-		"$type": t,
-	}
+	s.filter.Type(key, t)
 	return s
 }
 
@@ -357,18 +310,14 @@ func (s *Session) Type(key string, t interface{}) *Session {
 //{ $expr: { <expression> } }
 //$expr can build query expressions that compare fields from the same document in a $match stage
 //todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
-func (s *Session) Expr(filter Session) *Session {
-	s.m["$expr"] = filter.a()
+func (s *Session) Expr(c Condition) *Session {
+	s.filter.Expr(c)
 	return s
 }
 
 //todo 简单实现，后续增加支持
 func (s *Session) Regex(key string, value interface{}) *Session {
-	s.m[key] = bson.M{
-		"$regex":   value,
-		"$options": "i",
-	}
-
+	s.filter.Regex(key, value)
 	return s
 }
 
@@ -397,86 +346,3 @@ func (s *Session) Regex(key string, value interface{}) *Session {
 //func (s *Session) Text() *Session {
 //	panic("比较复杂今晚不加")
 //}
-
-func (s *Session) getStructColl(doc interface{}) (*mongo.Collection, error) {
-	beanValue := reflect.ValueOf(doc)
-	if beanValue.Kind() != reflect.Ptr {
-		return nil, errors.New("needs a pointer to a value")
-	} else if beanValue.Elem().Kind() == reflect.Ptr {
-		return nil, errors.New("a pointer to a pointer is not allowed")
-	}
-
-	if beanValue.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("needs a struct pointer")
-	}
-	t, err := s.engine.parser.Parse(beanValue)
-	if err != nil {
-		return nil, err
-	}
-	coll := s.engine.Collection(t.Name)
-	return coll, nil
-}
-
-func (s *Session) getSliceColl(doc interface{}) (*mongo.Collection, error) {
-	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
-
-	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
-		return nil, errors.New("needs a pointer to a slice or a map")
-	}
-
-	var t *schemas.Collection
-	var err error
-	if sliceValue.Kind() == reflect.Slice {
-		sliceElementType := sliceValue.Type().Elem()
-		if sliceElementType.Kind() == reflect.Struct {
-			pv := reflect.New(sliceElementType)
-			t, err = s.engine.parser.Parse(pv)
-		}
-	} else {
-		t, err = s.engine.parser.Parse(sliceValue)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	coll := s.engine.Collection(t.Name)
-	return coll, nil
-}
-
-func (s *Session) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
-	beanValue := reflect.ValueOf(doc)
-	if beanValue.Kind() != reflect.Ptr {
-		return nil, errors.New("needs a pointer to a value")
-	} else if beanValue.Elem().Kind() == reflect.Ptr {
-		return nil, errors.New("a pointer to a pointer is not allowed")
-	}
-
-	if beanValue.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("needs a struct pointer")
-	}
-	t, err := s.engine.parser.Parse(beanValue)
-	if err != nil {
-		return nil, err
-	}
-	docTyp := t.Type
-	for i := 0; i < docTyp.NumField(); i++ {
-		field := docTyp.Field(i)
-		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
-			//s.e = append(s.e, Session("_id", beanValue.Field(i).Interface()))
-			break
-		}
-	}
-
-	coll := s.engine.Collection(t.Name)
-	return coll, nil
-}
-
-func (s *Session) a() []bson.E {
-	var fs []bson.E
-
-	for key, value := range s.m {
-		fs = append(fs, bson.E{Key: key, Value: value})
-	}
-	return fs
-}

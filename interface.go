@@ -85,7 +85,7 @@ type Interface interface {
 	//        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
 	//        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 	// ]
-	And(filter Session) *Session
+	And(c Condition) *Session
 
 	//{ field: { $not: { <operator-expression> } } }
 	//not and Regular Expressions
@@ -95,9 +95,9 @@ type Interface interface {
 	// { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 	// { sale: true }, { sale: { $exists: false } } ] }
 	// price != 1.99 || sale != true || sale exists || sale exists
-	Nor(filter Session) *Session
+	Nor(c Condition) *Session
 	// { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-	Or(filter Session) *Session
+	Or(c Condition) *Session
 
 	Exists(key string, exists bool, filter ...*Session) *Session
 
@@ -112,7 +112,7 @@ type Interface interface {
 	//{ $expr: { <expression> } }
 	//$expr can build query expressions that compare fields from the same document in a $match stage
 	//todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
-	Expr(filter Session) *Session
+	Expr(c Condition) *Session
 
 	//todo 简单实现，后续增加支持
 	Regex(key string, value interface{}) *Session
