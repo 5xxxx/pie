@@ -14,8 +14,9 @@ import (
 	"errors"
 	"reflect"
 	"sync"
-	"tugrik/names"
-	"tugrik/schemas"
+
+	"github.com/NSObjects/tugrik/names"
+	"github.com/NSObjects/tugrik/schemas"
 )
 
 var (

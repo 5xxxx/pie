@@ -15,7 +15,8 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-	"tugrik/schemas"
+
+	"github.com/NSObjects/tugrik/schemas"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

@@ -38,7 +38,7 @@ package tugrik
 
 import (
 	"context"
-	"tugrik/names"
+	"github.com/NSObjects/tugrik/names"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

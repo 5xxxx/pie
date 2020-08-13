@@ -13,7 +13,8 @@ package schemas
 import (
 	"bytes"
 	"encoding/gob"
-	"tugrik/utils"
+
+	"github.com/NSObjects/tugrik/utils"
 )
 
 type PK []interface{}
