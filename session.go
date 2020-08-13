@@ -49,7 +49,7 @@ func (s *Session) Distinct(doc interface{}, columns string) ([]interface{}, erro
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
-func (s Session) FindOne(doc interface{}) error {
+func (s *Session) FindOne(doc interface{}) error {
 	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return err
