@@ -86,5 +86,5 @@ func (a *Aggregate) Match(c Condition) *Aggregate {
 }
 
 func (a *Aggregate) Group() *Aggregate {
-
+	panic("")
 }

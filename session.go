@@ -34,22 +34,22 @@ func NewSession(engine *Tugrik) *Session {
 	return &Session{engine: engine, filter: DefaultCondition()}
 }
 
-func (s *Session) Distinct(doc interface{}, columns string) ([]interface{}, error) {
+func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
 	coll, err := s.engine.getSliceColl(doc)
 	if err != nil {
 		return nil, err
 	}
-	return coll.Distinct(context.TODO(), columns, s.filter.Filters(), s.distinctOpts...)
+	return coll.Distinct(ctx, columns, s.filter.Filters(), s.distinctOpts...)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
-func (s *Session) FindOne(doc interface{}) error {
+func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
 
-	result := coll.FindOne(context.Background(), s.filter.Filters(), s.findOneOptions...)
+	result := coll.FindOne(ctx, s.filter.Filters(), s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -62,17 +62,17 @@ func (s *Session) FindOne(doc interface{}) error {
 }
 
 // Find executes a find command and returns a Cursor over the matching documents in the collection.
-func (s *Session) FindAll(rowsSlicePtr interface{}) error {
+func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 	coll, err := s.engine.getSliceColl(rowsSlicePtr)
 	if err != nil {
 		return err
 	}
-	cursor, err := coll.Find(context.Background(), s.filter.Filters(), s.findOptions...)
+	cursor, err := coll.Find(ctx, s.filter.Filters(), s.findOptions...)
 	if err != nil {
 		return err
 	}
 
-	if err = cursor.All(context.Background(), rowsSlicePtr); err != nil {
+	if err = cursor.All(ctx, rowsSlicePtr); err != nil {
 		return err
 	}
 
@@ -80,43 +80,43 @@ func (s *Session) FindAll(rowsSlicePtr interface{}) error {
 }
 
 // InsertOne executes an insert command to insert a single document into the collection.
-func (s *Session) InsertOne(doc interface{}) error {
+func (s *Session) InsertOne(ctx context.Context, doc interface{}) error {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.InsertOne(context.Background(), doc, s.insertOneOpts...)
+	_, err = coll.InsertOne(ctx, doc, s.insertOneOpts...)
 	return err
 }
 
 // InsertMany executes an insert command to insert multiple documents into the collection.
-func (s *Session) InsertMany(docs []interface{}) error {
+func (s *Session) InsertMany(ctx context.Context, docs []interface{}) error {
 	coll, err := s.engine.getSliceColl(docs)
 	if err != nil {
 		return err
 	}
-	_, err = coll.InsertMany(context.Background(), docs, s.insertManyOpts...)
+	_, err = coll.InsertMany(ctx, docs, s.insertManyOpts...)
 
 	return err
 }
 
 // DeleteOne executes a delete command to delete at most one document from the collection.
-func (s *Session) DeleteOne(doc interface{}) error {
+func (s *Session) DeleteOne(ctx context.Context, doc interface{}) error {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.DeleteOne(context.Background(), s.filter.Filters(), s.deleteOpts...)
+	_, err = coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
 	return err
 }
 
 // DeleteMany executes a delete command to delete documents from the collection.
-func (s *Session) DeleteMany(doc interface{}) error {
+func (s *Session) DeleteMany(ctx context.Context, doc interface{}) error {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.DeleteMany(context.Background(), s.filter.Filters(), s.deleteOpts...)
+	_, err = coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
 	return err
 }
 
