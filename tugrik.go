@@ -41,6 +41,7 @@ import (
 	"errors"
 	"github.com/NSObjects/tugrik/names"
 	"github.com/NSObjects/tugrik/schemas"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
 
@@ -211,12 +212,12 @@ func (e *Tugrik) Or(filter Condition) *Session {
 	return session
 }
 
-func (e *Tugrik) InsertOne(ctx context.Context, v interface{}) error {
+func (e *Tugrik) InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
 	session := e.NewSession()
 	return session.InsertOne(ctx, v)
 }
 
-func (e *Tugrik) InsertMany(ctx context.Context, v []interface{}) error {
+func (e *Tugrik) InsertMany(ctx context.Context, v []interface{}) (*mongo.InsertManyResult, error) {
 	session := e.NewSession()
 	return session.InsertMany(ctx, v)
 }
@@ -252,12 +253,12 @@ func (e *Tugrik) UpdateMany(bean interface{}) error {
 	return session.UpdateMany(bean)
 }
 
-func (e *Tugrik) DeleteOne(ctx context.Context, filter interface{}) error {
+func (e *Tugrik) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
 	session := e.NewSession()
 	return session.DeleteOne(ctx, filter)
 }
 
-func (e *Tugrik) DeleteMany(ctx context.Context, filter interface{}) error {
+func (e *Tugrik) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
 	session := e.NewSession()
 	return session.DeleteMany(ctx, filter)
 }
