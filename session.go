@@ -13,6 +13,9 @@ package tugrik
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -80,44 +83,46 @@ func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 }
 
 // InsertOne executes an insert command to insert a single document into the collection.
-func (s *Session) InsertOne(ctx context.Context, doc interface{}) error {
+func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error) {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
-		return err
+		return [12]byte{}, err
 	}
-	_, err = coll.InsertOne(ctx, doc, s.insertOneOpts...)
-	return err
+	result, err := coll.InsertOne(ctx, doc, s.insertOneOpts...)
+	if id, ok := result.InsertedID.(primitive.ObjectID); ok {
+		return id, err
+	}
+	return [12]byte{}, err
 }
 
 // InsertMany executes an insert command to insert multiple documents into the collection.
-func (s *Session) InsertMany(ctx context.Context, docs []interface{}) error {
+func (s *Session) InsertMany(ctx context.Context, docs []interface{}) (*mongo.InsertManyResult, error) {
 	coll, err := s.engine.getSliceColl(docs)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = coll.InsertMany(ctx, docs, s.insertManyOpts...)
 
-	return err
+	return coll.InsertMany(ctx, docs, s.insertManyOpts...)
 }
 
 // DeleteOne executes a delete command to delete at most one document from the collection.
-func (s *Session) DeleteOne(ctx context.Context, doc interface{}) error {
+func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
-	return err
+
+	return coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
 // DeleteMany executes a delete command to delete documents from the collection.
-func (s *Session) DeleteMany(ctx context.Context, doc interface{}) error {
+func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
 	coll, err := s.engine.getStructColl(doc)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
-	return err
+
+	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
 func (s *Session) Limit(i int64) *Session {
