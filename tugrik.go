@@ -80,19 +80,19 @@ func (e *Tugrik) Disconnect(ctx context.Context) error {
 	return e.client.Disconnect(ctx)
 }
 
-func (e *Tugrik) Distinct(doc interface{}, columns string) ([]interface{}, error) {
+func (e *Tugrik) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
 	session := e.NewSession()
-	return session.Distinct(doc, columns)
+	return session.Distinct(ctx, doc, columns)
 }
 
-func (e *Tugrik) FindOne(doc interface{}) error {
+func (e *Tugrik) FindOne(ctx context.Context, doc interface{}) error {
 	session := e.NewSession()
-	return session.FindOne(doc)
+	return session.FindOne(ctx, doc)
 }
 
-func (e *Tugrik) FindAll(docs interface{}) error {
+func (e *Tugrik) FindAll(ctx context.Context, docs interface{}) error {
 	session := e.NewSession()
-	return session.FindAll(docs)
+	return session.FindAll(ctx, docs)
 }
 
 func (e *Tugrik) RegexFilter(key, pattern string) *Session {
@@ -211,14 +211,14 @@ func (e *Tugrik) Or(filter Condition) *Session {
 	return session
 }
 
-func (e *Tugrik) InsertOne(v interface{}) error {
+func (e *Tugrik) InsertOne(ctx context.Context, v interface{}) error {
 	session := e.NewSession()
-	return session.InsertOne(v)
+	return session.InsertOne(ctx, v)
 }
 
-func (e *Tugrik) InsertMany(v []interface{}) error {
+func (e *Tugrik) InsertMany(ctx context.Context, v []interface{}) error {
 	session := e.NewSession()
-	return session.InsertMany(v)
+	return session.InsertMany(ctx, v)
 }
 
 func (e *Tugrik) Limit(limit int64) *Session {
@@ -252,14 +252,14 @@ func (e *Tugrik) UpdateMany(bean interface{}) error {
 	return session.UpdateMany(bean)
 }
 
-func (e *Tugrik) DeleteOne(filter interface{}) error {
+func (e *Tugrik) DeleteOne(ctx context.Context, filter interface{}) error {
 	session := e.NewSession()
-	return session.DeleteOne(filter)
+	return session.DeleteOne(ctx, filter)
 }
 
-func (e *Tugrik) DeleteMany(filter interface{}) error {
+func (e *Tugrik) DeleteMany(ctx context.Context, filter interface{}) error {
 	session := e.NewSession()
-	return session.DeleteMany(filter)
+	return session.DeleteMany(ctx, filter)
 }
 
 func (e *Tugrik) NewSession() *Session {
