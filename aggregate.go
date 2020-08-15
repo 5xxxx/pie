@@ -12,10 +12,10 @@ package tugrik
 
 import (
 	"context"
-
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IAggregate interface {
@@ -78,6 +78,59 @@ func (a *Aggregate) All(result interface{}) error {
 	return aggregate.All(a.ctx, result)
 }
 
+// SetAllowDiskUse sets the value for the AllowDiskUse field.
+func (ao *Aggregate) SetAllowDiskUse(b bool) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetAllowDiskUse(b))
+	return ao
+}
+
+// SetBatchSize sets the value for the BatchSize field.
+func (ao *Aggregate) SetBatchSize(i int32) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetBatchSize(i))
+	return ao
+}
+
+// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+func (ao *Aggregate) SetBypassDocumentValidation(b bool) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetBypassDocumentValidation(b))
+	return ao
+}
+
+// SetCollation sets the value for the Collation field.
+func (ao *Aggregate) SetCollation(c *options.Collation) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetCollation(c))
+	return ao
+}
+
+// SetMaxTime sets the value for the MaxTime field.
+func (ao *Aggregate) SetMaxTime(d time.Duration) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetMaxTime(d))
+	return ao
+}
+
+// SetMaxAwaitTime sets the value for the MaxAwaitTime field.
+func (ao *Aggregate) SetMaxAwaitTime(d time.Duration) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetMaxAwaitTime(d))
+	return ao
+}
+
+// SetComment sets the value for the Comment field.
+func (ao *Aggregate) SetComment(s string) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetComment(s))
+	return ao
+}
+
+// SetHint sets the value for the Hint field.
+func (ao *Aggregate) SetHint(h interface{}) *Aggregate {
+	ao.opts = append(ao.opts, options.Aggregate().SetHint(h))
+	return ao
+}
+
+func (a *Aggregate) Pipeline(pipeline bson.A) *Aggregate {
+	a.pipeline = pipeline
+	return a
+}
+
 func (a *Aggregate) Match(c Condition) *Aggregate {
 	a.pipeline = append(a.pipeline, bson.M{
 		"$match": c.Filters(),
@@ -85,6 +138,6 @@ func (a *Aggregate) Match(c Condition) *Aggregate {
 	return a
 }
 
-func (a *Aggregate) Group() *Aggregate {
-	panic("")
-}
+//func (a *Aggregate) Group() *Aggregate {
+//	panic("")
+//}
