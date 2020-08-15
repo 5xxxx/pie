@@ -1,6 +1,5 @@
 ## pie
-
-pie 是对[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 二次开发的操作库
+pie 是基于官方[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 封装，所有操作都是通过链式调用，可以方便的对MongoDB进行操作
 
 ### 安装
 
