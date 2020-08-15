@@ -8,7 +8,7 @@
  *
  */
 
-package tugrik
+package pie
 
 import (
 	"crypto/tls"
@@ -44,21 +44,21 @@ func (o *Options) SetUpdateEmpty(e bool) {
 //
 // For more information about the URI format, see https://docs.mongodb.com/manual/reference/connection-string/. See
 // mongo.Connect documentation for examples of using URIs for different Client configurations.
-func (c *Tugrik) SetURI(uri string) {
+func (c *Driver) SetURI(uri string) {
 	c.clientOpts = append(c.clientOpts, options.Client().ApplyURI(uri))
 }
 
 // SetAppName specifies an application name that is sent to the server when creating new connections. It is used by the
 // server to log connection and profiling information (e.g. slow query logs). This can also be set through the "appName"
 // URI option (e.g "appName=example_application"). The default is empty, meaning no app name will be sent.
-func (c *Tugrik) SetAppName(s string) {
+func (c *Driver) SetAppName(s string) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetAppName(s))
 }
 
 // SetAuth specifies a Credential containing options for configuring authentication. See the options.Credential
 // documentation for more information about Credential fields. The default is an empty Credential, meaning no
 // authentication will be configured.
-func (c *Tugrik) SetAuth(auth options.Credential) {
+func (c *Driver) SetAuth(auth options.Credential) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetAuth(auth))
 }
 
@@ -79,7 +79,7 @@ func (c *Tugrik) SetAuth(auth options.Credential) {
 //
 // This can also be set through the "compressors" URI option (e.g. "compressors=zstd,zlib,snappy"). The default is
 // an empty slice, meaning no compression will be enabled.
-func (c *Tugrik) SetCompressors(comps []string) {
+func (c *Driver) SetCompressors(comps []string) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetCompressors(comps))
 }
 
@@ -87,13 +87,13 @@ func (c *Tugrik) SetCompressors(comps []string) {
 // specified through SetDialer, this option must not be used. This can be set through SetURI with the
 // "connectTimeoutMS" (e.g "connectTimeoutMS=30") option. If set to 0, no timeout will be used. The default is 30
 // seconds.
-func (c *Tugrik) SetConnectTimeout(d time.Duration) {
+func (c *Driver) SetConnectTimeout(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetConnectTimeout(d))
 }
 
 // SetDialer specifies a custom ContextDialer to be used to create new connections to the server. The default is a
 // net.Dialer instance with a 300 second keepalive time.
-func (c *Tugrik) SetDialer(d options.ContextDialer) {
+func (c *Driver) SetDialer(d options.ContextDialer) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetDialer(d))
 }
 
@@ -107,13 +107,13 @@ func (c *Tugrik) SetDialer(d options.ContextDialer) {
 // 2. "connect=automatic" for automatic discovery.
 //
 // The default is false ("automatic" in the connection string).
-func (c *Tugrik) SetDirect(b bool) {
+func (c *Driver) SetDirect(b bool) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetDirect(b))
 }
 
 // SetHeartbeatInterval specifies the amount of time to wait between periodic background server checks. This can also be
 // set through the "heartbeatIntervalMS" URI option (e.g. "heartbeatIntervalMS=10000"). The default is 10 seconds.
-func (c *Tugrik) SetHeartbeatInterval(d time.Duration) {
+func (c *Driver) SetHeartbeatInterval(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetHeartbeatInterval(d))
 }
 
@@ -122,7 +122,7 @@ func (c *Tugrik) SetHeartbeatInterval(d time.Duration) {
 //
 // Hosts can also be specified as a comma-separated list in a URI. For example, to include "localhost:27017" and
 // "localhost:27018", a URI could be "mongodb://localhost:27017,localhost:27018". The default is ["localhost:27017"]
-func (c *Tugrik) SetHosts(s []string) {
+func (c *Driver) SetHosts(s []string) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetHosts(s))
 }
 
@@ -130,47 +130,47 @@ func (c *Tugrik) SetHosts(s []string) {
 // operation, this is the acceptable non-negative delta between shortest and longest average round-trip times. A server
 // within the latency window is selected randomly. This can also be set through the "localThresholdMS" URI option (e.g.
 // "localThresholdMS=15000"). The default is 15 milliseconds.
-func (c *Tugrik) SetLocalThreshold(d time.Duration) {
+func (c *Driver) SetLocalThreshold(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetLocalThreshold(d))
 }
 
 // SetMaxConnIdleTime specifies the maximum amount of time that a connection will remain idle in a connection pool
 // before it is removed from the pool and closed. This can also be set through the "maxIdleTimeMS" URI option (e.g.
 // "maxIdleTimeMS=10000"). The default is 0, meaning a connection can remain unused indefinitely.
-func (c *Tugrik) SetMaxConnIdleTime(d time.Duration) {
+func (c *Driver) SetMaxConnIdleTime(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetMaxConnIdleTime(d))
 }
 
 // SetMaxPoolSize specifies that maximum number of connections allowed in the driver's connection pool to each server.
 // Requests to a server will block if this maximum is reached. This can also be set through the "maxPoolSize" URI option
 // (e.g. "maxPoolSize=100"). The default is 100. If this is 0, it will be set to math.MaxInt64.
-func (c *Tugrik) SetMaxPoolSize(u uint64) {
+func (c *Driver) SetMaxPoolSize(u uint64) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetMaxPoolSize(u))
 }
 
 // SetMinPoolSize specifies the minimum number of connections allowed in the driver's connection pool to each server. If
 // this is non-zero, each server's pool will be maintained in the background to ensure that the size does not fall below
 // the minimum. This can also be set through the "minPoolSize" URI option (e.g. "minPoolSize=100"). The default is 0.
-func (c *Tugrik) SetMinPoolSize(u uint64) {
+func (c *Driver) SetMinPoolSize(u uint64) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetMinPoolSize(u))
 }
 
 // SetPoolMonitor specifies a PoolMonitor to receive connection pool events. See the event.PoolMonitor documentation
 // for more information about the structure of the monitor and events that can be received.
-func (c *Tugrik) SetPoolMonitor(m *event.PoolMonitor) {
+func (c *Driver) SetPoolMonitor(m *event.PoolMonitor) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetPoolMonitor(m))
 }
 
 // SetMonitor specifies a CommandMonitor to receive command events. See the event.CommandMonitor documentation for more
 // information about the structure of the monitor and events that can be received.
-func (c *Tugrik) SetMonitor(m *event.CommandMonitor) {
+func (c *Driver) SetMonitor(m *event.CommandMonitor) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetMonitor(m))
 }
 
 // SetReadConcern specifies the read concern to use for read operations. A read concern level can also be set through
 // the "readConcernLevel" URI option (e.g. "readConcernLevel=majority"). The default is nil, meaning the server will use
 // its configured default.
-func (c *Tugrik) SetReadConcern(rc *readconcern.ReadConcern) {
+func (c *Driver) SetReadConcern(rc *readconcern.ReadConcern) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetReadConcern(rc))
 }
 
@@ -187,13 +187,13 @@ func (c *Tugrik) SetReadConcern(rc *readconcern.ReadConcern) {
 //
 // The default is readpref.Primary(). See https://docs.mongodb.com/manual/core/read-preference/#read-preference for
 // more information about read preferences.
-func (c *Tugrik) SetReadPreference(rp *readpref.ReadPref) {
+func (c *Driver) SetReadPreference(rp *readpref.ReadPref) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetReadPreference(rp))
 }
 
 // SetRegistry specifies the BSON registry to use for BSON marshalling/unmarshalling operations. The default is
 // bson.DefaultRegistry.
-func (c *Tugrik) SetRegistry(registry *bsoncodec.Registry) {
+func (c *Driver) SetRegistry(registry *bsoncodec.Registry) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetRegistry(registry))
 }
 
@@ -202,7 +202,7 @@ func (c *Tugrik) SetRegistry(registry *bsoncodec.Registry) {
 // SetURI or SetHosts. All nodes in the replica set must have the same replica set name, or they will not be
 // considered as part of the set by the Client. This can also be set through the "replicaSet" URI option (e.g.
 // "replicaSet=replset"). The default is empty.
-func (c *Tugrik) SetReplicaSet(s string) {
+func (c *Driver) SetReplicaSet(s string) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetReplicaSet(s))
 }
 
@@ -217,7 +217,7 @@ func (c *Tugrik) SetReplicaSet(s string) {
 // This option requires server version >= 3.6 and a replica set or sharded cluster and will be ignored for any other
 // cluster type. This can also be set through the "retryWrites" URI option (e.g. "retryWrites=true"). The default is
 // true.
-func (c *Tugrik) SetRetryWrites(b bool) {
+func (c *Driver) SetRetryWrites(b bool) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetRetryWrites(b))
 }
 
@@ -229,21 +229,21 @@ func (c *Tugrik) SetRetryWrites(b bool) {
 // operations run through RunCommand are not retried.
 //
 // This option requires server version >= 3.6 and driver version >= 1.1.0. The default is true.
-func (c *Tugrik) SetRetryReads(b bool) {
+func (c *Driver) SetRetryReads(b bool) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetRetryReads(b))
 }
 
 // SetServerSelectionTimeout specifies how long the driver will wait to find an available, suitable server to execute an
 // operation. This can also be set through the "serverSelectionTimeoutMS" URI option (e.g.
 // "serverSelectionTimeoutMS=30000"). The default value is 30 seconds.
-func (c *Tugrik) SetServerSelectionTimeout(d time.Duration) {
+func (c *Driver) SetServerSelectionTimeout(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetServerSelectionTimeout(d))
 }
 
 // SetSocketTimeout specifies how long the driver will wait for a socket read or write to return before returning a
 // network error. This can also be set through the "socketTimeoutMS" URI option (e.g. "socketTimeoutMS=1000"). The
 // default value is 0, meaning no timeout is used and socket operations can block indefinitely.
-func (c *Tugrik) SetSocketTimeout(d time.Duration) {
+func (c *Driver) SetSocketTimeout(d time.Duration) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetSocketTimeout(d))
 }
 
@@ -270,7 +270,7 @@ func (c *Tugrik) SetSocketTimeout(d time.Duration) {
 // man-in-the-middle attacks and should only be done for testing.
 //
 // The default is nil, meaning no TLS will be enabled.
-func (c *Tugrik) SetTLSConfig(cfg *tls.Config) {
+func (c *Driver) SetTLSConfig(cfg *tls.Config) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetTLSConfig(cfg))
 }
 
@@ -288,7 +288,7 @@ func (c *Tugrik) SetTLSConfig(cfg *tls.Config) {
 // returning (e.g. "journal=true").
 //
 // The default is nil, meaning the server will use its configured default.
-func (c *Tugrik) SetWriteConcern(wc *writeconcern.WriteConcern) {
+func (c *Driver) SetWriteConcern(wc *writeconcern.WriteConcern) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetWriteConcern(wc))
 }
 
@@ -296,20 +296,20 @@ func (c *Tugrik) SetWriteConcern(wc *writeconcern.WriteConcern) {
 // compressor through SetURI or SetCompressors. Supported values are -1 through 9, inclusive. -1 tells the zlib
 // library to use its default, 0 means no compression, 1 means best speed, and 9 means best compression.
 // This can also be set through the "zlibCompressionLevel" URI option (e.g. "zlibCompressionLevel=-1"). Defaults to -1.
-func (c *Tugrik) SetZlibLevel(level int) {
+func (c *Driver) SetZlibLevel(level int) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetZlibLevel(level))
 }
 
 // SetZstdLevel sets the level for the zstd compressor. This option is ignored if zstd is not specified as a compressor
 // through SetURI or SetCompressors. Supported values are 1 through 20, inclusive. 1 means best speed and 20 means
 // best compression. This can also be set through the "zstdCompressionLevel" URI option. Defaults to 6.
-func (c *Tugrik) SetZstdLevel(level int) {
+func (c *Driver) SetZstdLevel(level int) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetZstdLevel(level))
 }
 
 // SetAutoEncryptionOptions specifies an AutoEncryptionOptions instance to automatically encrypt and decrypt commands
 // and their results. See the options.AutoEncryptionOptions documentation for more information about the supported
 // options.
-func (c *Tugrik) SetAutoEncryptionOptions(opts *options.AutoEncryptionOptions) {
+func (c *Driver) SetAutoEncryptionOptions(opts *options.AutoEncryptionOptions) {
 	c.clientOpts = append(c.clientOpts, options.Client().SetAutoEncryptionOptions(opts))
 }

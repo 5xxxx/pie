@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"encoding/gob"
 
-	"github.com/NSObjects/tugrik/utils"
+	"github.com/NSObjects/pie/utils"
 )
 
 type PK []interface{}

@@ -8,7 +8,7 @@
  *
  */
 
-package tugrik
+package pie
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 
 type TransFunc func(context.Context) error
 
-func (t Tugrik) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+func (t Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
 	session, err := t.client.StartSession(opt...)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (t Tugrik) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...
 	return session.CommitTransaction(ctx)
 }
 
-func (t Tugrik) Transaction(ctx context.Context, f TransFunc) error {
+func (t Driver) Transaction(ctx context.Context, f TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))

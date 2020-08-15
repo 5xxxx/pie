@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	t, err := tugrik.NewTugrik()
+	t, err := pie.NewDriver()
 	t.SetURI("mongodb://127.0.0.1:27017")
 	if err != nil {
 		panic(err)
@@ -34,13 +34,14 @@ func main() {
 }
 */
 
-package tugrik
+package pie
 
 import (
 	"context"
 	"errors"
-	"github.com/NSObjects/tugrik/names"
-	"github.com/NSObjects/tugrik/schemas"
+
+	"github.com/NSObjects/pie/names"
+	"github.com/NSObjects/pie/schemas"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
@@ -50,21 +51,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type Tugrik struct {
+type Driver struct {
 	client     *mongo.Client
 	parser     *Parser
 	db         string
 	clientOpts []*options.ClientOptions
 }
 
-func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
+func NewDriver(opts ...*options.ClientOptions) (*Driver, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
 	client, err := mongo.NewClient(opts...)
 	if err != nil {
 		return nil, err
 	}
 	parser := NewParser(mapper, mapper)
-	tugrik := &Tugrik{
+	tugrik := &Driver{
 		clientOpts: opts,
 		parser:     parser,
 		client:     client,
@@ -72,211 +73,211 @@ func NewTugrik(opts ...*options.ClientOptions) (*Tugrik, error) {
 	return tugrik, nil
 }
 
-func (e *Tugrik) Connect(ctx context.Context) (err error) {
+func (e *Driver) Connect(ctx context.Context) (err error) {
 	e.client, err = mongo.Connect(ctx, e.clientOpts...)
 	return err
 }
 
-func (e *Tugrik) Disconnect(ctx context.Context) error {
+func (e *Driver) Disconnect(ctx context.Context) error {
 	return e.client.Disconnect(ctx)
 }
 
-func (e *Tugrik) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
+func (e *Driver) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
 	session := e.NewSession()
 	return session.Distinct(ctx, doc, columns)
 }
 
-func (e *Tugrik) FindOne(ctx context.Context, doc interface{}) error {
+func (e *Driver) FindOne(ctx context.Context, doc interface{}) error {
 	session := e.NewSession()
 	return session.FindOne(ctx, doc)
 }
 
-func (e *Tugrik) FindAll(ctx context.Context, docs interface{}) error {
+func (e *Driver) FindAll(ctx context.Context, docs interface{}) error {
 	session := e.NewSession()
 	return session.FindAll(ctx, docs)
 }
 
-func (e *Tugrik) RegexFilter(key, pattern string) *Session {
+func (e *Driver) RegexFilter(key, pattern string) *Session {
 	session := e.NewSession()
 	return session.RegexFilter(key, pattern)
 }
 
-func (e *Tugrik) Asc(colNames ...string) *Session {
+func (e *Driver) Asc(colNames ...string) *Session {
 	session := e.NewSession()
 	return session.Asc(colNames...)
 }
 
-func (e *Tugrik) Eq(key string, value interface{}) *Session {
+func (e *Driver) Eq(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Eq(key, value)
 }
 
-func (e *Tugrik) Ne(key string, ne interface{}) *Session {
+func (e *Driver) Ne(key string, ne interface{}) *Session {
 	session := e.NewSession()
 	return session.Gt(key, ne)
 }
 
-func (e *Tugrik) Nin(key string, nin interface{}) *Session {
+func (e *Driver) Nin(key string, nin interface{}) *Session {
 	session := e.NewSession()
 	return session.Nin(key, nin)
 }
 
-func (e *Tugrik) Nor(c Condition) *Session {
+func (e *Driver) Nor(c Condition) *Session {
 	session := e.NewSession()
 	return session.Nor(c)
 }
 
-func (e *Tugrik) Exists(key string, exists bool, filter ...Condition) *Session {
+func (e *Driver) Exists(key string, exists bool, filter ...Condition) *Session {
 	session := e.NewSession()
 	return session.Exists(key, exists, filter...)
 }
 
-func (e *Tugrik) Type(key string, t interface{}) *Session {
+func (e *Driver) Type(key string, t interface{}) *Session {
 	session := e.NewSession()
 	return session.Gt(key, t)
 }
 
-func (e *Tugrik) Expr(filter Condition) *Session {
+func (e *Driver) Expr(filter Condition) *Session {
 	session := e.NewSession()
 	return session.Expr(filter)
 }
 
-func (e *Tugrik) Regex(key string, value interface{}) *Session {
+func (e *Driver) Regex(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Regex(key, value)
 }
 
-func (e *Tugrik) SetDatabase(db string) {
+func (e *Driver) SetDatabase(db string) {
 	e.db = db
 }
 
-func (e *Tugrik) Collection(name string) *mongo.Collection {
+func (e *Driver) Collection(name string) *mongo.Collection {
 	return e.client.Database(e.db).Collection(name)
 }
 
-func (e *Tugrik) Ping() error {
+func (e *Driver) Ping() error {
 	return e.client.Ping(context.TODO(), readpref.Primary())
 }
 
-func (e *Tugrik) Filter(key string, value interface{}) *Session {
+func (e *Driver) Filter(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Filter(key, value)
 }
 
-func (e *Tugrik) ID(id interface{}) *Session {
+func (e *Driver) ID(id interface{}) *Session {
 	session := e.NewSession()
 	return session.ID(id)
 }
 
-func (e *Tugrik) Gt(key string, value interface{}) *Session {
+func (e *Driver) Gt(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Gt(key, value)
 }
 
-func (e *Tugrik) Gte(key string, value interface{}) *Session {
+func (e *Driver) Gte(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Gte(key, value)
 }
 
-func (e *Tugrik) Lt(key string, value interface{}) *Session {
+func (e *Driver) Lt(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Lt(key, value)
 }
 
-func (e *Tugrik) Lte(key string, value interface{}) *Session {
+func (e *Driver) Lte(key string, value interface{}) *Session {
 	session := e.NewSession()
 	return session.Lte(key, value)
 }
 
-func (e *Tugrik) In(key string, value interface{}) *Session {
+func (e *Driver) In(key string, value interface{}) *Session {
 	session := e.NewSession()
 	session.In(key, value)
 	return session
 }
 
-func (e *Tugrik) And(filter Condition) *Session {
+func (e *Driver) And(filter Condition) *Session {
 	session := e.NewSession()
 	session.And(filter)
 	return session
 }
 
-func (e *Tugrik) Not(key string, value interface{}) *Session {
+func (e *Driver) Not(key string, value interface{}) *Session {
 	session := e.NewSession()
 	session.Not(key, value)
 	return session
 }
 
-func (e *Tugrik) Or(filter Condition) *Session {
+func (e *Driver) Or(filter Condition) *Session {
 	session := e.NewSession()
 	session.Or(filter)
 	return session
 }
 
-func (e *Tugrik) InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
+func (e *Driver) InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
 	session := e.NewSession()
 	return session.InsertOne(ctx, v)
 }
 
-func (e *Tugrik) InsertMany(ctx context.Context, v []interface{}) (*mongo.InsertManyResult, error) {
+func (e *Driver) InsertMany(ctx context.Context, v []interface{}) (*mongo.InsertManyResult, error) {
 	session := e.NewSession()
 	return session.InsertMany(ctx, v)
 }
 
-func (e *Tugrik) Limit(limit int64) *Session {
+func (e *Driver) Limit(limit int64) *Session {
 	session := e.NewSession()
 	return session.Limit(limit)
 }
 
-func (e *Tugrik) Skip(skip int64) *Session {
+func (e *Driver) Skip(skip int64) *Session {
 	session := e.NewSession()
 	return session.Limit(skip)
 }
 
-func (e *Tugrik) Count(i interface{}) (int64, error) {
+func (e *Driver) Count(i interface{}) (int64, error) {
 	session := e.NewSession()
 	return session.Count(i)
 }
 
-func (e *Tugrik) Desc(s2 ...string) *Session {
+func (e *Driver) Desc(s2 ...string) *Session {
 	session := e.NewSession()
 	return session.Desc(s2...)
 }
 
-func (e *Tugrik) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+func (e *Driver) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	session := e.NewSession()
 	return session.Update(ctx, bean)
 }
 
 //The following operation updates all of the documents with quantity value less than 50.
-func (e *Tugrik) UpdateMany(bean interface{}) error {
+func (e *Driver) UpdateMany(bean interface{}) error {
 	session := e.NewSession()
 	return session.UpdateMany(bean)
 }
 
-func (e *Tugrik) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
+func (e *Driver) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
 	session := e.NewSession()
 	return session.DeleteOne(ctx, filter)
 }
 
-func (e *Tugrik) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
+func (e *Driver) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
 	session := e.NewSession()
 	return session.DeleteMany(ctx, filter)
 }
 
-func (e *Tugrik) FilterBy(object interface{}) *Session {
+func (e *Driver) FilterBy(object interface{}) *Session {
 	session := e.NewSession()
 	return session.FilterBy(object)
 }
 
-func (e *Tugrik) NewSession() *Session {
+func (e *Driver) NewSession() *Session {
 	return NewSession(e)
 }
 
-func (e *Tugrik) Aggregate() *Aggregate {
+func (e *Driver) Aggregate() *Aggregate {
 	return NewAggregate(e)
 }
 
-func (s *Tugrik) getStructColl(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) getStructColl(doc interface{}) (*mongo.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -295,7 +296,7 @@ func (s *Tugrik) getStructColl(doc interface{}) (*mongo.Collection, error) {
 	return coll, nil
 }
 
-func (s *Tugrik) getSliceColl(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) getSliceColl(doc interface{}) (*mongo.Collection, error) {
 	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
 
 	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
@@ -322,7 +323,7 @@ func (s *Tugrik) getSliceColl(doc interface{}) (*mongo.Collection, error) {
 	return coll, nil
 }
 
-func (s *Tugrik) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")

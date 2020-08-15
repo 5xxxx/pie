@@ -8,15 +8,15 @@
  *
  */
 
-package tugrik
+package pie
 
 import (
 	"errors"
 	"reflect"
 	"sync"
 
-	"github.com/NSObjects/tugrik/names"
-	"github.com/NSObjects/tugrik/schemas"
+	"github.com/NSObjects/pie/names"
+	"github.com/NSObjects/pie/schemas"
 )
 
 var (

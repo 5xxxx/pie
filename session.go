@@ -8,7 +8,7 @@
  *
  */
 
-package tugrik
+package pie
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/NSObjects/tugrik/utils"
+	"github.com/NSObjects/pie/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,7 +28,7 @@ import (
 
 type Session struct {
 	filter         Condition
-	engine         *Tugrik
+	engine         *Driver
 	findOneOptions []*options.FindOneOptions
 	findOptions    []*options.FindOptions
 	insertManyOpts []*options.InsertManyOptions
@@ -39,7 +39,7 @@ type Session struct {
 	distinctOpts   []*options.DistinctOptions
 }
 
-func NewSession(engine *Tugrik) *Session {
+func NewSession(engine *Driver) *Session {
 	return &Session{engine: engine, filter: DefaultCondition()}
 }
 

@@ -8,7 +8,7 @@
  *
  */
 
-package tugrik
+package pie
 
 type Interface interface {
 	Distinct(doc interface{}, columns string) ([]interface{}, error)

@@ -8,7 +8,7 @@
  *
  */
 
-package tugrik
+package pie
 
 import (
 	"context"
@@ -54,13 +54,13 @@ type IAggregate interface {
 }
 
 type Aggregate struct {
-	engine   *Tugrik
+	engine   *Driver
 	ctx      context.Context
 	pipeline bson.A
 	opts     []*options.AggregateOptions
 }
 
-func NewAggregate(engine *Tugrik) *Aggregate {
+func NewAggregate(engine *Driver) *Aggregate {
 	return &Aggregate{engine: engine}
 }
 
