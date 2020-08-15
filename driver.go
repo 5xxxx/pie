@@ -218,7 +218,7 @@ func (e *Driver) InsertOne(ctx context.Context, v interface{}) (primitive.Object
 	return session.InsertOne(ctx, v)
 }
 
-func (e *Driver) InsertMany(ctx context.Context, v []interface{}) (*mongo.InsertManyResult, error) {
+func (e *Driver) InsertMany(ctx context.Context, v interface{}) (*mongo.InsertManyResult, error) {
 	session := e.NewSession()
 	return session.InsertMany(ctx, v)
 }
@@ -267,6 +267,15 @@ func (e *Driver) DeleteMany(ctx context.Context, filter interface{}) (*mongo.Del
 func (e *Driver) FilterBy(object interface{}) *Session {
 	session := e.NewSession()
 	return session.FilterBy(object)
+}
+
+func (e *Driver) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
+	indexes := e.NewIndexes()
+	return indexes.AddIndex(keys, opt...)
+}
+
+func (e *Driver) NewIndexes() *Indexes {
+	return NewIndexes(e)
 }
 
 func (e *Driver) NewSession() *Session {

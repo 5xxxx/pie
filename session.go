@@ -43,6 +43,26 @@ func NewSession(engine *Driver) *Session {
 	return &Session{engine: engine, filter: DefaultCondition()}
 }
 
+func (s *Session) FilterBy(object interface{}) *Session {
+	beanValue := reflect.ValueOf(object)
+	if beanValue.Kind() != reflect.Struct ||
+		//Todo how to fix array?
+		beanValue.Kind() == reflect.Array {
+		panic(errors.New("needs a struct"))
+	}
+	docType := reflect.TypeOf(object)
+	for index := 0; index < docType.NumField(); index++ {
+		fieldTag := docType.Field(index).Tag.Get("bson")
+		if fieldTag != "" {
+			split := strings.Split(fieldTag, ",")
+			if len(split) > 0 {
+				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
+			}
+		}
+	}
+	return s
+}
+
 func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
 	coll, err := s.engine.getSliceColl(doc)
 	if err != nil {
@@ -102,13 +122,18 @@ func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 }
 
 // InsertMany executes an insert command to insert multiple documents into the collection.
-func (s *Session) InsertMany(ctx context.Context, docs []interface{}) (*mongo.InsertManyResult, error) {
+func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error) {
 	coll, err := s.engine.getSliceColl(docs)
 	if err != nil {
 		return nil, err
 	}
 
-	return coll.InsertMany(ctx, docs, s.insertManyOpts...)
+	value := reflect.ValueOf(docs)
+	var many []interface{}
+	for index := 0; index < value.Len(); index++ {
+		many = append(many, value.Index(index).Interface())
+	}
+	return coll.InsertMany(ctx, many, s.insertManyOpts...)
 }
 
 // DeleteOne executes a delete command to delete at most one document from the collection.
@@ -327,26 +352,6 @@ func (s *Session) Expr(c Condition) *Session {
 //todo 简单实现，后续增加支持
 func (s *Session) Regex(key string, value interface{}) *Session {
 	s.filter.Regex(key, value)
-	return s
-}
-
-func (s *Session) FilterBy(object interface{}) *Session {
-	beanValue := reflect.ValueOf(object)
-	if beanValue.Kind() != reflect.Struct ||
-		//Todo how to fix array?
-		beanValue.Kind() == reflect.Array {
-		panic(errors.New("needs a struct"))
-	}
-	docType := reflect.TypeOf(object)
-	for index := 0; index < docType.NumField(); index++ {
-		fieldTag := docType.Field(index).Tag.Get("bson")
-		if fieldTag != "" {
-			split := strings.Split(fieldTag, ",")
-			if len(split) > 0 {
-				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
-			}
-		}
-	}
 	return s
 }
 

@@ -46,7 +46,7 @@ type User struct {
 }
 ```
 
-### Crete
+### InsertOne
 
 ```
 driver := pie.NewDriver(options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
@@ -58,6 +58,33 @@ user.MobileNumber = "138xxxx"
 err := driver.Insert(&user)
 if err != nil {
     fmt.Println(err)
+}
+```
+
+### InserMany
+
+```
+driver, err := pie.NewDriver()
+driver.SetURI("mongodb://127.0.0.1:27017")
+if err != nil {
+    panic(err)
+}
+if err = driver.Connect(context.Background()); err != nil {
+    panic(err)
+}
+
+driver.SetDatabase("xxxx")
+var users = []User{
+    {NickName: "aab"},
+    {NickName: "bbb"},
+    {NickName: "ccc"},
+    {NickName: "dd"},
+    {NickName: "eee"},
+}
+
+_, err = driver.InsertMany(context.Background(), users)
+if err != nil {
+    panic(err)
 }
 ```
 
@@ -169,4 +196,31 @@ if err != nil {
     panic(err)
 }
 fmt.Println(user)
+```
+
+### CreateIndexes
+
+```
+driver, err := pie.NewDriver()
+driver.SetURI("mongodb://127.0.0.1:27017")
+if err != nil {
+    panic(err)
+}
+if err = driver.Connect(context.Background()); err != nil {
+    panic(err)
+}
+
+driver.SetDatabase("jishimao_local")
+
+indexes, err := driver.
+    AddIndex(bson.M{"nickName": 1}, options.Index().SetBackground(true)).
+    AddIndex(bson.M{"birthday": 1}).
+    AddIndex(bson.M{"createdAt": 1, "mobileNumber": 1},
+    options.Index().SetBackground(true).SetName("create_mobil_index")).
+    CreateIndexes(context.Background(), &User{})
+
+if err != nil {
+    panic(err)
+}
+fmt.Println(indexes)
 ```
