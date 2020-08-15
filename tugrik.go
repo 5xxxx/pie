@@ -242,9 +242,9 @@ func (e *Tugrik) Desc(s2 ...string) *Session {
 	return session.Desc(s2...)
 }
 
-func (e *Tugrik) Update(bean interface{}) error {
+func (e *Tugrik) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	session := e.NewSession()
-	return session.Update(bean)
+	return session.Update(ctx, bean)
 }
 
 //The following operation updates all of the documents with quantity value less than 50.
@@ -261,6 +261,11 @@ func (e *Tugrik) DeleteOne(ctx context.Context, filter interface{}) (*mongo.Dele
 func (e *Tugrik) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
 	session := e.NewSession()
 	return session.DeleteMany(ctx, filter)
+}
+
+func (e *Tugrik) FilterBy(object interface{}) *Session {
+	session := e.NewSession()
+	return session.FilterBy(object)
 }
 
 func (e *Tugrik) NewSession() *Session {

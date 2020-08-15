@@ -71,6 +71,16 @@ _, err := t.Filter("username", "小明").Get(&u)
 if err != nil {
     panic(err)
 }
+
+or
+
+var user User
+user.Id, _ = primitive.ObjectIDFromHex("5f0ace734e2d4100013d8797")
+err = t.FilterBy(user).FindOne(context.Background(), &user)
+if err != nil {
+    panic(err)
+}
+
 ```
 
 ### FindAll
@@ -83,7 +93,20 @@ t.Gt("age",10).Skip(10).Limit(100).FindAll(&user)
 if err != nil {
     panic(err)
 }
+
+or
+
+var users []User
+var user User
+user.Age = 22
+err = t.FilterBy(user).FindAll(context.Background(), &users)
+if err != nil {
+    panic(err)
+}
+fmt.Println(users)
 ```
+
+
 
 ### UpdateOne
 
@@ -126,24 +149,24 @@ if err != nil {
 
 ### Aggregate
 ```
-    t, err := tugrik.NewTugrik()
-	t.SetURI("mongodb://127.0.0.1:27017")
-	if err != nil {
-		panic(err)
-	}
-	if err = t.Connect(context.Background()); err != nil {
-		panic(err)
-	}
+t, err := tugrik.NewTugrik()
+t.SetURI("mongodb://127.0.0.1:27017")
+if err != nil {
+    panic(err)
+}
+if err = t.Connect(context.Background()); err != nil {
+    panic(err)
+}
 
-	t.SetDatabase("jishimao_local")
-	var user []User
+t.SetDatabase("jishimao_local")
+var user []User
 
-	err = t.Aggregate().
-		Match(tugrik.DefaultCondition().
-			Eq("nick_name", "黄晶晶").
-			Eq("mobile_number", "c5b013cb2e102e0e743f117220b2acd1")).All(&user)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(user)
+err = t.Aggregate().
+Match(tugrik.DefaultCondition().
+Eq("nick_name", "黄晶晶").
+Eq("mobile_number", "c5b013cb2e102e0e743f117220b2acd1")).All(&user)
+if err != nil {
+    panic(err)
+}
+fmt.Println(user)
 ```

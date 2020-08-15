@@ -22,8 +22,8 @@ import (
 
 type TransFunc func(context.Context) error
 
-func (t Tugrik) TransactionWithOptions(ctx context.Context, opt *options.SessionOptions, f TransFunc) error {
-	session, err := t.client.StartSession(opt)
+func (t Tugrik) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+	session, err := t.client.StartSession(opt...)
 	if err != nil {
 		return err
 	}
@@ -38,5 +38,5 @@ func (t Tugrik) Transaction(ctx context.Context, f TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))
-	return t.TransactionWithOptions(ctx, opts, f)
+	return t.TransactionWithOptions(ctx, f, []*options.SessionOptions{opts}...)
 }

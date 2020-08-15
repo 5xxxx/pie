@@ -12,6 +12,12 @@ package tugrik
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/NSObjects/tugrik/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -144,14 +150,12 @@ func (s *Session) Count(i interface{}) (int64, error) {
 	return coll.CountDocuments(context.Background(), s.filter.Filters(), s.countOpts...)
 }
 
-func (s *Session) Update(bean interface{}) error {
+func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	coll, err := s.engine.getStructColl(bean)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = coll.UpdateOne(context.Background(), s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)})
-
-	return err
+	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)})
 }
 
 //todo update many
@@ -326,28 +330,50 @@ func (s *Session) Regex(key string, value interface{}) *Session {
 	return s
 }
 
-////todo 未实现 ,玩不懂。
-//func (s *Session) JsonSchema() {
-//
-//}
-//
-////{ field: { $mod: [ divisor, remainder ] } }
-////Examples
-////{ "_id" : 1, "item" : "abc123", "qty" : 0 }
-////{ "_id" : 2, "item" : "xyz123", "qty" : 5 }
-////{ "_id" : 3, "item" : "ijk123", "qty" : 12 }
-////db.inventory.find( { qty: { $mod: [ 4, 0 ] } } )
-////The query returns the following documents:
-////{ "_id" : 1, "item" : "abc123", "qty" : 0 }
-////{ "_id" : 3, "item" : "ijk123", "qty" : 12 }
-//func (s *Session) Mod(key string, mod interface{}) *Session {
-//	s.e = append(s.e, bson.E{Key: key, Value: bson.D{{"$mod", mod}}})
-//	return s
-//}
-//
+func (s *Session) FilterBy(object interface{}) *Session {
+	beanValue := reflect.ValueOf(object)
+	if beanValue.Kind() != reflect.Struct ||
+		//Todo how to fix array?
+		beanValue.Kind() == reflect.Array {
+		panic(errors.New("needs a struct"))
+	}
+	docType := reflect.TypeOf(object)
+	for index := 0; index < docType.NumField(); index++ {
+		fieldTag := docType.Field(index).Tag.Get("bson")
+		if fieldTag != "" {
+			split := strings.Split(fieldTag, ",")
+			if len(split) > 0 {
+				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
+			}
+		}
+	}
+	return s
+}
 
-//
-////todo 比较复杂今晚不加了
-//func (s *Session) Text() *Session {
-//	panic("比较复杂今晚不加")
-//}
+func (s *Session) makeFilterValue(field string, value interface{}) {
+	if utils.IsZero(value) {
+		return
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Struct:
+		s.makeStructValue(field, v)
+		return
+	case reflect.Array:
+		return
+	}
+	s.Filter(field, value)
+}
+
+func (s *Session) makeStructValue(field string, value reflect.Value) {
+	for index := 0; index < value.NumField(); index++ {
+		docType := reflect.TypeOf(value.Interface())
+		tag := docType.Field(index).Tag.Get("bson")
+		if tag != "" {
+			if !utils.IsZero(value.Field(index)) {
+				fieldTags := fmt.Sprintf("%s.%s", field, tag)
+				s.makeFilterValue(fieldTags, value.Field(index).Interface())
+			}
+		}
+	}
+}
