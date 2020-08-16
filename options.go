@@ -30,6 +30,60 @@ func (o *Options) SetUpdateEmpty(e bool) {
 	o.UpdateEmpty = e
 }
 
+// SetArrayFilters sets the value for the ArrayFilters field.
+func (f *Driver) SetArrayFilters(filters options.ArrayFilters) *Session {
+	session := f.NewSession()
+	return session.SetArrayFilters(filters)
+}
+
+// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+func (f *Driver) SetBypassDocumentValidation(b bool) *Session {
+	session := f.NewSession()
+	return session.SetBypassDocumentValidation(b)
+}
+
+// SetReturnDocument sets the value for the ReturnDocument field.
+func (f *Driver) SetReturnDocument(rd options.ReturnDocument) *Session {
+	session := f.NewSession()
+	return session.SetReturnDocument(rd)
+}
+
+// SetUpsert sets the value for the Upsert field.
+func (f *Driver) SetUpsert(b bool) *Session {
+	session := f.NewSession()
+	return session.SetUpsert(b)
+}
+
+// SetCollation sets the value for the Collation field.
+func (f *Driver) SetCollation(collation *options.Collation) *Session {
+	session := f.NewSession()
+	return session.SetCollation(collation)
+}
+
+// SetMaxTime sets the value for the MaxTime field.
+func (f *Driver) SetMaxTime(d time.Duration) *Session {
+	session := f.NewSession()
+	return session.SetMaxTime(d)
+}
+
+// SetProjection sets the value for the Projection field.
+func (f *Driver) SetProjection(projection interface{}) *Session {
+	session := f.NewSession()
+	return session.SetProjection(projection)
+}
+
+// SetSort sets the value for the Sort field.
+func (f *Driver) SetSort(sort interface{}) *Session {
+	session := f.NewSession()
+	return session.SetSort(sort)
+}
+
+// SetHint sets the value for the Hint field.
+func (f *Driver) SetHint(hint interface{}) *Session {
+	session := f.NewSession()
+	return session.SetHint(hint)
+}
+
 // SetURI parses the given URI and sets options accordingly. The URI can contain host names, IPv4/IPv6 literals, or
 // an SRV record that will be resolved when the Client is created. When using an SRV record, TLS support is
 // implictly enabled. Specify the "tls=false" URI option to override this.

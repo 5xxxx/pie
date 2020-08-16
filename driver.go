@@ -294,6 +294,16 @@ func (e *Driver) FilterBy(object interface{}) *Session {
 	return session.FilterBy(object)
 }
 
+func (s *Driver) DropAll(ctx context.Context, doc interface{}) error {
+	indexes := s.NewIndexes()
+	return indexes.DropAll(ctx, doc)
+}
+
+func (s *Driver) DropOne(ctx context.Context, doc interface{}, name string) error {
+	indexes := s.NewIndexes()
+	return indexes.DropOne(ctx, doc, name)
+}
+
 func (e *Driver) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
 	indexes := e.NewIndexes()
 	return indexes.AddIndex(keys, opt...)

@@ -19,9 +19,10 @@ import (
 )
 
 type Indexes struct {
-	driver  *Driver
-	indexes []mongo.IndexModel
-	opts    []*options.CreateIndexesOptions
+	driver             *Driver
+	indexes            []mongo.IndexModel
+	createIndexOpts    []*options.CreateIndexesOptions
+	dropIndexesOptions []*options.DropIndexesOptions
 }
 
 func NewIndexes(driver *Driver) *Indexes {
@@ -33,7 +34,26 @@ func (s *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string,
 	if err != nil {
 		return nil, err
 	}
-	return coll.Indexes().CreateMany(ctx, s.indexes, s.opts...)
+
+	return coll.Indexes().CreateMany(ctx, s.indexes, s.createIndexOpts...)
+}
+
+func (s *Indexes) DropAll(ctx context.Context, doc interface{}) error {
+	coll, err := s.driver.getStructColl(doc)
+	if err != nil {
+		return err
+	}
+	_, err = coll.Indexes().DropAll(ctx, s.dropIndexesOptions...)
+	return err
+}
+
+func (s *Indexes) DropOne(ctx context.Context, doc interface{}, name string) error {
+	coll, err := s.driver.getStructColl(doc)
+	if err != nil {
+		return err
+	}
+	_, err = coll.Indexes().DropOne(ctx, name, s.dropIndexesOptions...)
+	return err
 }
 
 func (s *Indexes) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
@@ -49,30 +69,31 @@ func (s *Indexes) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Inde
 
 // SetMaxTime sets the value for the MaxTime field.
 func (c *Indexes) SetMaxTime(d time.Duration) *Indexes {
-	c.opts = append(c.opts, options.CreateIndexes().SetMaxTime(d))
+	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetMaxTime(d))
+	c.dropIndexesOptions = append(c.dropIndexesOptions, options.DropIndexes().SetMaxTime(d))
 	return c
 }
 
 // SetCommitQuorumInt sets the value for the CommitQuorum field as an int32.
 func (c *Indexes) SetCommitQuorumInt(quorum int32) *Indexes {
-	c.opts = append(c.opts, options.CreateIndexes().SetCommitQuorumInt(quorum))
+	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumInt(quorum))
 	return c
 }
 
 // SetCommitQuorumString sets the value for the CommitQuorum field as a string.
 func (c *Indexes) SetCommitQuorumString(quorum string) *Indexes {
-	c.opts = append(c.opts, options.CreateIndexes().SetCommitQuorumString(quorum))
+	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumString(quorum))
 	return c
 }
 
 // SetCommitQuorumMajority sets the value for the CommitQuorum to special "majority" value.
 func (c *Indexes) SetCommitQuorumMajority() *Indexes {
-	c.opts = append(c.opts, options.CreateIndexes().SetCommitQuorumMajority())
+	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumMajority())
 	return c
 }
 
 // SetCommitQuorumVotingMembers sets the value for the CommitQuorum to special "votingMembers" value.
 func (c *Indexes) SetCommitQuorumVotingMembers() *Indexes {
-	c.opts = append(c.opts, options.CreateIndexes().SetCommitQuorumVotingMembers())
+	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
 	return c
 }
