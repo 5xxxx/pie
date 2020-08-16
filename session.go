@@ -16,27 +16,30 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/NSObjects/pie/utils"
-
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Session struct {
-	filter         Condition
-	engine         *Driver
-	findOneOptions []*options.FindOneOptions
-	findOptions    []*options.FindOptions
-	insertManyOpts []*options.InsertManyOptions
-	insertOneOpts  []*options.InsertOneOptions
-	deleteOpts     []*options.DeleteOptions
-	updateOpts     []*options.UpdateOptions
-	countOpts      []*options.CountOptions
-	distinctOpts   []*options.DistinctOptions
+	filter                Condition
+	engine                *Driver
+	findOneOptions        []*options.FindOneOptions
+	findOptions           []*options.FindOptions
+	insertManyOpts        []*options.InsertManyOptions
+	insertOneOpts         []*options.InsertOneOptions
+	deleteOpts            []*options.DeleteOptions
+	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptions
+	updateOpts            []*options.UpdateOptions
+	countOpts             []*options.CountOptions
+	distinctOpts          []*options.DistinctOptions
+	findOneAndReplaceOpts []*options.FindOneAndReplaceOptions
+	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
+	replaceOpts           []*options.ReplaceOptions
 }
 
 func NewSession(engine *Driver) *Session {
@@ -69,6 +72,40 @@ func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string)
 		return nil, err
 	}
 	return coll.Distinct(ctx, columns, s.filter.Filters(), s.distinctOpts...)
+}
+
+func (s *Session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
+	coll, err := s.engine.getStructColl(doc)
+	if err != nil {
+		return nil, err
+	}
+	return coll.ReplaceOne(ctx, s.filter.Filters(), doc, s.replaceOpts...)
+}
+
+func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error {
+	coll, err := s.engine.getStructColl(doc)
+	if err != nil {
+		return err
+	}
+
+	return coll.FindOneAndReplace(ctx, s.filter.Filters(), doc, s.findOneAndReplaceOpts...).Decode(&doc)
+}
+
+func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
+	coll, err := s.engine.getStructColl(doc)
+	if err != nil {
+		return err
+	}
+
+	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), doc, s.findOneAndUpdateOpts...).Decode(&doc)
+}
+
+func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
+	coll, err := s.engine.getStructColl(doc)
+	if err != nil {
+		return err
+	}
+	return coll.FindOneAndDelete(ctx, s.filter.Filters(), s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
@@ -328,6 +365,89 @@ func (s *Session) Or(c Condition) *Session {
 func (s *Session) Exists(key string, exists bool, filter ...Condition) *Session {
 	s.filter.Exists(key, exists, filter...)
 	return s
+}
+
+// SetArrayFilters sets the value for the ArrayFilters field.
+func (f *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetArrayFilters(filters))
+	return f
+}
+
+// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+func (f *Session) SetBypassDocumentValidation(b bool) *Session {
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetBypassDocumentValidation(b))
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))
+	return f
+}
+
+// SetReturnDocument sets the value for the ReturnDocument field.
+func (f *Session) SetReturnDocument(rd options.ReturnDocument) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetReturnDocument(rd))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetReturnDocument(rd))
+	return f
+}
+
+// SetUpsert sets the value for the Upsert field.
+func (f *Session) SetUpsert(b bool) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetUpsert(b))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetUpsert(b))
+	return f
+}
+
+// SetCollation sets the value for the Collation field.
+func (f *Session) SetCollation(collation *options.Collation) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetCollation(collation))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetCollation(collation))
+	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetCollation(collation))
+	return f
+}
+
+// SetMaxTime sets the value for the MaxTime field.
+func (f *Session) SetMaxTime(d time.Duration) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetMaxTime(d))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetMaxTime(d))
+	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetMaxTime(d))
+	return f
+}
+
+// SetProjection sets the value for the Projection field.
+func (f *Session) SetProjection(projection interface{}) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetProjection(projection))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetProjection(projection))
+	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetProjection(projection))
+	return f
+}
+
+// SetSort sets the value for the Sort field.
+func (f *Session) SetSort(sort interface{}) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetSort(sort))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetSort(sort))
+	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetSort(sort))
+	return f
+}
+
+// SetHint sets the value for the Hint field.
+func (f *Session) SetHint(hint interface{}) *Session {
+	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+		options.FindOneAndUpdate().SetHint(hint))
+	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+		options.FindOneAndReplace().SetHint(hint))
+	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetHint(hint))
+	return f
 }
 
 //{ field: { $type: <BSON type> } }

@@ -87,6 +87,27 @@ func (e *Driver) Distinct(ctx context.Context, doc interface{}, columns string) 
 	return session.Distinct(ctx, doc, columns)
 }
 
+func (e *Driver) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
+	session := e.NewSession()
+	return session.ReplaceOne(ctx, doc)
+}
+
+func (s *Driver) FindOneAndReplace(ctx context.Context, doc interface{}) error {
+	session := s.NewSession()
+	return session.FindOneAndReplace(ctx, doc)
+}
+
+func (s *Driver) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
+	session := s.NewSession()
+	return session.FindOneAndUpdate(ctx, doc)
+}
+
+func (s *Driver) FindAndDelete(ctx context.Context, doc interface{}) error {
+	session := s.NewSession()
+	return session.FindAndDelete(ctx, doc)
+}
+
+// FindOne executes a find command and returns a SingleResult for one document in the collection.
 func (e *Driver) FindOne(ctx context.Context, doc interface{}) error {
 	session := e.NewSession()
 	return session.FindOne(ctx, doc)

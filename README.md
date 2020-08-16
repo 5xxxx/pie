@@ -1,10 +1,9 @@
 ## pie
 pie 是基于官方[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 封装，所有操作都是通过链式调用，可以方便的对MongoDB进行操作
 
-
 ### 1.0 目标 todo list
 - [] Aggregate封装
-- [] CRUD全功能 e.g FindOneAndDelete
+- [x] CRUD全功能 e.g FindOneAndDelete
 - [] 测试
 - [] 文档
 
