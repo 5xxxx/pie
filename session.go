@@ -40,10 +40,25 @@ type Session struct {
 	findOneAndReplaceOpts []*options.FindOneAndReplaceOptions
 	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
 	replaceOpts           []*options.ReplaceOptions
+	bulkWriteOptions      []*options.BulkWriteOptions
 }
 
 func NewSession(engine *Driver) *Session {
 	return &Session{engine: engine, filter: DefaultCondition()}
+}
+
+func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
+	coll, err := s.engine.getSliceColl(docs)
+	if err != nil {
+		return nil, err
+	}
+	values := reflect.ValueOf(docs)
+	var mods []mongo.WriteModel
+	for i := 0; i < values.Len(); i++ {
+		mods = append(mods, mongo.NewInsertOneModel().SetDocument(docs))
+	}
+
+	return coll.BulkWrite(ctx, mods, s.bulkWriteOptions...)
 }
 
 func (s *Session) FilterBy(object interface{}) *Session {
@@ -374,8 +389,15 @@ func (f *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
 	return f
 }
 
+// SetOrdered sets the value for the Ordered field.
+func (b *Session) SetOrdered(ordered bool) *Session {
+	b.bulkWriteOptions = append(b.bulkWriteOptions, options.BulkWrite().SetOrdered(ordered))
+	return b
+}
+
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
 func (f *Session) SetBypassDocumentValidation(b bool) *Session {
+	f.bulkWriteOptions = append(f.bulkWriteOptions, options.BulkWrite().SetBypassDocumentValidation(b))
 	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
 	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))

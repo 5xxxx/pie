@@ -82,6 +82,11 @@ func (e *Driver) Disconnect(ctx context.Context) error {
 	return e.client.Disconnect(ctx)
 }
 
+func (d *Driver) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
+	session := d.NewSession()
+	return session.BulkWrite(ctx, docs)
+}
+
 func (e *Driver) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
 	session := e.NewSession()
 	return session.Distinct(ctx, doc, columns)
