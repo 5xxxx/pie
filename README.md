@@ -1,6 +1,13 @@
 ## pie
 pie 是基于官方[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 封装，所有操作都是通过链式调用，可以方便的对MongoDB进行操作
 
+
+### 1.0 目标 todo list
+- [] Aggregate封装
+- [] CRUD全功能 e.g FindOneAndDelete
+- [] 测试
+- [] 文档
+
 ### 安装
 
 ```
@@ -34,6 +41,24 @@ if err != nil {
 
 fmt.Println(user)
 ```
+
+pie还处于开发阶段，如果有不能满足需求的功能可以调用DataBase()方法获取*mongo.Database进行操作
+
+```
+driver.SetDatabase("xxx")
+base := driver.DataBase()
+matchStage := bson.D{{"$match", bson.D{{"operationType", "insert"}}}}
+opts := options.ChangeStream().SetMaxAwaitTime(2 * time.Second)
+
+changeStream, err := base.Watch(context.TODO(), mongo.Pipeline{matchStage}, opts)
+if err != nil {
+    panic(err)
+}
+for changeStream.Next(context.Background()) {
+    fmt.Println(changeStream.Current)
+}
+```
+
 
 ### 数据定义
 

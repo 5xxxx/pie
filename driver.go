@@ -151,6 +151,10 @@ func (e *Driver) SetDatabase(db string) {
 	e.db = db
 }
 
+func (e *Driver) DataBase() *mongo.Database {
+	return e.client.Database(e.db)
+}
+
 func (e *Driver) Collection(name string) *mongo.Collection {
 	return e.client.Database(e.db).Collection(name)
 }
