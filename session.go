@@ -208,6 +208,11 @@ func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.Delet
 	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
+func (s *Session) Clone() *Session {
+	var sess = *s
+	return &sess
+}
+
 func (s *Session) Limit(i int64) *Session {
 	s.findOptions = append(s.findOptions, options.Find().SetLimit(i))
 	return s
