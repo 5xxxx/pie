@@ -245,7 +245,15 @@ func (s *Session) Skip(i int64) *Session {
 }
 
 func (s *Session) Count(i interface{}) (int64, error) {
-	coll, err := s.engine.getStructColl(i)
+	var coll *mongo.Collection
+	var err error
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.Slice:
+		coll, err = s.engine.getSliceColl(i)
+	case reflect.Struct:
+		coll, err = s.engine.getStructColl(i)
+	}
+
 	if err != nil {
 		return 0, err
 	}
