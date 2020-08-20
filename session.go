@@ -245,6 +245,10 @@ func (s *Session) Skip(i int64) *Session {
 }
 
 func (s *Session) Count(i interface{}) (int64, error) {
+	kind := reflect.TypeOf(i).Kind()
+	if kind == reflect.Ptr {
+		i = reflect.Indirect(reflect.ValueOf(i)).Interface()
+	}
 	var coll *mongo.Collection
 	var err error
 	switch reflect.TypeOf(i).Kind() {
@@ -252,6 +256,8 @@ func (s *Session) Count(i interface{}) (int64, error) {
 		coll, err = s.engine.getSliceColl(i)
 	case reflect.Struct:
 		coll, err = s.engine.getStructColl(i)
+	default:
+		return 0, errors.New("neet slice or struct")
 	}
 
 	if err != nil {
