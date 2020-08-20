@@ -157,8 +157,16 @@ if err = driver.Connect(context.Background()); err != nil {
 }
 
 driver.SetDatabase("xxxx")
+type User struct {
+	ID             string              `bson:"_id" filter:"_id"`
+	Username       string              `bson:"user_name" filter:"user_name"`
+	MobileNumber   string              `bson:"mobile_number" filter:"-"` //ignore filter
+}
+
 var user User
 user.Id, _ = primitive.ObjectIDFromHex("5f0ace734e2d4100013d8797")
+user.Username = "Jack"
+user.MobileNumber = "+86 10086"
 err = driver.FilterBy(user).FindOne(context.Background(), &user)
 if err != nil {
     panic(err)
@@ -186,6 +194,7 @@ if err != nil {
 }
 
 or
+
 driver, err := pie.NewDriver()
 driver.SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
@@ -196,6 +205,13 @@ if err = driver.Connect(context.Background()); err != nil {
 }
 
 driver.SetDatabase("xxxx")
+
+type User struct {
+	ID             string              `bson:"_id" filter:"_id"`
+	Username       string              `bson:"user_name" filter:"user_name"`
+	MobileNumber   string              `bson:"mobile_number" filter:"-"` //ignore filter
+}
+
 var users []User
 var user User
 user.Age = 22

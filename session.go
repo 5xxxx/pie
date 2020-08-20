@@ -70,8 +70,8 @@ func (s *Session) FilterBy(object interface{}) *Session {
 	}
 	docType := reflect.TypeOf(object)
 	for index := 0; index < docType.NumField(); index++ {
-		fieldTag := docType.Field(index).Tag.Get("bson")
-		if fieldTag != "" {
+		fieldTag := docType.Field(index).Tag.Get("filter")
+		if fieldTag != "" && fieldTag != "-" {
 			split := strings.Split(fieldTag, ",")
 			if len(split) > 0 {
 				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
