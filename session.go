@@ -184,6 +184,9 @@ func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 		return [12]byte{}, err
 	}
 	result, err := coll.InsertOne(ctx, doc, s.insertOneOpts...)
+	if err != nil {
+		return [12]byte{}, err
+	}
 	if id, ok := result.InsertedID.(primitive.ObjectID); ok {
 		return id, err
 	}
