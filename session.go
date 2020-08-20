@@ -62,12 +62,28 @@ func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 }
 
 func (s *Session) FilterBy(object interface{}) *Session {
+
+	if m, ok := object.(bson.M); ok {
+		for key, value := range m {
+			s.Filter(key, value)
+		}
+		return s
+	}
+
+	if d, ok := object.(bson.D); ok {
+		for _, v := range d {
+			s.Filter(v.Key, v.Value)
+		}
+		return s
+	}
+
 	beanValue := reflect.ValueOf(object)
 	if beanValue.Kind() != reflect.Struct ||
 		//Todo how to fix array?
 		beanValue.Kind() == reflect.Array {
 		panic(errors.New("needs a struct"))
 	}
+
 	docType := reflect.TypeOf(object)
 	for index := 0; index < docType.NumField(); index++ {
 		fieldTag := docType.Field(index).Tag.Get("filter")
@@ -78,6 +94,7 @@ func (s *Session) FilterBy(object interface{}) *Session {
 			}
 		}
 	}
+
 	return s
 }
 
