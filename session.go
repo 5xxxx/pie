@@ -271,7 +271,7 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)})
+	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)}, s.updateOpts...)
 }
 
 //todo update many
@@ -280,7 +280,7 @@ func (s *Session) UpdateMany(bean interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateMany(context.Background(), s.filter.Filters(), bson.M{"$set": bean})
+	_, err = coll.UpdateMany(context.Background(), s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
 
 	return err
 }
@@ -425,6 +425,7 @@ func (s *Session) Exists(key string, exists bool, filter ...Condition) *Session 
 func (f *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
 	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetArrayFilters(filters))
+	f.updateOpts = append(f.updateOpts, options.Update().SetArrayFilters(filters))
 	return f
 }
 
@@ -440,6 +441,8 @@ func (f *Session) SetBypassDocumentValidation(b bool) *Session {
 	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
 	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))
+	f.updateOpts = append(f.updateOpts, options.Update().SetBypassDocumentValidation(b))
+
 	return f
 }
 
@@ -458,6 +461,7 @@ func (f *Session) SetUpsert(b bool) *Session {
 		options.FindOneAndUpdate().SetUpsert(b))
 	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetUpsert(b))
+	f.updateOpts = append(f.updateOpts, options.Update().SetUpsert(b))
 	return f
 }
 
@@ -468,6 +472,7 @@ func (f *Session) SetCollation(collation *options.Collation) *Session {
 	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetCollation(collation))
 	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetCollation(collation))
+	f.updateOpts = append(f.updateOpts, options.Update().SetCollation(collation))
 	return f
 }
 
@@ -508,6 +513,7 @@ func (f *Session) SetHint(hint interface{}) *Session {
 	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetHint(hint))
 	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetHint(hint))
+	f.updateOpts = append(f.updateOpts, options.Update().SetHint(hint))
 	return f
 }
 

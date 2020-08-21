@@ -22,12 +22,47 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
+type SessionOptions interface {
+	// SetArrayFilters sets the value for the ArrayFilters field.
+	SetArrayFilters(filters options.ArrayFilters) *Session
+
+	// SetOrdered sets the value for the Ordered field.
+	SetOrdered(ordered bool) *Session
+	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+	SetBypassDocumentValidation(b bool) *Session
+
+	// SetReturnDocument sets the value for the ReturnDocument field.
+	SetReturnDocument(rd options.ReturnDocument) *Session
+
+	// SetUpsert sets the value for the Upsert field.
+	SetUpsert(b bool) *Session
+
+	// SetCollation sets the value for the Collation field.
+	SetCollation(collation *options.Collation) *Session
+
+	// SetMaxTime sets the value for the MaxTime field.
+	SetMaxTime(d time.Duration) *Session
+	// SetProjection sets the value for the Projection field.
+	SetProjection(projection interface{}) *Session
+
+	// SetSort sets the value for the Sort field.
+	SetSort(sort interface{}) *Session
+
+	// SetHint sets the value for the Hint field.
+	SetHint(hint interface{}) *Session
+}
+
 type Options struct {
 	UpdateEmpty bool
 }
 
 func (o *Options) SetUpdateEmpty(e bool) {
 	o.UpdateEmpty = e
+}
+
+func (f *Driver) SetOrdered(ordered bool) *Session {
+	session := f.NewSession()
+	return session.SetOrdered(ordered)
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
