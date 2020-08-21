@@ -38,13 +38,8 @@ package pie
 
 import (
 	"context"
-	"errors"
 	"github.com/NSObjects/pie/names"
-	"github.com/NSObjects/pie/schemas"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"reflect"
-	"strings"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -323,78 +318,4 @@ func (e *Driver) NewSession() *Session {
 
 func (e *Driver) Aggregate() *Aggregate {
 	return NewAggregate(e)
-}
-
-func (s *Driver) getStructColl(doc interface{}) (*mongo.Collection, error) {
-	beanValue := reflect.ValueOf(doc)
-	if beanValue.Kind() != reflect.Ptr {
-		return nil, errors.New("needs a pointer to a value")
-	} else if beanValue.Elem().Kind() == reflect.Ptr {
-		return nil, errors.New("a pointer to a pointer is not allowed")
-	}
-
-	if beanValue.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("needs a struct pointer")
-	}
-	t, err := s.parser.Parse(beanValue)
-	if err != nil {
-		return nil, err
-	}
-	coll := s.Collection(t.Name)
-	return coll, nil
-}
-
-func (s *Driver) getSliceColl(doc interface{}) (*mongo.Collection, error) {
-	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
-
-	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
-		return nil, errors.New("needs a pointer to a slice or a map")
-	}
-
-	var t *schemas.Collection
-	var err error
-	if sliceValue.Kind() == reflect.Slice {
-		sliceElementType := sliceValue.Type().Elem()
-		if sliceElementType.Kind() == reflect.Struct {
-			pv := reflect.New(sliceElementType)
-			t, err = s.parser.Parse(pv)
-		}
-	} else {
-		t, err = s.parser.Parse(sliceValue)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	coll := s.Collection(t.Name)
-	return coll, nil
-}
-
-func (s *Driver) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
-	beanValue := reflect.ValueOf(doc)
-	if beanValue.Kind() != reflect.Ptr {
-		return nil, errors.New("needs a pointer to a value")
-	} else if beanValue.Elem().Kind() == reflect.Ptr {
-		return nil, errors.New("a pointer to a pointer is not allowed")
-	}
-
-	if beanValue.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("needs a struct pointer")
-	}
-	t, err := s.parser.Parse(beanValue)
-	if err != nil {
-		return nil, err
-	}
-	docTyp := t.Type
-	for i := 0; i < docTyp.NumField(); i++ {
-		field := docTyp.Field(i)
-		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
-			//s.e = append(s.e, Session("_id", beanValue.Field(i).Interface()))
-			break
-		}
-	}
-
-	coll := s.Collection(t.Name)
-	return coll, nil
 }

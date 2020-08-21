@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NSObjects/pie/schemas"
+
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,6 +28,7 @@ import (
 )
 
 type Session struct {
+	db                    string
 	filter                Condition
 	engine                *Driver
 	findOneOptions        []*options.FindOneOptions
@@ -48,7 +51,7 @@ func NewSession(engine *Driver) *Session {
 }
 
 func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
-	coll, err := s.engine.getSliceColl(docs)
+	coll, err := s.getSliceColl(docs)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +102,7 @@ func (s *Session) FilterBy(object interface{}) *Session {
 }
 
 func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
-	coll, err := s.engine.getSliceColl(doc)
+	coll, err := s.getSliceColl(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +110,7 @@ func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string)
 }
 
 func (s *Session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +118,7 @@ func (s *Session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.Updat
 }
 
 func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return err
 	}
@@ -124,7 +127,7 @@ func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 }
 
 func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return err
 	}
@@ -133,7 +136,7 @@ func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
 }
 
 func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return err
 	}
@@ -142,7 +145,7 @@ func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
 func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
 
 // Find executes a find command and returns a Cursor over the matching documents in the collection.
 func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
-	coll, err := s.engine.getSliceColl(rowsSlicePtr)
+	coll, err := s.getSliceColl(rowsSlicePtr)
 	if err != nil {
 		return err
 	}
@@ -179,7 +182,7 @@ func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 
 // InsertOne executes an insert command to insert a single document into the collection.
 func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error) {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return [12]byte{}, err
 	}
@@ -195,7 +198,7 @@ func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 
 // InsertMany executes an insert command to insert multiple documents into the collection.
 func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error) {
-	coll, err := s.engine.getSliceColl(docs)
+	coll, err := s.getSliceColl(docs)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +213,7 @@ func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.Inse
 
 // DeleteOne executes a delete command to delete at most one document from the collection.
 func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +223,7 @@ func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.Delete
 
 // DeleteMany executes a delete command to delete documents from the collection.
 func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
-	coll, err := s.engine.getStructColl(doc)
+	coll, err := s.getStructColl(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -253,9 +256,9 @@ func (s *Session) Count(i interface{}) (int64, error) {
 	var err error
 	switch reflect.TypeOf(i).Kind() {
 	case reflect.Slice:
-		coll, err = s.engine.getSliceColl(i)
+		coll, err = s.getSliceColl(i)
 	case reflect.Struct:
-		coll, err = s.engine.getStructColl(i)
+		coll, err = s.getStructColl(i)
 	default:
 		return 0, errors.New("neet slice or struct")
 	}
@@ -267,7 +270,7 @@ func (s *Session) Count(i interface{}) (int64, error) {
 }
 
 func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	coll, err := s.engine.getStructColl(bean)
+	coll, err := s.getStructColl(bean)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +279,7 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 
 //todo update many
 func (s *Session) UpdateMany(bean interface{}) error {
-	coll, err := s.engine.getSliceColl(bean)
+	coll, err := s.getSliceColl(bean)
 	if err != nil {
 		return err
 	}
@@ -542,6 +545,21 @@ func (s *Session) Regex(key string, value interface{}) *Session {
 	return s
 }
 
+func (s *Session) SetDatabase(db string) *Session {
+	s.db = db
+	return s
+}
+
+func (e *Session) Collection(name string) *mongo.Collection {
+	var db string
+	if e.db != "" {
+		db = e.db
+	} else {
+		db = e.engine.db
+	}
+	return e.engine.client.Database(db).Collection(name)
+}
+
 func (s *Session) makeFilterValue(field string, value interface{}) {
 	if utils.IsZero(value) {
 		return
@@ -568,4 +586,78 @@ func (s *Session) makeStructValue(field string, value reflect.Value) {
 			}
 		}
 	}
+}
+
+func (s *Session) getStructColl(doc interface{}) (*mongo.Collection, error) {
+	beanValue := reflect.ValueOf(doc)
+	if beanValue.Kind() != reflect.Ptr {
+		return nil, errors.New("needs a pointer to a value")
+	} else if beanValue.Elem().Kind() == reflect.Ptr {
+		return nil, errors.New("a pointer to a pointer is not allowed")
+	}
+
+	if beanValue.Elem().Kind() != reflect.Struct {
+		return nil, errors.New("needs a struct pointer")
+	}
+	t, err := s.engine.parser.Parse(beanValue)
+	if err != nil {
+		return nil, err
+	}
+	coll := s.Collection(t.Name)
+	return coll, nil
+}
+
+func (s *Session) getSliceColl(doc interface{}) (*mongo.Collection, error) {
+	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
+
+	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
+		return nil, errors.New("needs a pointer to a slice or a map")
+	}
+
+	var t *schemas.Collection
+	var err error
+	if sliceValue.Kind() == reflect.Slice {
+		sliceElementType := sliceValue.Type().Elem()
+		if sliceElementType.Kind() == reflect.Struct {
+			pv := reflect.New(sliceElementType)
+			t, err = s.engine.parser.Parse(pv)
+		}
+	} else {
+		t, err = s.engine.parser.Parse(sliceValue)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	coll := s.Collection(t.Name)
+	return coll, nil
+}
+
+func (s *Session) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
+	beanValue := reflect.ValueOf(doc)
+	if beanValue.Kind() != reflect.Ptr {
+		return nil, errors.New("needs a pointer to a value")
+	} else if beanValue.Elem().Kind() == reflect.Ptr {
+		return nil, errors.New("a pointer to a pointer is not allowed")
+	}
+
+	if beanValue.Elem().Kind() != reflect.Struct {
+		return nil, errors.New("needs a struct pointer")
+	}
+	t, err := s.engine.parser.Parse(beanValue)
+	if err != nil {
+		return nil, err
+	}
+	docTyp := t.Type
+	for i := 0; i < docTyp.NumField(); i++ {
+		field := docTyp.Field(i)
+		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
+			//s.e = append(s.e, Session("_id", beanValue.Field(i).Interface()))
+			break
+		}
+	}
+
+	coll := s.Collection(t.Name)
+	return coll, nil
 }
