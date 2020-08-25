@@ -12,6 +12,7 @@ package pie
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -62,6 +63,26 @@ type Aggregate struct {
 
 func NewAggregate(engine *Driver) *Aggregate {
 	return &Aggregate{engine: engine}
+}
+
+func (a *Aggregate) One(result interface{}) error {
+	coll, err := a.engine.getSliceColl(result)
+	if err != nil {
+		return err
+	}
+
+	aggregate, err := coll.Aggregate(a.ctx, a.pipeline, a.opts...)
+	if err != nil {
+		return err
+	}
+	if next := aggregate.Next(a.ctx);next {
+		if err := aggregate.Decode(&result);err != nil {
+			return err
+		}
+	} else {
+		return mongo.ErrNoDocuments
+	}
+	return nil
 }
 
 func (a *Aggregate) All(result interface{}) error {
