@@ -63,12 +63,12 @@ func NewDriver(opts ...*options.ClientOptions) (*Driver, error) {
 		return nil, err
 	}
 	parser := NewParser(mapper, mapper)
-	tugrik := &Driver{
+	driver := &Driver{
 		clientOpts: opts,
 		parser:     parser,
 		client:     client,
 	}
-	return tugrik, nil
+	return driver, nil
 }
 
 func (e *Driver) Connect(ctx context.Context) (err error) {
