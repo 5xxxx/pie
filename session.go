@@ -275,11 +275,11 @@ func (s *Session) Skip(i int64) *Session {
 func (s *Session) Count(i interface{}) (int64, error) {
 	kind := reflect.TypeOf(i).Kind()
 	if kind == reflect.Ptr {
-		i = reflect.Indirect(reflect.ValueOf(i)).Interface()
+		kind = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(i)).Interface()).Kind()
 	}
 	var coll *mongo.Collection
 	var err error
-	switch reflect.TypeOf(i).Kind() {
+	switch kind {
 	case reflect.Slice:
 		coll, err = s.collectionForSlice(i)
 	case reflect.Struct:
