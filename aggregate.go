@@ -114,7 +114,7 @@ func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	return aggregate.All(ctx, result)
 }
 
-func (s *Aggregate) SetCollection(doc interface{}) *Aggregate {
+func (s *Aggregate) Collection(doc interface{}) *Aggregate {
 	s.doc = doc
 	return s
 }
