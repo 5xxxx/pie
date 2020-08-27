@@ -29,7 +29,7 @@ type Session struct {
 	db                    string
 	filter                Condition
 	engine                *Driver
-	doc 				  interface{}
+	doc                   interface{}
 	findOneOptions        []*options.FindOneOptions
 	findOptions           []*options.FindOptions
 	insertManyOpts        []*options.InsertManyOptions
@@ -128,21 +128,26 @@ func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
 	var coll *mongo.Collection
 	var err error
-	if m,ok := doc.(bson.M);ok {
+	if m, ok := doc.(bson.M); ok {
 		if s.doc == nil {
 			return errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...).Decode(&doc)
-	} else if d,ok := doc.(bson.D);ok {
+	} else if d, ok := doc.(bson.D); ok {
 		if s.doc == nil {
-			return  errors.New("update bson.D must call Collection(struct{}) first")
+			return errors.New("update bson.D must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...).Decode(&doc)
 	}
 
-	coll, err = s.collectionForStruct(doc)
+	if s.doc != nil {
+		coll, err = s.collectionForStruct(s.doc)
+	} else {
+		coll, err = s.collectionForStruct(doc)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -246,7 +251,7 @@ func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.Delet
 	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
-func (s *Session)Collection(doc interface{})*Session  {
+func (s *Session) Collection(doc interface{}) *Session {
 	s.doc = doc
 	return s
 }
@@ -292,13 +297,13 @@ func (s *Session) Count(i interface{}) (int64, error) {
 func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	var coll *mongo.Collection
 	var err error
-	if m,ok := bean.(bson.M);ok {
+	if m, ok := bean.(bson.M); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		return coll.UpdateOne(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d,ok := bean.(bson.D);ok {
+	} else if d, ok := bean.(bson.D); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.D must call Collection(struct{}) first")
 		}
@@ -306,7 +311,11 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 		return coll.UpdateOne(ctx, s.filter.Filters(), d, s.updateOpts...)
 	}
 
-	coll, err = s.collectionForStruct(bean)
+	if s.doc != nil {
+		coll, err = s.collectionForStruct(s.doc)
+	} else {
+		coll, err = s.collectionForStruct(bean)
+	}
 
 	if err != nil {
 		return nil, err
@@ -314,16 +323,16 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)}, s.updateOpts...)
 }
 
-func (s *Session) UpdateMany(ctx context.Context,bean interface{}) (*mongo.UpdateResult, error) {
+func (s *Session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	var coll *mongo.Collection
 	var err error
-	if m,ok := bean.(bson.M);ok {
+	if m, ok := bean.(bson.M); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		return coll.UpdateMany(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d,ok := bean.(bson.D);ok {
+	} else if d, ok := bean.(bson.D); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.D must call Collection(struct{}) first")
 		}
@@ -331,7 +340,11 @@ func (s *Session) UpdateMany(ctx context.Context,bean interface{}) (*mongo.Updat
 		return coll.UpdateMany(ctx, s.filter.Filters(), d, s.updateOpts...)
 	}
 
-	coll, err = s.collectionForSlice(bean)
+	if s.doc != nil {
+		coll, err = s.collectionForSlice(s.doc)
+	} else {
+		coll, err = s.collectionForSlice(bean)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -602,23 +615,28 @@ func (s *Session) SetDatabase(db string) *Session {
 	return s
 }
 
-func (e *Session) collectionForStruct(doc interface{}) (*mongo.Collection,error) {
+//func (s *Session) SetCollection(doc interface{}) *Session {
+//	s.doc = doc
+//	return s
+//}
+
+func (e *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
 	coll, err := e.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return e.collection(coll.Name), nil
 }
 
-func (e *Session) collectionForSlice(doc interface{}) (*mongo.Collection,error) {
+func (e *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 	coll, err := e.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return e.collection(coll.Name), nil
 }
 
-func (s Session) collection(name string)*mongo.Collection {
+func (s Session) collection(name string) *mongo.Collection {
 	var db string
 	if s.db != "" {
 		db = s.db

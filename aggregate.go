@@ -57,6 +57,7 @@ type IAggregate interface {
 
 type Aggregate struct {
 	db       string
+	doc      interface{}
 	engine   *Driver
 	pipeline bson.A
 	opts     []*options.AggregateOptions
@@ -67,7 +68,14 @@ func NewAggregate(engine *Driver) *Aggregate {
 }
 
 func (a *Aggregate) One(ctx context.Context, result interface{}) error {
-	coll, err := a.collectionForStruct(result)
+	var coll *mongo.Collection
+	var err error
+	if a.doc != nil {
+		coll, err = a.collectionForStruct(a.doc)
+	} else {
+		coll, err = a.collectionForStruct(result)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -87,7 +95,13 @@ func (a *Aggregate) One(ctx context.Context, result interface{}) error {
 }
 
 func (a *Aggregate) All(ctx context.Context, result interface{}) error {
-	coll, err := a.collectionForSlice(result)
+	var coll *mongo.Collection
+	var err error
+	if a.doc != nil {
+		coll, err = a.collectionForSlice(a.doc)
+	} else {
+		coll, err = a.collectionForSlice(result)
+	}
 	if err != nil {
 		return err
 	}
@@ -98,6 +112,11 @@ func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	}
 
 	return aggregate.All(ctx, result)
+}
+
+func (s *Aggregate) SetCollection(doc interface{}) *Aggregate {
+	s.doc = doc
+	return s
 }
 
 func (s *Aggregate) SetDatabase(db string) *Aggregate {
