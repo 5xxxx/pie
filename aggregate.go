@@ -12,8 +12,9 @@ package pie
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -55,9 +56,8 @@ type IAggregate interface {
 }
 
 type Aggregate struct {
-	db 		 string
+	db       string
 	engine   *Driver
-	ctx      context.Context
 	pipeline bson.A
 	opts     []*options.AggregateOptions
 }
@@ -66,18 +66,18 @@ func NewAggregate(engine *Driver) *Aggregate {
 	return &Aggregate{engine: engine}
 }
 
-func (a *Aggregate) One(result interface{}) error {
+func (a *Aggregate) One(ctx context.Context, result interface{}) error {
 	coll, err := a.collectionForStruct(result)
 	if err != nil {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(a.ctx, a.pipeline, a.opts...)
+	aggregate, err := coll.Aggregate(ctx, a.pipeline, a.opts...)
 	if err != nil {
 		return err
 	}
-	if next := aggregate.Next(a.ctx);next {
-		if err := aggregate.Decode(&result);err != nil {
+	if next := aggregate.Next(ctx); next {
+		if err := aggregate.Decode(&result); err != nil {
 			return err
 		}
 	} else {
@@ -86,18 +86,18 @@ func (a *Aggregate) One(result interface{}) error {
 	return nil
 }
 
-func (a *Aggregate) All(result interface{}) error {
+func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	coll, err := a.collectionForSlice(result)
 	if err != nil {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(a.ctx, a.pipeline, a.opts...)
+	aggregate, err := coll.Aggregate(ctx, a.pipeline, a.opts...)
 	if err != nil {
 		return err
 	}
 
-	return aggregate.All(a.ctx, result)
+	return aggregate.All(ctx, result)
 }
 
 func (s *Aggregate) SetDatabase(db string) *Aggregate {
@@ -105,23 +105,23 @@ func (s *Aggregate) SetDatabase(db string) *Aggregate {
 	return s
 }
 
-func (e *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection,error) {
+func (e *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
 	coll, err := e.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return e.collection(coll.Name), nil
 }
 
-func (e *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection,error) {
+func (e *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 	coll, err := e.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return e.collection(coll.Name), nil
 }
 
-func (s Aggregate) collection(name string)*mongo.Collection {
+func (s Aggregate) collection(name string) *mongo.Collection {
 	var db string
 	if s.db != "" {
 		db = s.db
@@ -130,7 +130,6 @@ func (s Aggregate) collection(name string)*mongo.Collection {
 	}
 	return s.engine.client.Database(db).Collection(name)
 }
-
 
 // SetAllowDiskUse sets the value for the AllowDiskUse field.
 func (ao *Aggregate) SetAllowDiskUse(b bool) *Aggregate {
