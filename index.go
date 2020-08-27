@@ -19,6 +19,7 @@ import (
 )
 
 type Indexes struct {
+	db 				  string
 	driver             *Driver
 	indexes            []mongo.IndexModel
 	createIndexOpts    []*options.CreateIndexesOptions
@@ -30,7 +31,7 @@ func NewIndexes(driver *Driver) *Indexes {
 }
 
 func (s *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string, error) {
-	coll, err := s.driver.getStructColl(doc)
+	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func (s *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string,
 }
 
 func (s *Indexes) DropAll(ctx context.Context, doc interface{}) error {
-	coll, err := s.driver.getStructColl(doc)
+	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
@@ -48,7 +49,7 @@ func (s *Indexes) DropAll(ctx context.Context, doc interface{}) error {
 }
 
 func (s *Indexes) DropOne(ctx context.Context, doc interface{}, name string) error {
-	coll, err := s.driver.getStructColl(doc)
+	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
@@ -96,4 +97,37 @@ func (c *Indexes) SetCommitQuorumMajority() *Indexes {
 func (c *Indexes) SetCommitQuorumVotingMembers() *Indexes {
 	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
 	return c
+}
+
+
+
+func (s *Indexes) SetDatabase(db string) *Indexes {
+	s.db = db
+	return s
+}
+
+func (e *Indexes) collectionForStruct(doc interface{}) (*mongo.Collection,error) {
+	coll, err := e.driver.CollectionNameForStruct(doc)
+	if err != nil {
+		return nil, err
+	}
+	return e.collection(coll.Name),nil
+}
+
+func (e *Indexes) collectionForSlice(doc interface{}) (*mongo.Collection,error) {
+	coll, err := e.driver.CollectionNameForSlice(doc)
+	if err != nil {
+		return nil, err
+	}
+	return e.collection(coll.Name),nil
+}
+
+func (s *Indexes) collection(name string)*mongo.Collection {
+	var db string
+	if s.db != "" {
+		db = s.db
+	} else {
+		db = s.driver.db
+	}
+	return s.driver.client.Database(db).Collection(name)
 }

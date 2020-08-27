@@ -55,6 +55,7 @@ type IAggregate interface {
 }
 
 type Aggregate struct {
+	db 		 string
 	engine   *Driver
 	ctx      context.Context
 	pipeline bson.A
@@ -66,7 +67,7 @@ func NewAggregate(engine *Driver) *Aggregate {
 }
 
 func (a *Aggregate) One(result interface{}) error {
-	coll, err := a.engine.getSliceColl(result)
+	coll, err := a.collectionForStruct(result)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (a *Aggregate) One(result interface{}) error {
 }
 
 func (a *Aggregate) All(result interface{}) error {
-	coll, err := a.engine.getSliceColl(result)
+	coll, err := a.collectionForSlice(result)
 	if err != nil {
 		return err
 	}
@@ -98,6 +99,38 @@ func (a *Aggregate) All(result interface{}) error {
 
 	return aggregate.All(a.ctx, result)
 }
+
+func (s *Aggregate) SetDatabase(db string) *Aggregate {
+	s.db = db
+	return s
+}
+
+func (e *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection,error) {
+	coll, err := e.engine.CollectionNameForStruct(doc)
+	if err != nil {
+		return nil, err
+	}
+	return e.collection(coll.Name),nil
+}
+
+func (e *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection,error) {
+	coll, err := e.engine.CollectionNameForSlice(doc)
+	if err != nil {
+		return nil, err
+	}
+	return e.collection(coll.Name),nil
+}
+
+func (s Aggregate) collection(name string)*mongo.Collection {
+	var db string
+	if s.db != "" {
+		db = s.db
+	} else {
+		db = s.engine.db
+	}
+	return s.engine.client.Database(db).Collection(name)
+}
+
 
 // SetAllowDiskUse sets the value for the AllowDiskUse field.
 func (ao *Aggregate) SetAllowDiskUse(b bool) *Aggregate {

@@ -277,9 +277,9 @@ func (e *Driver) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRes
 }
 
 //The following operation updates all of the documents with quantity value less than 50.
-func (e *Driver) UpdateMany(bean interface{}) error {
+func (e *Driver) UpdateMany(ctx context.Context,bean interface{}) (*mongo.UpdateResult, error) {
 	session := e.NewSession()
-	return session.UpdateMany(bean)
+	return session.UpdateMany(ctx,bean)
 }
 
 func (e *Driver) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
@@ -324,7 +324,7 @@ func (e *Driver) Aggregate() *Aggregate {
 	return NewAggregate(e)
 }
 
-func (s *Driver) getStructColl(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) CollectionNameForStruct(doc interface{}) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -339,11 +339,11 @@ func (s *Driver) getStructColl(doc interface{}) (*mongo.Collection, error) {
 	if err != nil {
 		return nil, err
 	}
-	coll := s.Collection(t.Name)
-	return coll, nil
+
+	return t, nil
 }
 
-func (s *Driver) getSliceColl(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) CollectionNameForSlice(doc interface{}) (*schemas.Collection, error) {
 	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
 
 	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
@@ -365,12 +365,10 @@ func (s *Driver) getSliceColl(doc interface{}) (*mongo.Collection, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	coll := s.Collection(t.Name)
-	return coll, nil
+	return t, nil
 }
 
-func (s *Driver) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, error) {
+func (s *Driver) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -394,6 +392,5 @@ func (s *Driver) getStructCollAndSetKey(doc interface{}) (*mongo.Collection, err
 		}
 	}
 
-	coll := s.Collection(t.Name)
-	return coll, nil
+	return t, nil
 }
