@@ -304,7 +304,7 @@ func (s *Session) Asc(colNames ...string) *Session {
 		return s
 	}
 
-	var es bson.M
+	es := bson.M{}
 	for _, c := range colNames {
 		es[c] = -1
 	}
@@ -317,7 +317,8 @@ func (s *Session) Desc(colNames ...string) *Session {
 	if len(colNames) == 0 {
 		return s
 	}
-	var es bson.M
+
+	es := bson.M{}
 	for _, c := range colNames {
 		es[c] = 1
 	}
