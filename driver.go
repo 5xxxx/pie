@@ -71,13 +71,13 @@ func NewDriver(opts ...*options.ClientOptions) (*Driver, error) {
 	return driver, nil
 }
 
-func (e *Driver) Connect(ctx context.Context) (err error) {
-	e.client, err = mongo.Connect(ctx, e.clientOpts...)
+func (d *Driver) Connect(ctx context.Context) (err error) {
+	d.client, err = mongo.Connect(ctx, d.clientOpts...)
 	return err
 }
 
-func (e *Driver) Disconnect(ctx context.Context) error {
-	return e.client.Disconnect(ctx)
+func (d *Driver) Disconnect(ctx context.Context) error {
+	return d.client.Disconnect(ctx)
 }
 
 func (d *Driver) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
@@ -85,246 +85,246 @@ func (d *Driver) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWr
 	return session.BulkWrite(ctx, docs)
 }
 
-func (e *Driver) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
-	session := e.NewSession()
+func (d *Driver) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
+	session := d.NewSession()
 	return session.Distinct(ctx, doc, columns)
 }
 
-func (e *Driver) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
-	session := e.NewSession()
+func (d *Driver) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
+	session := d.NewSession()
 	return session.ReplaceOne(ctx, doc)
 }
 
-func (s *Driver) FindOneAndReplace(ctx context.Context, doc interface{}) error {
-	session := s.NewSession()
+func (d *Driver) FindOneAndReplace(ctx context.Context, doc interface{}) error {
+	session := d.NewSession()
 	return session.FindOneAndReplace(ctx, doc)
 }
 
-func (s *Driver) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
-	session := s.NewSession()
+func (d *Driver) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
+	session := d.NewSession()
 	return session.FindOneAndUpdate(ctx, doc)
 }
 
-func (s *Driver) FindAndDelete(ctx context.Context, doc interface{}) error {
-	session := s.NewSession()
+func (d *Driver) FindAndDelete(ctx context.Context, doc interface{}) error {
+	session := d.NewSession()
 	return session.FindAndDelete(ctx, doc)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collection.
-func (e *Driver) FindOne(ctx context.Context, doc interface{}) error {
-	session := e.NewSession()
+func (d *Driver) FindOne(ctx context.Context, doc interface{}) error {
+	session := d.NewSession()
 	return session.FindOne(ctx, doc)
 }
 
-func (e *Driver) FindAll(ctx context.Context, docs interface{}) error {
-	session := e.NewSession()
+func (d *Driver) FindAll(ctx context.Context, docs interface{}) error {
+	session := d.NewSession()
 	return session.FindAll(ctx, docs)
 }
 
-func (e *Driver) RegexFilter(key, pattern string) *Session {
-	session := e.NewSession()
+func (d *Driver) RegexFilter(key, pattern string) *Session {
+	session := d.NewSession()
 	return session.RegexFilter(key, pattern)
 }
 
-func (e *Driver) Asc(colNames ...string) *Session {
-	session := e.NewSession()
+func (d *Driver) Asc(colNames ...string) *Session {
+	session := d.NewSession()
 	return session.Asc(colNames...)
 }
 
-func (e *Driver) Eq(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Eq(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Eq(key, value)
 }
 
-func (e *Driver) Ne(key string, ne interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Ne(key string, ne interface{}) *Session {
+	session := d.NewSession()
 	return session.Gt(key, ne)
 }
 
-func (e *Driver) Nin(key string, nin interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Nin(key string, nin interface{}) *Session {
+	session := d.NewSession()
 	return session.Nin(key, nin)
 }
 
-func (e *Driver) Nor(c Condition) *Session {
-	session := e.NewSession()
+func (d *Driver) Nor(c Condition) *Session {
+	session := d.NewSession()
 	return session.Nor(c)
 }
 
-func (e *Driver) Exists(key string, exists bool, filter ...Condition) *Session {
-	session := e.NewSession()
+func (d *Driver) Exists(key string, exists bool, filter ...Condition) *Session {
+	session := d.NewSession()
 	return session.Exists(key, exists, filter...)
 }
 
-func (e *Driver) Type(key string, t interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Type(key string, t interface{}) *Session {
+	session := d.NewSession()
 	return session.Gt(key, t)
 }
 
-func (e *Driver) Expr(filter Condition) *Session {
-	session := e.NewSession()
+func (d *Driver) Expr(filter Condition) *Session {
+	session := d.NewSession()
 	return session.Expr(filter)
 }
 
-func (e *Driver) Regex(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Regex(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Regex(key, value)
 }
 
-func (e *Driver) SetDatabase(db string) {
-	e.db = db
+func (d *Driver) SetDatabase(db string) {
+	d.db = db
 }
 
-func (e *Driver) DataBase() *mongo.Database {
-	return e.client.Database(e.db)
+func (d *Driver) DataBase() *mongo.Database {
+	return d.client.Database(d.db)
 }
 
-func (e *Driver) Collection(name string) *mongo.Collection {
-	return e.client.Database(e.db).Collection(name)
+func (d *Driver) Collection(name string) *mongo.Collection {
+	return d.client.Database(d.db).Collection(name)
 }
 
-func (e *Driver) Ping() error {
-	return e.client.Ping(context.TODO(), readpref.Primary())
+func (d *Driver) Ping() error {
+	return d.client.Ping(context.TODO(), readpref.Primary())
 }
 
-func (e *Driver) Filter(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Filter(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Filter(key, value)
 }
 
-func (e *Driver) ID(id interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) ID(id interface{}) *Session {
+	session := d.NewSession()
 	return session.ID(id)
 }
 
-func (e *Driver) Gt(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Gt(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Gt(key, value)
 }
 
-func (e *Driver) Gte(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Gte(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Gte(key, value)
 }
 
-func (e *Driver) Lt(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Lt(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Lt(key, value)
 }
 
-func (e *Driver) Lte(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Lte(key string, value interface{}) *Session {
+	session := d.NewSession()
 	return session.Lte(key, value)
 }
 
-func (e *Driver) In(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) In(key string, value interface{}) *Session {
+	session := d.NewSession()
 	session.In(key, value)
 	return session
 }
 
-func (e *Driver) And(filter Condition) *Session {
-	session := e.NewSession()
+func (d *Driver) And(filter Condition) *Session {
+	session := d.NewSession()
 	session.And(filter)
 	return session
 }
 
-func (e *Driver) Not(key string, value interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) Not(key string, value interface{}) *Session {
+	session := d.NewSession()
 	session.Not(key, value)
 	return session
 }
 
-func (e *Driver) Or(filter Condition) *Session {
-	session := e.NewSession()
+func (d *Driver) Or(filter Condition) *Session {
+	session := d.NewSession()
 	session.Or(filter)
 	return session
 }
 
-func (e *Driver) InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
-	session := e.NewSession()
+func (d *Driver) InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
+	session := d.NewSession()
 	return session.InsertOne(ctx, v)
 }
 
-func (e *Driver) InsertMany(ctx context.Context, v interface{}) (*mongo.InsertManyResult, error) {
-	session := e.NewSession()
+func (d *Driver) InsertMany(ctx context.Context, v interface{}) (*mongo.InsertManyResult, error) {
+	session := d.NewSession()
 	return session.InsertMany(ctx, v)
 }
 
-func (e *Driver) Limit(limit int64) *Session {
-	session := e.NewSession()
+func (d *Driver) Limit(limit int64) *Session {
+	session := d.NewSession()
 	return session.Limit(limit)
 }
 
-func (e *Driver) Skip(skip int64) *Session {
-	session := e.NewSession()
+func (d *Driver) Skip(skip int64) *Session {
+	session := d.NewSession()
 	return session.Limit(skip)
 }
 
-func (e *Driver) Count(i interface{}) (int64, error) {
-	session := e.NewSession()
+func (d *Driver) Count(i interface{}) (int64, error) {
+	session := d.NewSession()
 	return session.Count(i)
 }
 
-func (e *Driver) Desc(s2 ...string) *Session {
-	session := e.NewSession()
+func (d *Driver) Desc(s2 ...string) *Session {
+	session := d.NewSession()
 	return session.Desc(s2...)
 }
 
-func (e *Driver) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	session := e.NewSession()
+func (d *Driver) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+	session := d.NewSession()
 	return session.Update(ctx, bean)
 }
 
 //The following operation updates all of the documents with quantity value less than 50.
-func (e *Driver) UpdateMany(ctx context.Context,bean interface{}) (*mongo.UpdateResult, error) {
-	session := e.NewSession()
-	return session.UpdateMany(ctx,bean)
+func (d *Driver) UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+	session := d.NewSession()
+	return session.UpdateMany(ctx, bean)
 }
 
-func (e *Driver) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
-	session := e.NewSession()
+func (d *Driver) DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
+	session := d.NewSession()
 	return session.DeleteOne(ctx, filter)
 }
 
-func (e *Driver) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
-	session := e.NewSession()
+func (d *Driver) DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error) {
+	session := d.NewSession()
 	return session.DeleteMany(ctx, filter)
 }
 
-func (e *Driver) FilterBy(object interface{}) *Session {
-	session := e.NewSession()
+func (d *Driver) FilterBy(object interface{}) *Session {
+	session := d.NewSession()
 	return session.FilterBy(object)
 }
 
-func (s *Driver) DropAll(ctx context.Context, doc interface{}) error {
-	indexes := s.NewIndexes()
+func (d *Driver) DropAll(ctx context.Context, doc interface{}) error {
+	indexes := d.NewIndexes()
 	return indexes.DropAll(ctx, doc)
 }
 
-func (s *Driver) DropOne(ctx context.Context, doc interface{}, name string) error {
-	indexes := s.NewIndexes()
+func (d *Driver) DropOne(ctx context.Context, doc interface{}, name string) error {
+	indexes := d.NewIndexes()
 	return indexes.DropOne(ctx, doc, name)
 }
 
-func (e *Driver) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
-	indexes := e.NewIndexes()
+func (d *Driver) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
+	indexes := d.NewIndexes()
 	return indexes.AddIndex(keys, opt...)
 }
 
-func (e *Driver) NewIndexes() *Indexes {
-	return NewIndexes(e)
+func (d *Driver) NewIndexes() *Indexes {
+	return NewIndexes(d)
 }
 
-func (e *Driver) NewSession() *Session {
-	return NewSession(e)
+func (d *Driver) NewSession() *Session {
+	return NewSession(d)
 }
 
-func (e *Driver) Aggregate() *Aggregate {
-	return NewAggregate(e)
+func (d *Driver) Aggregate() *Aggregate {
+	return NewAggregate(d)
 }
 
-func (s *Driver) CollectionNameForStruct(doc interface{}) (*schemas.Collection, error) {
+func (d *Driver) CollectionNameForStruct(doc interface{}) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -335,7 +335,7 @@ func (s *Driver) CollectionNameForStruct(doc interface{}) (*schemas.Collection, 
 	if beanValue.Elem().Kind() != reflect.Struct {
 		return nil, errors.New("needs a struct pointer")
 	}
-	t, err := s.parser.Parse(beanValue)
+	t, err := d.parser.Parse(beanValue)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func (s *Driver) CollectionNameForStruct(doc interface{}) (*schemas.Collection, 
 	return t, nil
 }
 
-func (s *Driver) CollectionNameForSlice(doc interface{}) (*schemas.Collection, error) {
+func (d *Driver) CollectionNameForSlice(doc interface{}) (*schemas.Collection, error) {
 	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
 
 	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
@@ -356,10 +356,10 @@ func (s *Driver) CollectionNameForSlice(doc interface{}) (*schemas.Collection, e
 		sliceElementType := sliceValue.Type().Elem()
 		if sliceElementType.Kind() == reflect.Struct {
 			pv := reflect.New(sliceElementType)
-			t, err = s.parser.Parse(pv)
+			t, err = d.parser.Parse(pv)
 		}
 	} else {
-		t, err = s.parser.Parse(sliceValue)
+		t, err = d.parser.Parse(sliceValue)
 	}
 
 	if err != nil {
@@ -368,7 +368,7 @@ func (s *Driver) CollectionNameForSlice(doc interface{}) (*schemas.Collection, e
 	return t, nil
 }
 
-func (s *Driver) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, error) {
+func (d *Driver) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -379,7 +379,7 @@ func (s *Driver) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, e
 	if beanValue.Elem().Kind() != reflect.Struct {
 		return nil, errors.New("needs a struct pointer")
 	}
-	t, err := s.parser.Parse(beanValue)
+	t, err := d.parser.Parse(beanValue)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +387,7 @@ func (s *Driver) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, e
 	for i := 0; i < docTyp.NumField(); i++ {
 		field := docTyp.Field(i)
 		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
-			//s.e = append(s.e, Session("_id", beanValue.Field(i).Interface()))
+			//d.e = append(d.e, Session("_id", beanValue.Field(i).Interface()))
 			break
 		}
 	}

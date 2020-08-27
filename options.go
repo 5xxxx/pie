@@ -60,62 +60,62 @@ func (o *Options) SetUpdateEmpty(e bool) {
 	o.UpdateEmpty = e
 }
 
-func (f *Driver) SetOrdered(ordered bool) *Session {
-	session := f.NewSession()
+func (d *Driver) SetOrdered(ordered bool) *Session {
+	session := d.NewSession()
 	return session.SetOrdered(ordered)
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (f *Driver) SetArrayFilters(filters options.ArrayFilters) *Session {
-	session := f.NewSession()
+func (d *Driver) SetArrayFilters(filters options.ArrayFilters) *Session {
+	session := d.NewSession()
 	return session.SetArrayFilters(filters)
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (f *Driver) SetBypassDocumentValidation(b bool) *Session {
-	session := f.NewSession()
+func (d *Driver) SetBypassDocumentValidation(b bool) *Session {
+	session := d.NewSession()
 	return session.SetBypassDocumentValidation(b)
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
-func (f *Driver) SetReturnDocument(rd options.ReturnDocument) *Session {
-	session := f.NewSession()
+func (d *Driver) SetReturnDocument(rd options.ReturnDocument) *Session {
+	session := d.NewSession()
 	return session.SetReturnDocument(rd)
 }
 
 // SetUpsert sets the value for the Upsert field.
-func (f *Driver) SetUpsert(b bool) *Session {
-	session := f.NewSession()
+func (d *Driver) SetUpsert(b bool) *Session {
+	session := d.NewSession()
 	return session.SetUpsert(b)
 }
 
 // SetCollation sets the value for the Collation field.
-func (f *Driver) SetCollation(collation *options.Collation) *Session {
-	session := f.NewSession()
+func (d *Driver) SetCollation(collation *options.Collation) *Session {
+	session := d.NewSession()
 	return session.SetCollation(collation)
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (f *Driver) SetMaxTime(d time.Duration) *Session {
-	session := f.NewSession()
-	return session.SetMaxTime(d)
+func (d *Driver) SetMaxTime(t time.Duration) *Session {
+	session := d.NewSession()
+	return session.SetMaxTime(t)
 }
 
 // SetProjection sets the value for the Projection field.
-func (f *Driver) SetProjection(projection interface{}) *Session {
-	session := f.NewSession()
+func (d *Driver) SetProjection(projection interface{}) *Session {
+	session := d.NewSession()
 	return session.SetProjection(projection)
 }
 
 // SetSort sets the value for the Sort field.
-func (f *Driver) SetSort(sort interface{}) *Session {
-	session := f.NewSession()
+func (d *Driver) SetSort(sort interface{}) *Session {
+	session := d.NewSession()
 	return session.SetSort(sort)
 }
 
 // SetHint sets the value for the Hint field.
-func (f *Driver) SetHint(hint interface{}) *Session {
-	session := f.NewSession()
+func (d *Driver) SetHint(hint interface{}) *Session {
+	session := d.NewSession()
 	return session.SetHint(hint)
 }
 
@@ -133,22 +133,22 @@ func (f *Driver) SetHint(hint interface{}) *Session {
 //
 // For more information about the URI format, see https://docs.mongodb.com/manual/reference/connection-string/. See
 // mongo.Connect documentation for examples of using URIs for different Client configurations.
-func (c *Driver) SetURI(uri string) {
-	c.clientOpts = append(c.clientOpts, options.Client().ApplyURI(uri))
+func (d *Driver) SetURI(uri string) {
+	d.clientOpts = append(d.clientOpts, options.Client().ApplyURI(uri))
 }
 
 // SetAppName specifies an application name that is sent to the server when creating new connections. It is used by the
 // server to log connection and profiling information (e.g. slow query logs). This can also be set through the "appName"
 // URI option (e.g "appName=example_application"). The default is empty, meaning no app name will be sent.
-func (c *Driver) SetAppName(s string) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetAppName(s))
+func (d *Driver) SetAppName(s string) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetAppName(s))
 }
 
 // SetAuth specifies a Credential containing options for configuring authentication. See the options.Credential
 // documentation for more information about Credential fields. The default is an empty Credential, meaning no
 // authentication will be configured.
-func (c *Driver) SetAuth(auth options.Credential) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetAuth(auth))
+func (d *Driver) SetAuth(auth options.Credential) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetAuth(auth))
 }
 
 // SetCompressors sets the compressors that can be used when communicating with a server. Valid values are:
@@ -168,22 +168,22 @@ func (c *Driver) SetAuth(auth options.Credential) {
 //
 // This can also be set through the "compressors" URI option (e.g. "compressors=zstd,zlib,snappy"). The default is
 // an empty slice, meaning no compression will be enabled.
-func (c *Driver) SetCompressors(comps []string) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetCompressors(comps))
+func (d *Driver) SetCompressors(comps []string) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetCompressors(comps))
 }
 
 // SetConnectTimeout specifies a timeout that is used for creating connections to the server. If a custom Dialer is
 // specified through SetDialer, this option must not be used. This can be set through SetURI with the
 // "connectTimeoutMS" (e.g "connectTimeoutMS=30") option. If set to 0, no timeout will be used. The default is 30
 // seconds.
-func (c *Driver) SetConnectTimeout(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetConnectTimeout(d))
+func (d *Driver) SetConnectTimeout(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetConnectTimeout(t))
 }
 
 // SetDialer specifies a custom ContextDialer to be used to create new connections to the server. The default is a
 // net.Dialer instance with a 300 second keepalive time.
-func (c *Driver) SetDialer(d options.ContextDialer) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetDialer(d))
+func (d *Driver) SetDialer(t options.ContextDialer) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetDialer(t))
 }
 
 // SetDirect specifies whether or not a direct connect should be made. To use this option, a URI with a single host must
@@ -196,14 +196,14 @@ func (c *Driver) SetDialer(d options.ContextDialer) {
 // 2. "connect=automatic" for automatic discovery.
 //
 // The default is false ("automatic" in the connection string).
-func (c *Driver) SetDirect(b bool) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetDirect(b))
+func (d *Driver) SetDirect(b bool) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetDirect(b))
 }
 
 // SetHeartbeatInterval specifies the amount of time to wait between periodic background server checks. This can also be
 // set through the "heartbeatIntervalMS" URI option (e.g. "heartbeatIntervalMS=10000"). The default is 10 seconds.
-func (c *Driver) SetHeartbeatInterval(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetHeartbeatInterval(d))
+func (d *Driver) SetHeartbeatInterval(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetHeartbeatInterval(t))
 }
 
 // SetHosts specifies a list of host names or IP addresses for servers in a cluster. Both IPv4 and IPv6 addresses are
@@ -211,56 +211,56 @@ func (c *Driver) SetHeartbeatInterval(d time.Duration) {
 //
 // Hosts can also be specified as a comma-separated list in a URI. For example, to include "localhost:27017" and
 // "localhost:27018", a URI could be "mongodb://localhost:27017,localhost:27018". The default is ["localhost:27017"]
-func (c *Driver) SetHosts(s []string) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetHosts(s))
+func (d *Driver) SetHosts(s []string) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetHosts(s))
 }
 
 // SetLocalThreshold specifies the width of the 'latency window': when choosing between multiple suitable servers for an
 // operation, this is the acceptable non-negative delta between shortest and longest average round-trip times. A server
 // within the latency window is selected randomly. This can also be set through the "localThresholdMS" URI option (e.g.
 // "localThresholdMS=15000"). The default is 15 milliseconds.
-func (c *Driver) SetLocalThreshold(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetLocalThreshold(d))
+func (d *Driver) SetLocalThreshold(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetLocalThreshold(t))
 }
 
 // SetMaxConnIdleTime specifies the maximum amount of time that a connection will remain idle in a connection pool
 // before it is removed from the pool and closed. This can also be set through the "maxIdleTimeMS" URI option (e.g.
 // "maxIdleTimeMS=10000"). The default is 0, meaning a connection can remain unused indefinitely.
-func (c *Driver) SetMaxConnIdleTime(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetMaxConnIdleTime(d))
+func (d *Driver) SetMaxConnIdleTime(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetMaxConnIdleTime(t))
 }
 
 // SetMaxPoolSize specifies that maximum number of connections allowed in the driver's connection pool to each server.
 // Requests to a server will block if this maximum is reached. This can also be set through the "maxPoolSize" URI option
 // (e.g. "maxPoolSize=100"). The default is 100. If this is 0, it will be set to math.MaxInt64.
-func (c *Driver) SetMaxPoolSize(u uint64) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetMaxPoolSize(u))
+func (d *Driver) SetMaxPoolSize(u uint64) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetMaxPoolSize(u))
 }
 
 // SetMinPoolSize specifies the minimum number of connections allowed in the driver's connection pool to each server. If
 // this is non-zero, each server's pool will be maintained in the background to ensure that the size does not fall below
 // the minimum. This can also be set through the "minPoolSize" URI option (e.g. "minPoolSize=100"). The default is 0.
-func (c *Driver) SetMinPoolSize(u uint64) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetMinPoolSize(u))
+func (d *Driver) SetMinPoolSize(u uint64) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetMinPoolSize(u))
 }
 
 // SetPoolMonitor specifies a PoolMonitor to receive connection pool events. See the event.PoolMonitor documentation
 // for more information about the structure of the monitor and events that can be received.
-func (c *Driver) SetPoolMonitor(m *event.PoolMonitor) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetPoolMonitor(m))
+func (d *Driver) SetPoolMonitor(m *event.PoolMonitor) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetPoolMonitor(m))
 }
 
 // SetMonitor specifies a CommandMonitor to receive command events. See the event.CommandMonitor documentation for more
 // information about the structure of the monitor and events that can be received.
-func (c *Driver) SetMonitor(m *event.CommandMonitor) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetMonitor(m))
+func (d *Driver) SetMonitor(m *event.CommandMonitor) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetMonitor(m))
 }
 
 // SetReadConcern specifies the read concern to use for read operations. A read concern level can also be set through
 // the "readConcernLevel" URI option (e.g. "readConcernLevel=majority"). The default is nil, meaning the server will use
 // its configured default.
-func (c *Driver) SetReadConcern(rc *readconcern.ReadConcern) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetReadConcern(rc))
+func (d *Driver) SetReadConcern(rc *readconcern.ReadConcern) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetReadConcern(rc))
 }
 
 // SetReadPreference specifies the read preference to use for read operations. This can also be set through the
@@ -276,14 +276,14 @@ func (c *Driver) SetReadConcern(rc *readconcern.ReadConcern) {
 //
 // The default is readpref.Primary(). See https://docs.mongodb.com/manual/core/read-preference/#read-preference for
 // more information about read preferences.
-func (c *Driver) SetReadPreference(rp *readpref.ReadPref) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetReadPreference(rp))
+func (d *Driver) SetReadPreference(rp *readpref.ReadPref) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetReadPreference(rp))
 }
 
 // SetRegistry specifies the BSON registry to use for BSON marshalling/unmarshalling operations. The default is
 // bson.DefaultRegistry.
-func (c *Driver) SetRegistry(registry *bsoncodec.Registry) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetRegistry(registry))
+func (d *Driver) SetRegistry(registry *bsoncodec.Registry) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetRegistry(registry))
 }
 
 // SetReplicaSet specifies the replica set name for the cluster. If specified, the cluster will be treated as a replica
@@ -291,8 +291,8 @@ func (c *Driver) SetRegistry(registry *bsoncodec.Registry) {
 // SetURI or SetHosts. All nodes in the replica set must have the same replica set name, or they will not be
 // considered as part of the set by the Client. This can also be set through the "replicaSet" URI option (e.g.
 // "replicaSet=replset"). The default is empty.
-func (c *Driver) SetReplicaSet(s string) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetReplicaSet(s))
+func (d *Driver) SetReplicaSet(s string) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetReplicaSet(s))
 }
 
 // SetRetryWrites specifies whether supported write operations should be retried once on certain errors, such as network
@@ -306,8 +306,8 @@ func (c *Driver) SetReplicaSet(s string) {
 // This option requires server version >= 3.6 and a replica set or sharded cluster and will be ignored for any other
 // cluster type. This can also be set through the "retryWrites" URI option (e.g. "retryWrites=true"). The default is
 // true.
-func (c *Driver) SetRetryWrites(b bool) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetRetryWrites(b))
+func (d *Driver) SetRetryWrites(b bool) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetRetryWrites(b))
 }
 
 // SetRetryReads specifies whether supported read operations should be retried once on certain errors, such as network
@@ -318,22 +318,22 @@ func (c *Driver) SetRetryWrites(b bool) {
 // operations run through RunCommand are not retried.
 //
 // This option requires server version >= 3.6 and driver version >= 1.1.0. The default is true.
-func (c *Driver) SetRetryReads(b bool) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetRetryReads(b))
+func (d *Driver) SetRetryReads(b bool) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetRetryReads(b))
 }
 
 // SetServerSelectionTimeout specifies how long the driver will wait to find an available, suitable server to execute an
 // operation. This can also be set through the "serverSelectionTimeoutMS" URI option (e.g.
 // "serverSelectionTimeoutMS=30000"). The default value is 30 seconds.
-func (c *Driver) SetServerSelectionTimeout(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetServerSelectionTimeout(d))
+func (d *Driver) SetServerSelectionTimeout(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetServerSelectionTimeout(t))
 }
 
 // SetSocketTimeout specifies how long the driver will wait for a socket read or write to return before returning a
 // network error. This can also be set through the "socketTimeoutMS" URI option (e.g. "socketTimeoutMS=1000"). The
 // default value is 0, meaning no timeout is used and socket operations can block indefinitely.
-func (c *Driver) SetSocketTimeout(d time.Duration) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetSocketTimeout(d))
+func (d *Driver) SetSocketTimeout(t time.Duration) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetSocketTimeout(t))
 }
 
 // SetTLSConfig specifies a tls.Config instance to use use to configure TLS on all connections created to the cluster.
@@ -359,8 +359,8 @@ func (c *Driver) SetSocketTimeout(d time.Duration) {
 // man-in-the-middle attacks and should only be done for testing.
 //
 // The default is nil, meaning no TLS will be enabled.
-func (c *Driver) SetTLSConfig(cfg *tls.Config) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetTLSConfig(cfg))
+func (d *Driver) SetTLSConfig(cfg *tls.Config) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetTLSConfig(cfg))
 }
 
 // SetWriteConcern specifies the write concern to use to for write operations. This can also be set through the following
@@ -377,28 +377,28 @@ func (c *Driver) SetTLSConfig(cfg *tls.Config) {
 // returning (e.g. "journal=true").
 //
 // The default is nil, meaning the server will use its configured default.
-func (c *Driver) SetWriteConcern(wc *writeconcern.WriteConcern) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetWriteConcern(wc))
+func (d *Driver) SetWriteConcern(wc *writeconcern.WriteConcern) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetWriteConcern(wc))
 }
 
 // SetZlibLevel specifies the level for the zlib compressor. This option is ignored if zlib is not specified as a
 // compressor through SetURI or SetCompressors. Supported values are -1 through 9, inclusive. -1 tells the zlib
 // library to use its default, 0 means no compression, 1 means best speed, and 9 means best compression.
 // This can also be set through the "zlibCompressionLevel" URI option (e.g. "zlibCompressionLevel=-1"). Defaults to -1.
-func (c *Driver) SetZlibLevel(level int) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetZlibLevel(level))
+func (d *Driver) SetZlibLevel(level int) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetZlibLevel(level))
 }
 
 // SetZstdLevel sets the level for the zstd compressor. This option is ignored if zstd is not specified as a compressor
 // through SetURI or SetCompressors. Supported values are 1 through 20, inclusive. 1 means best speed and 20 means
 // best compression. This can also be set through the "zstdCompressionLevel" URI option. Defaults to 6.
-func (c *Driver) SetZstdLevel(level int) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetZstdLevel(level))
+func (d *Driver) SetZstdLevel(level int) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetZstdLevel(level))
 }
 
 // SetAutoEncryptionOptions specifies an AutoEncryptionOptions instance to automatically encrypt and decrypt commands
 // and their results. See the options.AutoEncryptionOptions documentation for more information about the supported
 // options.
-func (c *Driver) SetAutoEncryptionOptions(opts *options.AutoEncryptionOptions) {
-	c.clientOpts = append(c.clientOpts, options.Client().SetAutoEncryptionOptions(opts))
+func (d *Driver) SetAutoEncryptionOptions(opts *options.AutoEncryptionOptions) {
+	d.clientOpts = append(d.clientOpts, options.Client().SetAutoEncryptionOptions(opts))
 }

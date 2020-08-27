@@ -19,7 +19,7 @@ import (
 )
 
 type Indexes struct {
-	db 				  string
+	db                 string
 	driver             *Driver
 	indexes            []mongo.IndexModel
 	createIndexOpts    []*options.CreateIndexesOptions
@@ -30,104 +30,102 @@ func NewIndexes(driver *Driver) *Indexes {
 	return &Indexes{driver: driver}
 }
 
-func (s *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string, error) {
-	coll, err := s.collectionForStruct(doc)
+func (i *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string, error) {
+	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	return coll.Indexes().CreateMany(ctx, s.indexes, s.createIndexOpts...)
+	return coll.Indexes().CreateMany(ctx, i.indexes, i.createIndexOpts...)
 }
 
-func (s *Indexes) DropAll(ctx context.Context, doc interface{}) error {
-	coll, err := s.collectionForStruct(doc)
+func (i *Indexes) DropAll(ctx context.Context, doc interface{}) error {
+	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.Indexes().DropAll(ctx, s.dropIndexesOptions...)
+	_, err = coll.Indexes().DropAll(ctx, i.dropIndexesOptions...)
 	return err
 }
 
-func (s *Indexes) DropOne(ctx context.Context, doc interface{}, name string) error {
-	coll, err := s.collectionForStruct(doc)
+func (i *Indexes) DropOne(ctx context.Context, doc interface{}, name string) error {
+	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.Indexes().DropOne(ctx, name, s.dropIndexesOptions...)
+	_, err = coll.Indexes().DropOne(ctx, name, i.dropIndexesOptions...)
 	return err
 }
 
-func (s *Indexes) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
+func (i *Indexes) AddIndex(keys interface{}, opt ...*options.IndexOptions) *Indexes {
 	m := mongo.IndexModel{
 		Keys: keys,
 	}
 	if len(opt) > 0 {
 		m.Options = opt[0]
 	}
-	s.indexes = append(s.indexes, m)
-	return s
+	i.indexes = append(i.indexes, m)
+	return i
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (c *Indexes) SetMaxTime(d time.Duration) *Indexes {
-	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetMaxTime(d))
-	c.dropIndexesOptions = append(c.dropIndexesOptions, options.DropIndexes().SetMaxTime(d))
-	return c
+func (i *Indexes) SetMaxTime(d time.Duration) *Indexes {
+	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetMaxTime(d))
+	i.dropIndexesOptions = append(i.dropIndexesOptions, options.DropIndexes().SetMaxTime(d))
+	return i
 }
 
 // SetCommitQuorumInt sets the value for the CommitQuorum field as an int32.
-func (c *Indexes) SetCommitQuorumInt(quorum int32) *Indexes {
-	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumInt(quorum))
-	return c
+func (i *Indexes) SetCommitQuorumInt(quorum int32) *Indexes {
+	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumInt(quorum))
+	return i
 }
 
 // SetCommitQuorumString sets the value for the CommitQuorum field as a string.
-func (c *Indexes) SetCommitQuorumString(quorum string) *Indexes {
-	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumString(quorum))
-	return c
+func (i *Indexes) SetCommitQuorumString(quorum string) *Indexes {
+	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumString(quorum))
+	return i
 }
 
 // SetCommitQuorumMajority sets the value for the CommitQuorum to special "majority" value.
-func (c *Indexes) SetCommitQuorumMajority() *Indexes {
-	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumMajority())
-	return c
+func (i *Indexes) SetCommitQuorumMajority() *Indexes {
+	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumMajority())
+	return i
 }
 
 // SetCommitQuorumVotingMembers sets the value for the CommitQuorum to special "votingMembers" value.
-func (c *Indexes) SetCommitQuorumVotingMembers() *Indexes {
-	c.createIndexOpts = append(c.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
-	return c
+func (i *Indexes) SetCommitQuorumVotingMembers() *Indexes {
+	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
+	return i
 }
 
-
-
-func (s *Indexes) SetDatabase(db string) *Indexes {
-	s.db = db
-	return s
+func (i *Indexes) SetDatabase(db string) *Indexes {
+	i.db = db
+	return i
 }
 
-func (e *Indexes) collectionForStruct(doc interface{}) (*mongo.Collection,error) {
-	coll, err := e.driver.CollectionNameForStruct(doc)
+func (i *Indexes) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	coll, err := i.driver.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return i.collection(coll.Name), nil
 }
 
-func (e *Indexes) collectionForSlice(doc interface{}) (*mongo.Collection,error) {
-	coll, err := e.driver.CollectionNameForSlice(doc)
+func (i *Indexes) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	coll, err := i.driver.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name),nil
+	return i.collection(coll.Name), nil
 }
 
-func (s *Indexes) collection(name string)*mongo.Collection {
+func (i *Indexes) collection(name string) *mongo.Collection {
 	var db string
-	if s.db != "" {
-		db = s.db
+	if i.db != "" {
+		db = i.db
 	} else {
-		db = s.driver.db
+		db = i.driver.db
 	}
-	return s.driver.client.Database(db).Collection(name)
+	return i.driver.client.Database(db).Collection(name)
 }

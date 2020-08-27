@@ -98,7 +98,7 @@ func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	var coll *mongo.Collection
 	var err error
 	if a.doc != nil {
-		coll, err = a.collectionForSlice(a.doc)
+		coll, err = a.collectionForStruct(a.doc)
 	} else {
 		coll, err = a.collectionForSlice(result)
 	}
@@ -114,88 +114,88 @@ func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	return aggregate.All(ctx, result)
 }
 
-func (s *Aggregate) Collection(doc interface{}) *Aggregate {
-	s.doc = doc
-	return s
+func (a *Aggregate) Collection(doc interface{}) *Aggregate {
+	a.doc = doc
+	return a
 }
 
-func (s *Aggregate) SetDatabase(db string) *Aggregate {
-	s.db = db
-	return s
+func (a *Aggregate) SetDatabase(db string) *Aggregate {
+	a.db = db
+	return a
 }
 
-func (e *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := e.engine.CollectionNameForStruct(doc)
+func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	coll, err := a.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name), nil
+	return a.collection(coll.Name), nil
 }
 
-func (e *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := e.engine.CollectionNameForSlice(doc)
+func (a *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	coll, err := a.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name), nil
+	return a.collection(coll.Name), nil
 }
 
-func (s Aggregate) collection(name string) *mongo.Collection {
+func (a Aggregate) collection(name string) *mongo.Collection {
 	var db string
-	if s.db != "" {
-		db = s.db
+	if a.db != "" {
+		db = a.db
 	} else {
-		db = s.engine.db
+		db = a.engine.db
 	}
-	return s.engine.client.Database(db).Collection(name)
+	return a.engine.client.Database(db).Collection(name)
 }
 
 // SetAllowDiskUse sets the value for the AllowDiskUse field.
-func (ao *Aggregate) SetAllowDiskUse(b bool) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetAllowDiskUse(b))
-	return ao
+func (a *Aggregate) SetAllowDiskUse(b bool) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetAllowDiskUse(b))
+	return a
 }
 
 // SetBatchSize sets the value for the BatchSize field.
-func (ao *Aggregate) SetBatchSize(i int32) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetBatchSize(i))
-	return ao
+func (a *Aggregate) SetBatchSize(i int32) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetBatchSize(i))
+	return a
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (ao *Aggregate) SetBypassDocumentValidation(b bool) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetBypassDocumentValidation(b))
-	return ao
+func (a *Aggregate) SetBypassDocumentValidation(b bool) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetBypassDocumentValidation(b))
+	return a
 }
 
 // SetCollation sets the value for the Collation field.
-func (ao *Aggregate) SetCollation(c *options.Collation) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetCollation(c))
-	return ao
+func (a *Aggregate) SetCollation(c *options.Collation) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetCollation(c))
+	return a
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (ao *Aggregate) SetMaxTime(d time.Duration) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetMaxTime(d))
-	return ao
+func (a *Aggregate) SetMaxTime(d time.Duration) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetMaxTime(d))
+	return a
 }
 
 // SetMaxAwaitTime sets the value for the MaxAwaitTime field.
-func (ao *Aggregate) SetMaxAwaitTime(d time.Duration) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetMaxAwaitTime(d))
-	return ao
+func (a *Aggregate) SetMaxAwaitTime(d time.Duration) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetMaxAwaitTime(d))
+	return a
 }
 
 // SetComment sets the value for the Comment field.
-func (ao *Aggregate) SetComment(s string) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetComment(s))
-	return ao
+func (a *Aggregate) SetComment(s string) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetComment(s))
+	return a
 }
 
 // SetHint sets the value for the Hint field.
-func (ao *Aggregate) SetHint(h interface{}) *Aggregate {
-	ao.opts = append(ao.opts, options.Aggregate().SetHint(h))
-	return ao
+func (a *Aggregate) SetHint(h interface{}) *Aggregate {
+	a.opts = append(a.opts, options.Aggregate().SetHint(h))
+	return a
 }
 
 func (a *Aggregate) Pipeline(pipeline bson.A) *Aggregate {

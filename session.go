@@ -341,7 +341,7 @@ func (s *Session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.Upda
 	}
 
 	if s.doc != nil {
-		coll, err = s.collectionForSlice(s.doc)
+		coll, err = s.collectionForStruct(s.doc)
 	} else {
 		coll, err = s.collectionForSlice(bean)
 	}
@@ -490,99 +490,99 @@ func (s *Session) Exists(key string, exists bool, filter ...Condition) *Session 
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (f *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetArrayFilters(filters))
-	f.updateOpts = append(f.updateOpts, options.Update().SetArrayFilters(filters))
-	return f
+	s.updateOpts = append(s.updateOpts, options.Update().SetArrayFilters(filters))
+	return s
 }
 
 // SetOrdered sets the value for the Ordered field.
-func (b *Session) SetOrdered(ordered bool) *Session {
-	b.bulkWriteOptions = append(b.bulkWriteOptions, options.BulkWrite().SetOrdered(ordered))
-	return b
+func (s *Session) SetOrdered(ordered bool) *Session {
+	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetOrdered(ordered))
+	return s
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (f *Session) SetBypassDocumentValidation(b bool) *Session {
-	f.bulkWriteOptions = append(f.bulkWriteOptions, options.BulkWrite().SetBypassDocumentValidation(b))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+func (s *Session) SetBypassDocumentValidation(b bool) *Session {
+	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetBypassDocumentValidation(b))
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))
-	f.updateOpts = append(f.updateOpts, options.Update().SetBypassDocumentValidation(b))
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))
+	s.updateOpts = append(s.updateOpts, options.Update().SetBypassDocumentValidation(b))
 
-	return f
+	return s
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
-func (f *Session) SetReturnDocument(rd options.ReturnDocument) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetReturnDocument(rd options.ReturnDocument) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetReturnDocument(rd))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetReturnDocument(rd))
-	return f
+	return s
 }
 
 // SetUpsert sets the value for the Upsert field.
-func (f *Session) SetUpsert(b bool) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetUpsert(b bool) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetUpsert(b))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetUpsert(b))
-	f.updateOpts = append(f.updateOpts, options.Update().SetUpsert(b))
-	return f
+	s.updateOpts = append(s.updateOpts, options.Update().SetUpsert(b))
+	return s
 }
 
 // SetCollation sets the value for the Collation field.
-func (f *Session) SetCollation(collation *options.Collation) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetCollation(collation *options.Collation) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetCollation(collation))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetCollation(collation))
-	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetCollation(collation))
-	f.updateOpts = append(f.updateOpts, options.Update().SetCollation(collation))
-	return f
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetCollation(collation))
+	s.updateOpts = append(s.updateOpts, options.Update().SetCollation(collation))
+	return s
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (f *Session) SetMaxTime(d time.Duration) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetMaxTime(d time.Duration) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetMaxTime(d))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetMaxTime(d))
-	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetMaxTime(d))
-	return f
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetMaxTime(d))
+	return s
 }
 
 // SetProjection sets the value for the Projection field.
-func (f *Session) SetProjection(projection interface{}) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetProjection(projection interface{}) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetProjection(projection))
-	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetProjection(projection))
-	return f
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetProjection(projection))
+	return s
 }
 
 // SetSort sets the value for the Sort field.
-func (f *Session) SetSort(sort interface{}) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetSort(sort interface{}) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetSort(sort))
-	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetSort(sort))
-	return f
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetSort(sort))
+	return s
 }
 
 // SetHint sets the value for the Hint field.
-func (f *Session) SetHint(hint interface{}) *Session {
-	f.findOneAndUpdateOpts = append(f.findOneAndUpdateOpts,
+func (s *Session) SetHint(hint interface{}) *Session {
+	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
-	f.findOneAndReplaceOpts = append(f.findOneAndReplaceOpts,
+	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetHint(hint))
-	f.findOneAndDeleteOpts = append(f.findOneAndDeleteOpts, options.FindOneAndDelete().SetHint(hint))
-	f.updateOpts = append(f.updateOpts, options.Update().SetHint(hint))
-	return f
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetHint(hint))
+	s.updateOpts = append(s.updateOpts, options.Update().SetHint(hint))
+	return s
 }
 
 //{ field: { $type: <BSON type> } }
@@ -620,20 +620,20 @@ func (s *Session) SetDatabase(db string) *Session {
 //	return s
 //}
 
-func (e *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := e.engine.CollectionNameForStruct(doc)
+func (s *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	coll, err := s.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name), nil
+	return s.collection(coll.Name), nil
 }
 
-func (e *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := e.engine.CollectionNameForSlice(doc)
+func (s *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	coll, err := s.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return e.collection(coll.Name), nil
+	return s.collection(coll.Name), nil
 }
 
 func (s Session) collection(name string) *mongo.Collection {

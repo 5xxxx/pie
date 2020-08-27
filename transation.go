@@ -22,8 +22,8 @@ import (
 
 type TransFunc func(context.Context) error
 
-func (t Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
-	session, err := t.client.StartSession(opt...)
+func (d Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+	session, err := d.client.StartSession(opt...)
 	if err != nil {
 		return err
 	}
@@ -34,9 +34,9 @@ func (t Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...
 	return session.CommitTransaction(ctx)
 }
 
-func (t Driver) Transaction(ctx context.Context, f TransFunc) error {
+func (d Driver) Transaction(ctx context.Context, f TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))
-	return t.TransactionWithOptions(ctx, f, []*options.SessionOptions{opts}...)
+	return d.TransactionWithOptions(ctx, f, []*options.SessionOptions{opts}...)
 }
