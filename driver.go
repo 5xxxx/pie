@@ -110,7 +110,7 @@ func (d *Driver) FindAndDelete(ctx context.Context, doc interface{}) error {
 	return session.FindAndDelete(ctx, doc)
 }
 
-// FindOne executes a find command and returns a SingleResult for one document in the collection.
+// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 func (d *Driver) FindOne(ctx context.Context, doc interface{}) error {
 	session := d.NewSession()
 	return session.FindOne(ctx, doc)

@@ -14,6 +14,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/NSObjects/pie/schemas"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -125,7 +127,12 @@ func (a *Aggregate) SetDatabase(db string) *Aggregate {
 }
 
 func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := a.engine.CollectionNameForStruct(doc)
+	var coll *schemas.Collection
+	var err error
+	if a.doc != nil {
+		coll, err = a.engine.CollectionNameForStruct(doc)
+	}
+	coll, err = a.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +140,12 @@ func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, err
 }
 
 func (a *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := a.engine.CollectionNameForSlice(doc)
+	var coll *schemas.Collection
+	var err error
+	if a.doc != nil {
+		coll, err = a.engine.CollectionNameForSlice(doc)
+	}
+	coll, err = a.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}

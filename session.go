@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NSObjects/pie/schemas"
+
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -133,21 +135,23 @@ func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
 			return errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return err
+		}
 		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...).Decode(&doc)
 	} else if d, ok := doc.(bson.D); ok {
 		if s.doc == nil {
 			return errors.New("update bson.D must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return err
+		}
+
 		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...).Decode(&doc)
 	}
 
-	if s.doc != nil {
-		coll, err = s.collectionForStruct(s.doc)
-	} else {
-		coll, err = s.collectionForStruct(doc)
-	}
-
+	coll, err = s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
@@ -163,7 +167,7 @@ func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
 	return coll.FindOneAndDelete(ctx, s.filter.Filters(), s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
-// FindOne executes a find command and returns a SingleResult for one document in the collection.
+// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -182,7 +186,7 @@ func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
 	return nil
 }
 
-// Find executes a find command and returns a Cursor over the matching documents in the collection.
+// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -200,7 +204,7 @@ func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 	return nil
 }
 
-// InsertOne executes an insert command to insert a single document into the collection.
+// InsertOne executes an insert command to insert a single document into the collectionByName.
 func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -216,7 +220,7 @@ func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 	return [12]byte{}, err
 }
 
-// InsertMany executes an insert command to insert multiple documents into the collection.
+// InsertMany executes an insert command to insert multiple documents into the collectionByName.
 func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
@@ -231,7 +235,7 @@ func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.Inse
 	return coll.InsertMany(ctx, many, s.insertManyOpts...)
 }
 
-// DeleteOne executes a delete command to delete at most one document from the collection.
+// DeleteOne executes a delete command to delete at most one document from the collectionByName.
 func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -241,7 +245,7 @@ func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.Delete
 	return coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
-// DeleteMany executes a delete command to delete documents from the collection.
+// DeleteMany executes a delete command to delete documents from the collectionByName.
 func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -302,20 +306,22 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 			return nil, errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return nil, err
+		}
 		return coll.UpdateOne(ctx, s.filter.Filters(), m, s.updateOpts...)
 	} else if d, ok := bean.(bson.D); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.D must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return nil, err
+		}
 		return coll.UpdateOne(ctx, s.filter.Filters(), d, s.updateOpts...)
 	}
 
-	if s.doc != nil {
-		coll, err = s.collectionForStruct(s.doc)
-	} else {
-		coll, err = s.collectionForStruct(bean)
-	}
+	coll, err = s.collectionForStruct(bean)
 
 	if err != nil {
 		return nil, err
@@ -331,20 +337,22 @@ func (s *Session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.Upda
 			return nil, errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return nil, err
+		}
 		return coll.UpdateMany(ctx, s.filter.Filters(), m, s.updateOpts...)
 	} else if d, ok := bean.(bson.D); ok {
 		if s.doc == nil {
 			return nil, errors.New("update bson.D must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
+		if err != nil {
+			return nil, err
+		}
 		return coll.UpdateMany(ctx, s.filter.Filters(), d, s.updateOpts...)
 	}
 
-	if s.doc != nil {
-		coll, err = s.collectionForStruct(s.doc)
-	} else {
-		coll, err = s.collectionForSlice(bean)
-	}
+	coll, err = s.collectionForSlice(bean)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +371,6 @@ func (s *Session) ID(id interface{}) *Session {
 }
 
 func (s *Session) Asc(colNames ...string) *Session {
-
 	if len(colNames) == 0 {
 		return s
 	}
@@ -615,28 +622,33 @@ func (s *Session) SetDatabase(db string) *Session {
 	return s
 }
 
-//func (s *Session) SetCollection(doc interface{}) *Session {
-//	s.doc = doc
-//	return s
-//}
-
 func (s *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := s.engine.CollectionNameForStruct(doc)
+	var coll *schemas.Collection
+	var err error
+	if s.doc != nil {
+		coll, err = s.engine.CollectionNameForStruct(doc)
+	}
+	coll, err = s.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return s.collection(coll.Name), nil
+	return s.collectionByName(coll.Name), nil
 }
 
 func (s *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := s.engine.CollectionNameForSlice(doc)
+	var coll *schemas.Collection
+	var err error
+	if s.doc != nil {
+		coll, err = s.engine.CollectionNameForSlice(doc)
+	}
+	coll, err = s.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return s.collection(coll.Name), nil
+	return s.collectionByName(coll.Name), nil
 }
 
-func (s Session) collection(name string) *mongo.Collection {
+func (s Session) collectionByName(name string) *mongo.Collection {
 	var db string
 	if s.db != "" {
 		db = s.db

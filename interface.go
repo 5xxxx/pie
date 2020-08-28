@@ -13,22 +13,22 @@ package pie
 type Interface interface {
 	Distinct(doc interface{}, columns string) ([]interface{}, error)
 
-	// FindOne executes a find command and returns a SingleResult for one document in the collection.
+	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 	FindOne(doc interface{}) error
 
-	// Find executes a find command and returns a Cursor over the matching documents in the collection.
+	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 	FindAll(rowsSlicePtr interface{}) error
 
-	// InsertOne executes an insert command to insert a single document into the collection.
+	// InsertOne executes an insert command to insert a single document into the collectionByName.
 	InsertOne(doc interface{}) error
 
-	// InsertMany executes an insert command to insert multiple documents into the collection.
+	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
 	InsertMany(docs []interface{}) error
 
-	// DeleteOne executes a delete command to delete at most one document from the collection.
+	// DeleteOne executes a delete command to delete at most one document from the collectionByName.
 	DeleteOne(doc interface{}) error
 
-	// DeleteMany executes a delete command to delete documents from the collection.
+	// DeleteMany executes a delete command to delete documents from the collectionByName.
 	DeleteMany(doc interface{}) error
 
 	Limit(i int64) *Session
