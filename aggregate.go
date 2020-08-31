@@ -131,8 +131,9 @@ func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, err
 	var err error
 	if a.doc != nil {
 		coll, err = a.engine.CollectionNameForStruct(doc)
+	} else {
+		coll, err = a.engine.CollectionNameForStruct(doc)
 	}
-	coll, err = a.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +145,10 @@ func (a *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, erro
 	var err error
 	if a.doc != nil {
 		coll, err = a.engine.CollectionNameForSlice(doc)
+	} else {
+		coll, err = a.engine.CollectionNameForSlice(doc)
 	}
-	coll, err = a.engine.CollectionNameForSlice(doc)
+
 	if err != nil {
 		return nil, err
 	}

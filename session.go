@@ -627,8 +627,9 @@ func (s *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error
 	var err error
 	if s.doc != nil {
 		coll, err = s.engine.CollectionNameForStruct(doc)
+	} else {
+		coll, err = s.engine.CollectionNameForStruct(doc)
 	}
-	coll, err = s.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -640,8 +641,9 @@ func (s *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error)
 	var err error
 	if s.doc != nil {
 		coll, err = s.engine.CollectionNameForSlice(doc)
+	} else {
+		coll, err = s.engine.CollectionNameForSlice(doc)
 	}
-	coll, err = s.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
