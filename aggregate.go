@@ -87,7 +87,7 @@ func (a *Aggregate) One(ctx context.Context, result interface{}) error {
 		return err
 	}
 	if next := aggregate.Next(ctx); next {
-		if err := aggregate.Decode(&result); err != nil {
+		if err := aggregate.Decode(result); err != nil {
 			return err
 		}
 	} else {
