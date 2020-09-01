@@ -86,27 +86,28 @@ type Condition interface {
 	//todo 简单实现，后续增加支持
 	Regex(key string, value interface{}) *filter
 
-	Filters() bson.M
-	A() []bson.E
+	Filters() bson.D
+	A() bson.A
 }
 
 type filter struct {
-	m bson.M
+	d bson.D
 }
 
 func DefaultCondition() Condition {
-	return &filter{m: bson.M{}}
+	return &filter{d: bson.D{}}
 }
 
-func (f *filter) Filters() bson.M {
-	return f.m
+func (f *filter) Filters() bson.D {
+	return f.d
 }
 
 func (f *filter) RegexFilter(key, pattern string) *filter {
-	f.m[key] = primitive.Regex{
+	v := primitive.Regex{
 		Pattern: pattern,
 		Options: "i",
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
@@ -117,9 +118,9 @@ func (f *filter) ID(id interface{}) *filter {
 	switch id.(type) {
 	case string:
 		objectId, _ := primitive.ObjectIDFromHex(id.(string))
-		f.m["_id"] = objectId
+		f.d = append(f.d, bson.E{Key: "_id", Value: objectId})
 	case primitive.ObjectID:
-		f.m["_id"] = id
+		f.d = append(f.d, bson.E{Key: "_id", Value: id})
 	default:
 		panic("id type must be string or primitive.ObjectID")
 	}
@@ -133,23 +134,25 @@ func (f *filter) ID(id interface{}) *filter {
 // Equals an Array Value
 //{ tags: [ "A", "B" ] }
 func (f *filter) Eq(key string, value interface{}) *filter {
-	f.m[key] = value
+	f.d = append(f.d, bson.E{Key: key, Value: value})
 	return f
 }
 
 //{field: {$gt: value} } >
 func (f *filter) Gt(key string, gt interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$gt": gt,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
 //{ qty: { $gte: 20 } } >=
 func (f *filter) Gte(key string, gte interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$gte": gte,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
@@ -157,41 +160,46 @@ func (f *filter) Gte(key string, gte interface{}) *filter {
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
 func (f *filter) In(key string, in interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$in": in,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
 //{field: {$lt: value} } <
 func (f *filter) Lt(key string, lt interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$lt": lt,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
 //{ field: { $lte: value} } <=
 func (f *filter) Lte(key string, lte interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$lte": lte,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
 //{field: {$ne: value} } !=
 func (f *filter) Ne(key string, ne interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$ne": ne,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
 //{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
 func (f *filter) Nin(key string, nin interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$nin": nin,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
@@ -201,7 +209,7 @@ func (f *filter) Nin(key string, nin interface{}) *filter {
 //        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 // ]
 func (f *filter) And(filter Condition) *filter {
-	f.m["$and"] = filter.A()
+	f.d = append(f.d, bson.E{Key: "$and", Value: filter.A()})
 	return f
 
 }
@@ -210,9 +218,10 @@ func (f *filter) And(filter Condition) *filter {
 //not and Regular Expressions
 //{ item: { $not: /^p.*/ } }
 func (f *filter) Not(key string, not interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$not": not,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
@@ -220,13 +229,13 @@ func (f *filter) Not(key string, not interface{}) *filter {
 // { sale: true }, { sale: { $exists: false } } ] }
 // price != 1.99 || sale != true || sale exists || sale exists
 func (f *filter) Nor(filter Condition) *filter {
-	f.m["$nor"] = filter.A()
+	f.d = append(f.d, bson.E{Key: "$nor", Value: filter.A()})
 	return f
 }
 
 // { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
 func (f *filter) Or(filter Condition) *filter {
-	f.m["$or"] = filter.A()
+	f.d = append(f.d, bson.E{Key: "$or", Value: filter.A()})
 	return f
 }
 
@@ -235,11 +244,12 @@ func (f *filter) Exists(key string, exists bool, filter ...Condition) *filter {
 		"$exists": exists,
 	}
 	for _, v := range filter {
-		for fk, fv := range v.Filters() {
-			m[fk] = fv
+		for _, fv := range v.Filters() {
+			m[fv.Key] = fv.Value
 		}
 	}
-	f.m[key] = m
+
+	f.d = append(f.d, bson.E{Key: key, Value: m})
 	return f
 }
 
@@ -249,9 +259,10 @@ func (f *filter) Exists(key string, exists bool, filter ...Condition) *filter {
 // db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 // return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
 func (f *filter) Type(key string, t interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$type": t,
 	}
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
@@ -260,25 +271,25 @@ func (f *filter) Type(key string, t interface{}) *filter {
 //$expr can build query expressions that compare fields from the same document in a $match stage
 //todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
 func (f *filter) Expr(filter Condition) *filter {
-	f.m["$expr"] = filter.A()
+	f.d = append(f.d, bson.E{Key: "$expr", Value: filter.A()})
 	return f
 }
 
 //todo 简单实现，后续增加支持
 func (f *filter) Regex(key string, value interface{}) *filter {
-	f.m[key] = bson.M{
+	v := bson.M{
 		"$regex":   value,
 		"$options": "i",
 	}
-
+	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }
 
-func (f *filter) A() []bson.E {
-	var fs []bson.E
+func (f *filter) A() bson.A {
+	var fs bson.A
 
-	for key, value := range f.m {
-		fs = append(fs, bson.E{Key: key, Value: value})
+	for _, value := range f.d {
+		fs = append(fs, value)
 	}
 	return fs
 }
