@@ -10,26 +10,53 @@
 
 package pie
 
+import (
+	"context"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
 type Interface interface {
-	Distinct(doc interface{}, columns string) ([]interface{}, error)
+	BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error)
+
+	FilterBy(object interface{}) *Session
+
+	Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error)
+
+	ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error)
+
+	FindOneAndReplace(ctx context.Context, doc interface{}) error
+
+	FindOneAndUpdate(ctx context.Context, doc interface{}) error
+
+	FindAndDelete(ctx context.Context, doc interface{}) error
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
-	FindOne(doc interface{}) error
+	FindOne(ctx context.Context, doc interface{}) error
 
 	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
-	FindAll(rowsSlicePtr interface{}) error
+	FindAll(ctx context.Context, rowsSlicePtr interface{}) error
 
 	// InsertOne executes an insert command to insert a single document into the collectionByName.
-	InsertOne(doc interface{}) error
+	InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error)
 
 	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
-	InsertMany(docs []interface{}) error
+	InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error)
 
 	// DeleteOne executes a delete command to delete at most one document from the collectionByName.
-	DeleteOne(doc interface{}) error
+	DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error)
+
+	SoftDeleteOne(ctx context.Context, doc interface{}) error
 
 	// DeleteMany executes a delete command to delete documents from the collectionByName.
-	DeleteMany(doc interface{}) error
+	DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error)
+
+	SoftDeleteMany(ctx context.Context, doc interface{}) error
+
+	Clone() *Session
 
 	Limit(i int64) *Session
 
@@ -37,16 +64,16 @@ type Interface interface {
 
 	Count(i interface{}) (int64, error)
 
-	Update(bean interface{}) error
-
-	//todo update many
-	UpdateMany(bean interface{}) error
+	Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
 
 	RegexFilter(key, pattern string) *Session
 
 	ID(id interface{}) *Session
+
 	Asc(colNames ...string) *Session
 	Desc(colNames ...string) *Session
+
 	Filter(key string, value interface{}) *Session
 
 	//Equals a Specified Value
@@ -99,7 +126,37 @@ type Interface interface {
 	// { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
 	Or(c Condition) *Session
 
-	Exists(key string, exists bool, filter ...*Session) *Session
+	Exists(key string, exists bool, filter ...Condition) *Session
+
+	// SetArrayFilters sets the value for the ArrayFilters field.
+	SetArrayFilters(filters options.ArrayFilters) *Session
+
+	// SetOrdered sets the value for the Ordered field.
+	SetOrdered(ordered bool) *Session
+
+	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+	SetBypassDocumentValidation(b bool) *Session
+
+	// SetReturnDocument sets the value for the ReturnDocument field.
+	SetReturnDocument(rd options.ReturnDocument) *Session
+
+	// SetUpsert sets the value for the Upsert field.
+	SetUpsert(b bool) *Session
+
+	// SetCollation sets the value for the Collation field.
+	SetCollation(collation *options.Collation) *Session
+
+	// SetMaxTime sets the value for the MaxTime field.
+	SetMaxTime(d time.Duration) *Session
+
+	// SetProjection sets the value for the Projection field.
+	SetProjection(projection interface{}) *Session
+
+	// SetSort sets the value for the Sort field.
+	SetSort(sort interface{}) *Session
+
+	// SetHint sets the value for the Hint field.
+	SetHint(hint interface{}) *Session
 
 	//{ field: { $type: <BSON type> } }
 	// { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },

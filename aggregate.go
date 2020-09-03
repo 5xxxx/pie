@@ -14,6 +14,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/NSObjects/pie/schemas"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -56,13 +58,15 @@ type IAggregate interface {
 }
 
 type Aggregate struct {
-	collection
+	db       string
+	doc      interface{}
+	engine   *Driver
 	pipeline bson.A
 	opts     []*options.AggregateOptions
 }
 
 func NewAggregate(engine *Driver) *Aggregate {
-	return &Aggregate{collection: collection{engine: engine}}
+	return &Aggregate{engine: engine}
 }
 
 func (a *Aggregate) One(ctx context.Context, result interface{}) error {
@@ -172,6 +176,50 @@ func (a *Aggregate) Match(c Condition) *Aggregate {
 	return a
 }
 
-//func (a *Aggregate) Group() *Aggregate {
-//	panic("")
-//}
+func (c *Aggregate) SetDatabase(db string) *Aggregate {
+	c.db = db
+	return c
+}
+
+func (c *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	var coll *schemas.Collection
+	var err error
+	if c.doc != nil {
+		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	} else {
+		coll, err = c.engine.CollectionNameForStruct(doc)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.collectionByName(coll.Name), nil
+}
+
+func (c *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	var coll *schemas.Collection
+	var err error
+	if c.doc != nil {
+		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	} else {
+		coll, err = c.engine.CollectionNameForSlice(doc)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.collectionByName(coll.Name), nil
+}
+
+func (c *Aggregate) collectionByName(name string) *mongo.Collection {
+	var db string
+	if c.db != "" {
+		db = c.db
+	} else {
+		db = c.engine.db
+	}
+	return c.engine.client.Database(db).Collection(name)
+}
+
+func (c *Aggregate) Collection(doc interface{}) *Aggregate {
+	c.doc = doc
+	return c
+}

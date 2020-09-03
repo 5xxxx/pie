@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NSObjects/pie/schemas"
+
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,7 +28,9 @@ import (
 )
 
 type Session struct {
-	collection
+	db                    string
+	doc                   interface{}
+	engine                *Driver
 	filter                Condition
 	findOneOptions        []*options.FindOneOptions
 	findOptions           []*options.FindOptions
@@ -44,7 +48,7 @@ type Session struct {
 }
 
 func NewSession(engine *Driver) *Session {
-	return &Session{collection: collection{engine: engine}, filter: DefaultCondition()}
+	return &Session{engine: engine, filter: DefaultCondition()}
 }
 
 func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
@@ -626,6 +630,60 @@ func (s *Session) Expr(c Condition) *Session {
 func (s *Session) Regex(key string, value interface{}) *Session {
 	s.filter.Regex(key, value)
 	return s
+}
+
+//type collection struct {
+//	db     string
+//	doc    interface{}
+//	engine *Driver
+//}
+
+func (c *Session) SetDatabase(db string) *Session {
+	c.db = db
+	return c
+}
+
+func (c *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	var coll *schemas.Collection
+	var err error
+	if c.doc != nil {
+		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	} else {
+		coll, err = c.engine.CollectionNameForStruct(doc)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.collectionByName(coll.Name), nil
+}
+
+func (c *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	var coll *schemas.Collection
+	var err error
+	if c.doc != nil {
+		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	} else {
+		coll, err = c.engine.CollectionNameForSlice(doc)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.collectionByName(coll.Name), nil
+}
+
+func (c *Session) collectionByName(name string) *mongo.Collection {
+	var db string
+	if c.db != "" {
+		db = c.db
+	} else {
+		db = c.engine.db
+	}
+	return c.engine.client.Database(db).Collection(name)
+}
+
+func (c *Session) Collection(doc interface{}) *Session {
+	c.doc = doc
+	return c
 }
 
 func (s *Session) makeFilterValue(field string, value interface{}) {
