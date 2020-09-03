@@ -14,8 +14,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/NSObjects/pie/schemas"
-
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -58,15 +56,13 @@ type IAggregate interface {
 }
 
 type Aggregate struct {
-	db       string
-	doc      interface{}
-	engine   *Driver
+	collection
 	pipeline bson.A
 	opts     []*options.AggregateOptions
 }
 
 func NewAggregate(engine *Driver) *Aggregate {
-	return &Aggregate{engine: engine}
+	return &Aggregate{collection: collection{engine: engine}}
 }
 
 func (a *Aggregate) One(ctx context.Context, result interface{}) error {
@@ -114,55 +110,6 @@ func (a *Aggregate) All(ctx context.Context, result interface{}) error {
 	}
 
 	return aggregate.All(ctx, result)
-}
-
-func (a *Aggregate) Collection(doc interface{}) *Aggregate {
-	a.doc = doc
-	return a
-}
-
-func (a *Aggregate) SetDatabase(db string) *Aggregate {
-	a.db = db
-	return a
-}
-
-func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.engine.CollectionNameForStruct(a.doc)
-	} else {
-		coll, err = a.engine.CollectionNameForStruct(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return a.collection(coll.Name), nil
-}
-
-func (a *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.engine.CollectionNameForStruct(a.doc)
-	} else {
-		coll, err = a.engine.CollectionNameForSlice(doc)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return a.collection(coll.Name), nil
-}
-
-func (a Aggregate) collection(name string) *mongo.Collection {
-	var db string
-	if a.db != "" {
-		db = a.db
-	} else {
-		db = a.engine.db
-	}
-	return a.engine.client.Database(db).Collection(name)
 }
 
 // SetAllowDiskUse sets the value for the AllowDiskUse field.

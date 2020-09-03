@@ -19,15 +19,14 @@ import (
 )
 
 type Indexes struct {
-	db                 string
-	driver             *Driver
+	collection
 	indexes            []mongo.IndexModel
 	createIndexOpts    []*options.CreateIndexesOptions
 	dropIndexesOptions []*options.DropIndexesOptions
 }
 
 func NewIndexes(driver *Driver) *Indexes {
-	return &Indexes{driver: driver}
+	return &Indexes{collection: collection{engine: driver}}
 }
 
 func (i *Indexes) CreateIndexes(ctx context.Context, doc interface{}) ([]string, error) {
@@ -97,35 +96,4 @@ func (i *Indexes) SetCommitQuorumMajority() *Indexes {
 func (i *Indexes) SetCommitQuorumVotingMembers() *Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
 	return i
-}
-
-func (i *Indexes) SetDatabase(db string) *Indexes {
-	i.db = db
-	return i
-}
-
-func (i *Indexes) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := i.driver.CollectionNameForStruct(doc)
-	if err != nil {
-		return nil, err
-	}
-	return i.collection(coll.Name), nil
-}
-
-func (i *Indexes) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := i.driver.CollectionNameForSlice(doc)
-	if err != nil {
-		return nil, err
-	}
-	return i.collection(coll.Name), nil
-}
-
-func (i *Indexes) collection(name string) *mongo.Collection {
-	var db string
-	if i.db != "" {
-		db = i.db
-	} else {
-		db = i.driver.db
-	}
-	return i.driver.client.Database(db).Collection(name)
 }

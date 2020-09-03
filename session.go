@@ -18,8 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NSObjects/pie/schemas"
-
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,10 +26,8 @@ import (
 )
 
 type Session struct {
-	db                    string
+	collection
 	filter                Condition
-	engine                *Driver
-	doc                   interface{}
 	findOneOptions        []*options.FindOneOptions
 	findOptions           []*options.FindOptions
 	insertManyOpts        []*options.InsertManyOptions
@@ -48,7 +44,7 @@ type Session struct {
 }
 
 func NewSession(engine *Driver) *Session {
-	return &Session{engine: engine, filter: DefaultCondition()}
+	return &Session{collection: collection{engine: engine}, filter: DefaultCondition()}
 }
 
 func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
@@ -245,6 +241,16 @@ func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.Delete
 	return coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
+func (s *Session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
+	coll, err := s.collectionForStruct(doc)
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateOne(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	return err
+}
+
 // DeleteMany executes a delete command to delete documents from the collectionByName.
 func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
@@ -255,9 +261,14 @@ func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.Delet
 	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
 }
 
-func (s *Session) Collection(doc interface{}) *Session {
-	s.doc = doc
-	return s
+func (s *Session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
+	coll, err := s.collectionForStruct(doc)
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateMany(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	return err
 }
 
 func (s *Session) Clone() *Session {
@@ -615,49 +626,6 @@ func (s *Session) Expr(c Condition) *Session {
 func (s *Session) Regex(key string, value interface{}) *Session {
 	s.filter.Regex(key, value)
 	return s
-}
-
-func (s *Session) SetDatabase(db string) *Session {
-	s.db = db
-	return s
-}
-
-func (s *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if s.doc != nil {
-		coll, err = s.engine.CollectionNameForStruct(s.doc)
-	} else {
-		coll, err = s.engine.CollectionNameForStruct(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return s.collectionByName(coll.Name), nil
-}
-
-func (s *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if s.doc != nil {
-		coll, err = s.engine.CollectionNameForStruct(s.doc)
-	} else {
-		coll, err = s.engine.CollectionNameForSlice(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return s.collectionByName(coll.Name), nil
-}
-
-func (s Session) collectionByName(name string) *mongo.Collection {
-	var db string
-	if s.db != "" {
-		db = s.db
-	} else {
-		db = s.engine.db
-	}
-	return s.engine.client.Database(db).Collection(name)
 }
 
 func (s *Session) makeFilterValue(field string, value interface{}) {

@@ -291,6 +291,15 @@ func (d *Driver) DeleteMany(ctx context.Context, filter interface{}) (*mongo.Del
 	session := d.NewSession()
 	return session.DeleteMany(ctx, filter)
 }
+func (d *Driver) SoftDeleteOne(ctx context.Context, filter interface{}) error {
+	session := d.NewSession()
+	return session.SoftDeleteOne(ctx, filter)
+}
+
+func (d *Driver) SoftDeleteMany(ctx context.Context, filter interface{}) error {
+	session := d.NewSession()
+	return session.SoftDeleteMany(ctx, filter)
+}
 
 func (d *Driver) FilterBy(object interface{}) *Session {
 	session := d.NewSession()
