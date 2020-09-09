@@ -414,6 +414,26 @@ func (s *Session) Desc(colNames ...string) *Session {
 	return s
 }
 
+func (s *Session) Sort(colNames ...string) *Session {
+	if len(colNames) == 0 {
+		return s
+	}
+	es := bson.D{}
+	for _, field := range colNames {
+		if field != "" {
+			switch field[0] {
+			case '-':
+				es = append(es,bson.E{field[1:],-1})
+			default:
+				es = append(es,bson.E{field,1})
+			}
+		}
+	}
+	s.findOptions = append(s.findOptions, options.Find().SetSort(es))
+	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSort(es))
+	return s
+}
+
 func (s *Session) Filter(key string, value interface{}) *Session {
 	return s.Eq(key, value)
 }
