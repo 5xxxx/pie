@@ -274,7 +274,73 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": insertOmitemptyTag(bean)}, s.updateOpts...)
+	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": s.toBson(bean)}, s.updateOpts...)
+}
+
+func (s *Session) toBson(obj interface{}) bson.M {
+	if _, ok := obj.(bson.M); ok {
+		return obj.(bson.M)
+	}
+
+	if d, ok := obj.(bson.D); ok {
+		ret := bson.M{}
+		for _, v := range d {
+			ret[v.Key] = v.Value
+		}
+		return obj.(bson.M)
+	}
+	beanValue := reflect.ValueOf(obj).Elem()
+	if beanValue.Kind() != reflect.Struct ||
+		//Todo how to fix array?
+		beanValue.Kind() == reflect.Array {
+		panic(errors.New("needs a struct"))
+	}
+
+	ret := bson.M{}
+	docType := reflect.TypeOf(obj).Elem()
+	for index := 0; index < docType.NumField(); index++ {
+		fieldTag := docType.Field(index).Tag.Get("bson")
+		if fieldTag != "" && fieldTag != "-" {
+			split := strings.Split(fieldTag, ",")
+			if len(split) > 0 {
+				s.makeValue(split[0], beanValue.Field(index).Interface(), ret)
+			}
+		}
+	}
+	return ret
+}
+
+func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
+	if utils.IsZero(value) {
+		return
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Struct:
+		s.makeStruct(field, v, ret)
+	case reflect.Array:
+		return
+	}
+
+	if v.Kind() != reflect.Struct || v.Kind() != reflect.Array {
+		ret[field] = value
+	}
+}
+
+func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
+	for index := 0; index < value.NumField(); index++ {
+		docType := reflect.TypeOf(value.Interface())
+		tag := docType.Field(index).Tag.Get("bson")
+		split := strings.Split(tag, ",")
+		if len(split) > 0 {
+			if tag != "" {
+				if !utils.IsZero(value.Field(index)) {
+					fieldTags := fmt.Sprintf("%s.%s", field, split[0])
+					s.makeValue(fieldTags, value.Field(index).Interface(), ret)
+				}
+			}
+		}
+	}
 }
 
 //todo update many
@@ -561,19 +627,18 @@ func (e *Session) Collection(name string) *mongo.Collection {
 	return e.engine.client.Database(db).Collection(name)
 }
 
-func (s *Session) makeFilterValue(field string, value interface{}) {
+func (s *Session) makeFilterValue(field string, value interface{}) (string, interface{}) {
 	if utils.IsZero(value) {
-		return
+		return "", nil
 	}
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Struct:
 		s.makeStructValue(field, v)
-		return
 	case reflect.Array:
-		return
+		return "", nil
 	}
-	s.Filter(field, value)
+	return field, value
 }
 
 func (s *Session) makeStructValue(field string, value reflect.Value) {
