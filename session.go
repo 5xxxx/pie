@@ -289,7 +289,7 @@ func (s *Session) toBson(obj interface{}) bson.M {
 		}
 		return obj.(bson.M)
 	}
-	beanValue := reflect.ValueOf(obj).Elem()
+
 	if beanValue.Kind() != reflect.Struct ||
 		//Todo how to fix array?
 		beanValue.Kind() == reflect.Array {
@@ -297,7 +297,30 @@ func (s *Session) toBson(obj interface{}) bson.M {
 	}
 
 	ret := bson.M{}
-	docType := reflect.TypeOf(obj).Elem()
+
+	for index := 0; index < docType.NumField(); index++ {
+		fieldTag := docType.Field(index).Tag.Get("bson")
+		if fieldTag != "" && fieldTag != "-" {
+			split := strings.Split(fieldTag, ",")
+			if len(split) > 0 {
+				s.makeValue(split[0], beanValue.Field(index).Interface(), ret)
+			}
+		}
+	}
+	return ret
+}
+
+func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
+	if utils.IsZero(value) {
+		return
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Struct:
+		s.makeStruct(field, v, ret)
+	case reflect.Array:
+		return
+	}
 	for index := 0; index < docType.NumField(); index++ {
 		fieldTag := docType.Field(index).Tag.Get("bson")
 		if fieldTag != "" && fieldTag != "-" {
@@ -335,7 +358,6 @@ func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
 		if len(split) > 0 {
 			if tag != "" {
 				if !utils.IsZero(value.Field(index)) {
-					fieldTags := fmt.Sprintf("%s.%s", field, split[0])
 					s.makeValue(fieldTags, value.Field(index).Interface(), ret)
 				}
 			}
