@@ -625,18 +625,18 @@ func (e *Session) Collection(name string) *mongo.Collection {
 	return e.engine.client.Database(db).Collection(name)
 }
 
-func (s *Session) makeFilterValue(field string, value interface{}) (string, interface{}) {
+func (s *Session) makeFilterValue(field string, value interface{}) {
 	if utils.IsZero(value) {
-		return "", nil
+		return
 	}
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Struct:
 		s.makeStructValue(field, v)
 	case reflect.Array:
-		return "", nil
+		return
 	}
-	return field, value
+	s.Filter(field, value)
 }
 
 func (s *Session) makeStructValue(field string, value reflect.Value) {
