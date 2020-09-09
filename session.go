@@ -318,13 +318,11 @@ func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
 	switch v.Kind() {
 	case reflect.Struct:
 		s.makeStruct(field, v, ret)
+		return
 	case reflect.Array:
 		return
 	}
-
-	if v.Kind() != reflect.Struct || v.Kind() != reflect.Array {
-		ret[field] = value
-	}
+	ret[field] = value
 }
 
 func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
