@@ -1,7 +1,7 @@
 /*
  *
  * find_one_session.go
- * tugrik
+ * pie
  *
  * Created by lintao on 2020/7/17 10:16 下午
  * Copyright © 2020-2020 LINTAO. All rights reserved.
@@ -67,24 +67,21 @@ func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 
 func (s *Session) FilterBy(object interface{}) *Session {
 
-	if m, ok := object.(bson.M); ok {
-		for key, value := range m {
-			s.Filter(key, value)
-		}
-		return s
-	}
-
-	if d, ok := object.(bson.D); ok {
-		for _, v := range d {
-			s.Filter(v.Key, v.Value)
-		}
-		return s
-	}
-
 	beanValue := reflect.ValueOf(object)
-	if beanValue.Kind() != reflect.Struct ||
-		//Todo how to fix array?
-		beanValue.Kind() == reflect.Array {
+	if beanValue.Kind() != reflect.Struct {
+		if m, ok := object.(bson.M); ok {
+			for key, value := range m {
+				s.Filter(key, value)
+			}
+			return s
+		}
+
+		if d, ok := object.(bson.D); ok {
+			for _, v := range d {
+				s.Filter(v.Key, v.Value)
+			}
+			return s
+		}
 		panic(errors.New("needs a struct"))
 	}
 
@@ -487,9 +484,9 @@ func (s *Session) Sort(colNames ...string) *Session {
 		if field != "" {
 			switch field[0] {
 			case '-':
-				es = append(es,bson.E{field[1:],-1})
+				es = append(es, bson.E{field[1:], -1})
 			default:
-				es = append(es,bson.E{field,1})
+				es = append(es, bson.E{field, 1})
 			}
 		}
 	}

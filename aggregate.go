@@ -1,7 +1,7 @@
 /*
  *
  * aggregate.go
- * tugrik
+ * pie
  *
  * Created by lintao on 2020/8/13 12:26 下午
  * Copyright © 2020-2020 LINTAO. All rights reserved.
@@ -176,50 +176,50 @@ func (a *Aggregate) Match(c Condition) *Aggregate {
 	return a
 }
 
-func (c *Aggregate) SetDatabase(db string) *Aggregate {
-	c.db = db
-	return c
+func (a *Aggregate) SetDatabase(db string) *Aggregate {
+	a.db = db
+	return a
 }
 
-func (c *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+func (a *Aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	if a.doc != nil {
+		coll, err = a.engine.CollectionNameForStruct(a.doc)
 	} else {
-		coll, err = c.engine.CollectionNameForStruct(doc)
+		coll, err = a.engine.CollectionNameForStruct(doc)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return c.collectionByName(coll.Name), nil
+	return a.collectionByName(coll.Name), nil
 }
 
-func (c *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+func (a *Aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	if a.doc != nil {
+		coll, err = a.engine.CollectionNameForStruct(a.doc)
 	} else {
-		coll, err = c.engine.CollectionNameForSlice(doc)
+		coll, err = a.engine.CollectionNameForSlice(doc)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return c.collectionByName(coll.Name), nil
+	return a.collectionByName(coll.Name), nil
 }
 
-func (c *Aggregate) collectionByName(name string) *mongo.Collection {
+func (a *Aggregate) collectionByName(name string) *mongo.Collection {
 	var db string
-	if c.db != "" {
-		db = c.db
+	if a.db != "" {
+		db = a.db
 	} else {
-		db = c.engine.db
+		db = a.engine.db
 	}
-	return c.engine.client.Database(db).Collection(name)
+	return a.engine.client.Database(db).Collection(name)
 }
 
-func (c *Aggregate) Collection(doc interface{}) *Aggregate {
-	c.doc = doc
-	return c
+func (a *Aggregate) Collection(doc interface{}) *Aggregate {
+	a.doc = doc
+	return a
 }

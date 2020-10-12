@@ -8,11 +8,11 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"tugrik"
+	"github.com/NSObjects/pie"
 )
 
 func main() {
-	t, err := pie.NewDriver()
+	t, err := pie.NewDriver("demo")
 	t.SetURI("mongodb://127.0.0.1:27017")
 	if err != nil {
 		panic(err)
@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	t.SetDatabase("xxxx")
+
 	var user User
 	err = t.filter("nickName", "淳朴的润土").FindOne(&user)
 	if err != nil {
@@ -56,7 +56,7 @@ type Driver struct {
 	clientOpts []*options.ClientOptions
 }
 
-func NewDriver(opts ...*options.ClientOptions) (*Driver, error) {
+func NewDriver(db string, opts ...*options.ClientOptions) (*Driver, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
 	client, err := mongo.NewClient(opts...)
 	if err != nil {
@@ -67,6 +67,7 @@ func NewDriver(opts ...*options.ClientOptions) (*Driver, error) {
 		clientOpts: opts,
 		parser:     parser,
 		client:     client,
+		db:         db,
 	}
 	return driver, nil
 }
@@ -171,9 +172,9 @@ func (d *Driver) Regex(key string, value interface{}) *Session {
 	return session.Regex(key, value)
 }
 
-func (d *Driver) SetDatabase(db string) {
-	d.db = db
-}
+//func (d *Driver) SetDatabase(db string) {
+//	d.db = db
+//}
 
 func (d *Driver) DataBase() *mongo.Database {
 	return d.client.Database(d.db)
