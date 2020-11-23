@@ -101,7 +101,7 @@ func (d *Driver) FindOneAndReplace(ctx context.Context, doc interface{}) error {
 	return session.FindOneAndReplace(ctx, doc)
 }
 
-func (d *Driver) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
+func (d *Driver) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
 	session := d.NewSession()
 	return session.FindOneAndUpdate(ctx, doc)
 }

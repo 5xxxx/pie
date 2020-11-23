@@ -117,13 +117,23 @@ func (f *filter) ID(id interface{}) *filter {
 	}
 	switch id.(type) {
 	case string:
-		objectId, _ := primitive.ObjectIDFromHex(id.(string))
+		objectId, err := primitive.ObjectIDFromHex(id.(string))
+		if err != nil {
+			panic("id type must be string or primitive.ObjectID")
+		}
+		if objectId == primitive.NilObjectID {
+			panic("id type must be string or primitive.ObjectID")
+		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: objectId})
 	case primitive.ObjectID:
+		if id == primitive.NilObjectID {
+			panic("id type must be string or primitive.ObjectID")
+		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: id})
 	default:
 		panic("id type must be string or primitive.ObjectID")
 	}
+
 	return f
 }
 

@@ -124,36 +124,36 @@ func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 	return coll.FindOneAndReplace(ctx, s.filter.Filters(), doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
 
-func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) error {
+func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
 	var coll *mongo.Collection
 	var err error
 	if m, ok := doc.(bson.M); ok {
 		if s.doc == nil {
-			return errors.New("update bson.M must call Collection(struct{}) first")
+			return nil, errors.New("update bson.M must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...).Decode(&doc)
+		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...), nil
 	} else if d, ok := doc.(bson.D); ok {
 		if s.doc == nil {
-			return errors.New("update bson.D must call Collection(struct{}) first")
+			return nil, errors.New("update bson.D must call Collection(struct{}) first")
 		}
 		coll, err = s.collectionForStruct(s.doc)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...).Decode(&doc)
+		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...), nil
 	}
 
 	coll, err = s.collectionForStruct(doc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), doc, s.findOneAndUpdateOpts...).Decode(&doc)
+	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), bson.M{"$set": s.toBson(doc)}, s.findOneAndUpdateOpts...), nil
 }
 
 func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
@@ -365,19 +365,23 @@ func (s *Session) toBson(obj interface{}) bson.M {
 	for index := 0; index < docType.NumField(); index++ {
 		fieldTag := docType.Field(index).Tag.Get("bson")
 		if fieldTag != "" && fieldTag != "-" {
-			split := strings.Split(fieldTag, ",")
-			if len(split) > 0 {
-				s.makeValue(split[0], beanValue.Field(index).Interface(), ret)
-			}
+			s.makeValue(fieldTag, beanValue.Field(index).Interface(), ret)
 		}
 	}
 	return ret
 }
 
 func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
-	if utils.IsZero(value) {
+	split := strings.Split(field, ",")
+	if len(split) <= 0 {
 		return
 	}
+	if strings.Contains(field, "omitempty") {
+		if utils.IsZero(value) {
+			return
+		}
+	}
+
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Struct:
@@ -386,7 +390,7 @@ func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
 	case reflect.Array:
 		return
 	}
-	ret[field] = value
+	ret[split[0]] = value
 }
 
 func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
@@ -396,10 +400,16 @@ func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
 		split := strings.Split(tag, ",")
 		if len(split) > 0 {
 			if tag != "" {
-				if !utils.IsZero(value.Field(index)) {
+				if strings.Contains(tag, "omitempty") {
+					if !utils.IsZero(value.Field(index)) {
+						fieldTags := fmt.Sprintf("%s.%s", field, split[0])
+						s.makeValue(fieldTags, value.Field(index).Interface(), ret)
+					}
+				} else {
 					fieldTags := fmt.Sprintf("%s.%s", field, split[0])
 					s.makeValue(fieldTags, value.Field(index).Interface(), ret)
 				}
+
 			}
 		}
 	}
