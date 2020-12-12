@@ -153,7 +153,7 @@ func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo
 		return nil, err
 	}
 
-	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), bson.M{"$set": s.toBson(doc)}, s.findOneAndUpdateOpts...), nil
+	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
 func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
@@ -338,7 +338,7 @@ func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": s.toBson(bean)}, s.updateOpts...)
+	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
 }
 
 func (s *Session) toBson(obj interface{}) bson.M {
