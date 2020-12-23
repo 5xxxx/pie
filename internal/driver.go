@@ -62,6 +62,21 @@ func (d *defaultDriver) ReplaceOne(ctx context.Context, doc interface{}) (*mongo
 	return session.ReplaceOne(ctx, doc)
 }
 
+func (d defaultDriver) UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+	session := d.NewSession()
+	return session.UpdateOneBson(ctx, coll, bson)
+}
+
+func (d defaultDriver) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error) {
+	session := d.NewSession()
+	return session.FindOneAndUpdateBson(ctx, coll, bson)
+}
+
+func (d defaultDriver) UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+	session := d.NewSession()
+	return session.UpdateManyBson(ctx, coll, bson)
+}
+
 func (d *defaultDriver) FindOneAndReplace(ctx context.Context, doc interface{}) error {
 	session := d.NewSession()
 	return session.FindOneAndReplace(ctx, doc)
@@ -236,7 +251,7 @@ func (d *defaultDriver) Desc(s2 ...string) driver.Session {
 
 func (d *defaultDriver) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
 	session := d.NewSession()
-	return session.Update(ctx, bean)
+	return session.UpdateOne(ctx, bean)
 }
 
 //The following operation updates all of the documents with quantity value less than 50.

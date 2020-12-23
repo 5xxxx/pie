@@ -28,6 +28,7 @@ type Client interface {
 	FindAll(ctx context.Context, docs interface{}) error
 	RegexFilter(key, pattern string) Session
 	Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error)
+	FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error)
 
 	//insert
 	InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error)
@@ -39,6 +40,10 @@ type Client interface {
 	Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
 	//The following operation updates all of the documents with quantity value less than 50.
 	UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+
+	UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+
+	UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
 
 	//delete
 	SoftDeleteOne(ctx context.Context, filter interface{}) error

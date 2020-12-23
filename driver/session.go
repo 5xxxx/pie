@@ -22,6 +22,8 @@ type Session interface {
 
 	FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error)
 
+	FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error)
+
 	FindAndDelete(ctx context.Context, doc interface{}) error
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
@@ -52,7 +54,11 @@ type Session interface {
 
 	Count(i interface{}) (int64, error)
 
-	Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	UpdateOne(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+
+	UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+
+	UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
 
 	UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
 

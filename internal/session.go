@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/NSObjects/pie/driver"
-	"github.com/NSObjects/pie/schemas"
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -29,7 +28,6 @@ import (
 
 type session struct {
 	db                    string
-	doc                   interface{}
 	engine                driver.Client
 	filter                driver.Condition
 	findOneOptions        []*options.FindOneOptions
@@ -66,7 +64,6 @@ func (s *session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 }
 
 func (s *session) FilterBy(object interface{}) driver.Session {
-
 	beanValue := reflect.ValueOf(object)
 	if beanValue.Kind() != reflect.Struct {
 		if m, ok := object.(bson.M); ok {
@@ -124,31 +121,17 @@ func (s *session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 	return coll.FindOneAndReplace(ctx, s.filter.Filters(), doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
 
-func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := doc.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...), nil
-	} else if d, ok := doc.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...), nil
+func (s *session) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
 	}
+	return c.FindOneAndUpdate(ctx, s.filter.Filters(), bson, s.findOneAndUpdateOpts...), nil
+}
 
-	coll, err = s.collectionForStruct(doc)
+func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
+
+	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -310,30 +293,8 @@ func (s *session) Count(i interface{}) (int64, error) {
 	return coll.CountDocuments(context.Background(), s.filter.Filters(), s.countOpts...)
 }
 
-func (s *session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := bean.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateOne(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d, ok := bean.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateOne(ctx, s.filter.Filters(), d, s.updateOpts...)
-	}
-
-	coll, err = s.collectionForStruct(bean)
+func (s *session) UpdateOne(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+	coll, err := s.collectionForStruct(bean)
 
 	if err != nil {
 		return nil, err
@@ -341,18 +302,23 @@ func (s *session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateRe
 	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
 }
 
-func (s *session) toBson(obj interface{}) bson.M {
-	if _, ok := obj.(bson.M); ok {
-		return obj.(bson.M)
+func (s *session) UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
 	}
+	return c.UpdateOne(ctx, s.filter.Filters(), bson, s.updateOpts...)
+}
 
-	if d, ok := obj.(bson.D); ok {
-		ret := bson.M{}
-		for _, v := range d {
-			ret[v.Key] = v.Value
-		}
-		return obj.(bson.M)
+func (s *session) UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
 	}
+	return c.UpdateMany(ctx, s.filter.Filters(), bson, s.updateOpts...)
+}
+
+func (s *session) toBson(obj interface{}) bson.M {
 	beanValue := reflect.ValueOf(obj).Elem()
 	if beanValue.Kind() != reflect.Struct ||
 		//Todo how to fix array?
@@ -416,29 +382,7 @@ func (s *session) makeStruct(field string, value reflect.Value, ret bson.M) {
 }
 
 func (s *session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := bean.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateMany(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d, ok := bean.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateMany(ctx, s.filter.Filters(), d, s.updateOpts...)
-	}
-
-	coll, err = s.collectionForSlice(bean)
+	coll, err := s.collectionForSlice(bean)
 	if err != nil {
 		return nil, err
 	}
@@ -723,39 +667,22 @@ func (s *session) Regex(key string, value interface{}) driver.Session {
 	return s
 }
 
-//type collection struct {
-//	db     string
-//	doc    driver{}
-//	engine *internal
-//}
-
 func (c *session) SetDatabase(db string) driver.Session {
 	c.db = db
 	return c
 }
 
 func (c *session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
-	} else {
-		coll, err = c.engine.CollectionNameForStruct(doc)
-	}
+	coll, err := c.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
+
 	return c.collectionByName(coll.Name), nil
 }
 
 func (c *session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
-	} else {
-		coll, err = c.engine.CollectionNameForSlice(doc)
-	}
+	coll, err := c.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -770,11 +697,6 @@ func (c *session) collectionByName(name string) *mongo.Collection {
 		db = c.engine.DataBase().Name()
 	}
 	return c.engine.SetDatabase(db).Collection(name)
-}
-
-func (c *session) Collection(doc interface{}) driver.Session {
-	c.doc = doc
-	return c
 }
 
 func (s *session) makeFilterValue(field string, value interface{}) {
