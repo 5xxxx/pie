@@ -11,6 +11,8 @@
 package pie
 
 import (
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -112,22 +114,21 @@ func (f *filter) RegexFilter(key, pattern string) *filter {
 }
 
 func (f *filter) ID(id interface{}) *filter {
-	if id == nil {
-		return f
-	}
 	switch id.(type) {
 	case string:
 		objectId, err := primitive.ObjectIDFromHex(id.(string))
 		if err != nil {
-			panic("id type must be string or primitive.ObjectID")
+			panic(fmt.Sprintf("id type must be string or primitive.ObjectID \n %s,%s", err.Error(), id))
 		}
+
 		if objectId == primitive.NilObjectID {
-			panic("id type must be string or primitive.ObjectID")
+			panic(fmt.Sprintf("id type must be string or primitive.ObjectID \n %s", id))
 		}
+
 		f.d = append(f.d, bson.E{Key: "_id", Value: objectId})
 	case primitive.ObjectID:
 		if id == primitive.NilObjectID {
-			panic("id type must be string or primitive.ObjectID")
+			panic(fmt.Sprintf("id type must be string or primitive.ObjectID \n %s", id))
 		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: id})
 	default:
