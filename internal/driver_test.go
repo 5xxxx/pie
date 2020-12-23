@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/NSObjects/pie/driver"
 	"github.com/NSObjects/pie/schemas"
@@ -12,28 +13,404 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var URI = "mongodb://192.168.1.208:10001"
+
+type Account struct {
+	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	NickName     string             `json:"nick_name" bson:"nick_name,omitempty"`
+	MobileNumber string             `json:"mobile_number" bson:"mobile_number,omitempty"`
+	Gender       int                `json:"gender" bson:"gender,omitempty"`
+	Birthday     string             `json:"birthday" bson:"birthday,omitempty"`
+	GeoPoint     []float64          `json:"geo_point" bson:"geo_point,omitempty"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at,omitempty"`
+	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at,omitempty"`
+}
+
 func TestNewClient(t *testing.T) {
 	type args struct {
 		db   string
 		opts []*options.ClientOptions
 	}
+
 	tests := []struct {
 		name    string
 		args    args
-		want    driver.Client
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "init client",
+			args: args{
+				db:   "pie",
+				opts: []*options.ClientOptions{options.Client().ApplyURI(URI)},
+			},
+			want:    "pie",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewClient(tt.args.db, tt.args.opts...)
+			if err = got.Connect(context.Background()); err != nil {
+				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got.DataBase().Name() != tt.want {
+				t.Errorf("NewClient() error = %v, want %v", err, tt.want)
+				return
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_InsertMany(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		v   interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "InsertMany",
+			args: args{
+				ctx: context.Background(),
+				v: []Account{
+					{
+						NickName:     "xiaoming",
+						MobileNumber: "13888888888",
+						Gender:       1,
+						Birthday:     "1970-01-12",
+						GeoPoint:     []float64{12.3, 12.4},
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						NickName:     "xiaohong",
+						MobileNumber: "18888888888",
+						Gender:       2,
+						Birthday:     "1990-03-23",
+						GeoPoint:     []float64{53.3, 167.4},
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			_, err = d.InsertMany(tt.args.ctx, tt.args.v)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InsertMany() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("InsertMany() got = %v, want %v", got, tt.want)
+			//}
+		})
+	}
+}
+
+func Test_defaultDriver_InsertOne(t *testing.T) {
+	id := primitive.NewObjectID()
+	type args struct {
+		ctx context.Context
+		v   Account
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    primitive.ObjectID
+		wantErr bool
+	}{
+		{
+			name: "Insert One",
+			args: args{
+				ctx: context.Background(),
+				v: Account{
+					Id:           id,
+					NickName:     "xiaolv",
+					MobileNumber: "139999999999",
+					Gender:       3,
+					Birthday:     "2000-03-23",
+					GeoPoint:     []float64{53.3, 167.4},
+					CreatedAt:    time.Now(),
+					UpdatedAt:    time.Now(),
+				},
+			},
+			want:    id,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			got, err := d.InsertOne(tt.args.ctx, &tt.args.v)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InsertOne() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_FindAll(t *testing.T) {
+	type args struct {
+		ctx  context.Context
+		docs []Account
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "find all",
+			args: args{
+				ctx:  context.Background(),
+				docs: make([]Account, 0),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.FindAll(tt.args.ctx, &tt.args.docs); (err != nil) != tt.wantErr {
+				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+		})
+	}
+}
+
+func Test_defaultDriver_FindAndDelete(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		doc Account
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "FindAndDelete",
+			args: args{
+				ctx: context.Background(),
+				doc: Account{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err := d.FindAndDelete(tt.args.ctx, &tt.args.doc); (err != nil) != tt.wantErr {
+				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_FindOne(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		doc interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "FindOne",
+			args:    args{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err := d.FindOne(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_FindOneAndReplace(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		doc Account
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "FindOneAndReplace",
+			args: args{
+				ctx: context.Background(),
+				doc: Account{
+					NickName: "xiaolin",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewClient("pie", options.Client().ApplyURI(URI))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err = d.Connect(context.Background()); (err != nil) != tt.wantErr {
+				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err := d.FindOneAndReplace(tt.args.ctx, &tt.args.doc); (err != nil) != tt.wantErr {
+				t.Errorf("FindOneAndReplace() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_FindOneAndUpdate(t *testing.T) {
+	type fields struct {
+		client     *mongo.Client
+		parser     *driver.Parser
+		db         string
+		clientOpts []*options.ClientOptions
+	}
+	type args struct {
+		ctx context.Context
+		doc interface{}
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *mongo.SingleResult
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewClient(tt.args.db, tt.args.opts...)
+			d := &defaultDriver{
+				client:     tt.fields.client,
+				parser:     tt.fields.parser,
+				db:         tt.fields.db,
+				clientOpts: tt.fields.clientOpts,
+			}
+			got, err := d.FindOneAndUpdate(tt.args.ctx, tt.args.doc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("FindOneAndUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewClient() got = %v, want %v", got, tt.want)
+				t.Errorf("FindOneAndUpdate() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_defaultDriver_FindOneAndUpdateBson(t *testing.T) {
+	type fields struct {
+		client     *mongo.Client
+		parser     *driver.Parser
+		db         string
+		clientOpts []*options.ClientOptions
+	}
+	type args struct {
+		ctx  context.Context
+		coll interface{}
+		bson interface{}
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *mongo.SingleResult
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := defaultDriver{
+				client:     tt.fields.client,
+				parser:     tt.fields.parser,
+				db:         tt.fields.db,
+				clientOpts: tt.fields.clientOpts,
+			}
+			got, err := d.FindOneAndUpdateBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindOneAndUpdateBson() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FindOneAndUpdateBson() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -845,223 +1222,6 @@ func Test_defaultDriver_FilterBy(t *testing.T) {
 	}
 }
 
-func Test_defaultDriver_FindAll(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx  context.Context
-		docs interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			if err := d.FindAll(tt.args.ctx, tt.args.docs); (err != nil) != tt.wantErr {
-				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_FindAndDelete(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		doc interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			if err := d.FindAndDelete(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
-				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_FindOne(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		doc interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			if err := d.FindOne(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
-				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_FindOneAndReplace(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		doc interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			if err := d.FindOneAndReplace(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
-				t.Errorf("FindOneAndReplace() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_FindOneAndUpdate(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		doc interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *mongo.SingleResult
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			got, err := d.FindOneAndUpdate(tt.args.ctx, tt.args.doc)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindOneAndUpdate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FindOneAndUpdate() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_FindOneAndUpdateBson(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx  context.Context
-		coll interface{}
-		bson interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *mongo.SingleResult
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			got, err := d.FindOneAndUpdateBson(tt.args.ctx, tt.args.coll, tt.args.bson)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindOneAndUpdateBson() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FindOneAndUpdateBson() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_defaultDriver_Gt(t *testing.T) {
 	type fields struct {
 		client     *mongo.Client
@@ -1192,86 +1352,6 @@ func Test_defaultDriver_In(t *testing.T) {
 			}
 			if got := d.In(tt.args.key, tt.args.value); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("In() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_InsertMany(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		v   interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *mongo.InsertManyResult
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			got, err := d.InsertMany(tt.args.ctx, tt.args.v)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("InsertMany() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InsertMany() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_InsertOne(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		ctx context.Context
-		v   interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    primitive.ObjectID
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			got, err := d.InsertOne(tt.args.ctx, tt.args.v)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InsertOne() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
