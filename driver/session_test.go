@@ -8,10 +8,9 @@
  *
  */
 
-package pie
+package driver
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -58,13 +57,13 @@ func TestSession_FilterBy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tu, _ := NewDriver()
+			tu, _ := NewClient("")
 			s := NewSession(tu)
 			if err := s.FilterBy(tt.args.object); (err != nil) != tt.wantErr {
 				//t.Errorf("FilterBy() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			fmt.Println(s.filter)
+			//fmt.Println(s.filter)
 		})
 	}
 }
