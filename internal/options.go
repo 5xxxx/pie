@@ -312,7 +312,7 @@ func (d *defaultDriver) SetRetryWrites(b bool) {
 // SetRetryReads specifies whether supported read operations should be retried once on certain errors, such as network
 // errors.
 //
-// Supported operations are Find, FindOne, Aggregate without a $out stage, Distinct, CountDocuments,
+// Supported operations are Find, FindOne, aggregate without a $out stage, Distinct, CountDocuments,
 // EstimatedDocumentCount, Watch (for Client, Database, and Collection), ListCollections, and ListDatabases. Note that
 // operations run through RunCommand are not retried.
 //
