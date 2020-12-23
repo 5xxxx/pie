@@ -8,7 +8,7 @@
  *
  */
 
-package driver
+package internal
 
 import (
 	"testing"

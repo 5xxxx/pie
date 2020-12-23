@@ -8,7 +8,7 @@
  *
  */
 
-package driver
+package internal
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 
 type TransFunc func(context.Context) error
 
-func (d driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+func (d defaultDriver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
 	session, err := d.client.StartSession(opt...)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (d driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...
 	return session.CommitTransaction(ctx)
 }
 
-func (d driver) Transaction(ctx context.Context, f TransFunc) error {
+func (d defaultDriver) Transaction(ctx context.Context, f TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))

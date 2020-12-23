@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-// CollectionName collection name interface to define customerize collection name
+// CollectionName collection name driver to define customerize collection name
 type CollectionName interface {
 	CollectionName() string
 }
