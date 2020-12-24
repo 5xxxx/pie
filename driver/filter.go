@@ -85,6 +85,9 @@ type Condition interface {
 	//todo 简单实现，后续增加支持
 	Regex(key string, value interface{}) Condition
 
-	Filters() bson.D
+	Filters() (bson.D, error)
 	A() bson.A
+	Err() error
+
+	FilterBy(object interface{}) Condition
 }

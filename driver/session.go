@@ -24,6 +24,8 @@ type Session interface {
 
 	FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error)
 
+	FindPagination(ctx context.Context, page, count int64, doc interface{}) error
+
 	FindAndDelete(ctx context.Context, doc interface{}) error
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.

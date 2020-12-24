@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/NSObjects/pie/driver"
-	_interface "github.com/NSObjects/pie/driver"
 
 	"github.com/NSObjects/pie/schemas"
 
@@ -137,9 +136,13 @@ func (a *aggregate) Pipeline(pipeline bson.A) driver.Aggregate {
 	return a
 }
 
-func (a *aggregate) Match(c _interface.Condition) driver.Aggregate {
+func (a *aggregate) Match(c driver.Condition) driver.Aggregate {
+	filters, err := c.Filters()
+	if err != nil {
+		panic(err)
+	}
 	a.pipeline = append(a.pipeline, bson.M{
-		"$match": c.Filters(),
+		"$match": filters,
 	})
 	return a
 }

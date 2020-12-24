@@ -21,6 +21,7 @@ import (
 
 type Client interface {
 	//find
+	FindPagination(ctx context.Context, page, count int64, doc interface{}) error
 	FindOneAndReplace(ctx context.Context, doc interface{}) error
 	FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error)
 	FindAndDelete(ctx context.Context, doc interface{}) error

@@ -470,7 +470,7 @@ func Test_defaultDriver_Aggregate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -503,7 +503,7 @@ func Test_defaultDriver_And(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -536,7 +536,7 @@ func Test_defaultDriver_Asc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -571,7 +571,7 @@ func Test_defaultDriver_BulkWrite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -609,7 +609,7 @@ func Test_defaultDriver_Collection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -643,7 +643,7 @@ func Test_defaultDriver_CollectionNameForSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -682,7 +682,7 @@ func Test_defaultDriver_CollectionNameForStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -720,7 +720,7 @@ func Test_defaultDriver_Connect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -754,7 +754,7 @@ func Test_defaultDriver_Count(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -788,7 +788,7 @@ func Test_defaultDriver_DataBase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -823,7 +823,7 @@ func Test_defaultDriver_DeleteMany(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -863,7 +863,7 @@ func Test_defaultDriver_DeleteOne(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -901,7 +901,7 @@ func Test_defaultDriver_Desc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -934,7 +934,7 @@ func Test_defaultDriver_Disconnect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -970,7 +970,7 @@ func Test_defaultDriver_Distinct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1009,7 +1009,7 @@ func Test_defaultDriver_DropAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1044,7 +1044,7 @@ func Test_defaultDriver_DropOne(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1078,7 +1078,7 @@ func Test_defaultDriver_Eq(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1113,7 +1113,7 @@ func Test_defaultDriver_Exists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1146,7 +1146,7 @@ func Test_defaultDriver_Expr(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1180,7 +1180,7 @@ func Test_defaultDriver_Filter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1213,7 +1213,7 @@ func Test_defaultDriver_FilterBy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1247,7 +1247,7 @@ func Test_defaultDriver_Gt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1281,7 +1281,7 @@ func Test_defaultDriver_Gte(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1314,7 +1314,7 @@ func Test_defaultDriver_ID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1348,7 +1348,7 @@ func Test_defaultDriver_In(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1381,7 +1381,7 @@ func Test_defaultDriver_Limit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1415,7 +1415,7 @@ func Test_defaultDriver_Lt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1449,7 +1449,7 @@ func Test_defaultDriver_Lte(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1483,7 +1483,7 @@ func Test_defaultDriver_Ne(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1512,7 +1512,7 @@ func Test_defaultDriver_NewIndexes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1541,7 +1541,7 @@ func Test_defaultDriver_NewSession(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1575,7 +1575,7 @@ func Test_defaultDriver_Nin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1608,7 +1608,7 @@ func Test_defaultDriver_Nor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1642,7 +1642,7 @@ func Test_defaultDriver_Not(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1675,7 +1675,7 @@ func Test_defaultDriver_Or(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1704,7 +1704,7 @@ func Test_defaultDriver_Ping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1738,7 +1738,7 @@ func Test_defaultDriver_Regex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1772,7 +1772,7 @@ func Test_defaultDriver_RegexFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1807,7 +1807,7 @@ func Test_defaultDriver_ReplaceOne(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1845,7 +1845,7 @@ func Test_defaultDriver_SetDatabase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1878,7 +1878,7 @@ func Test_defaultDriver_Skip(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1912,7 +1912,7 @@ func Test_defaultDriver_SoftDeleteMany(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1946,7 +1946,7 @@ func Test_defaultDriver_SoftDeleteOne(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -1980,7 +1980,7 @@ func Test_defaultDriver_Type(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -2015,7 +2015,7 @@ func Test_defaultDriver_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -2055,7 +2055,7 @@ func Test_defaultDriver_UpdateMany(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -2096,7 +2096,7 @@ func Test_defaultDriver_UpdateManyBson(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := defaultDriver{
+			d := defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -2137,7 +2137,7 @@ func Test_defaultDriver_UpdateOneBson(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := defaultDriver{
+			d := defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,
@@ -2176,7 +2176,7 @@ func Test_defaultDriver_getStructCollAndSetKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultDriver{
+			d := &defaultClient{
 				client:     tt.fields.client,
 				parser:     tt.fields.parser,
 				db:         tt.fields.db,

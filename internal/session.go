@@ -49,6 +49,36 @@ func NewSession(engine driver.Client) driver.Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
+func (s *session) FindPagination(ctx context.Context, page, count int64, rowsSlicePtr interface{}) error {
+	coll, err := s.collectionForSlice(rowsSlicePtr)
+	if err != nil {
+		return err
+	}
+	if page == 0 {
+		return errors.New("page must be greater that 0")
+	}
+
+	if count == 0 {
+		count = 10
+	}
+
+	s.Skip((page - 1) * count).Limit(count)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+
+	cursor, err := coll.Find(ctx, filters, s.findOptions...)
+	if err != nil {
+		return err
+	}
+
+	if err = cursor.All(ctx, rowsSlicePtr); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
@@ -64,35 +94,7 @@ func (s *session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 }
 
 func (s *session) FilterBy(object interface{}) driver.Session {
-	beanValue := reflect.ValueOf(object)
-	if beanValue.Kind() != reflect.Struct {
-		if m, ok := object.(bson.M); ok {
-			for key, value := range m {
-				s.Filter(key, value)
-			}
-			return s
-		}
-
-		if d, ok := object.(bson.D); ok {
-			for _, v := range d {
-				s.Filter(v.Key, v.Value)
-			}
-			return s
-		}
-		panic(errors.New("needs a struct"))
-	}
-
-	docType := reflect.TypeOf(object)
-	for index := 0; index < docType.NumField(); index++ {
-		fieldTag := docType.Field(index).Tag.Get("filter")
-		if fieldTag != "" && fieldTag != "-" {
-			split := strings.Split(fieldTag, ",")
-			if len(split) > 0 {
-				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
-			}
-		}
-	}
-
+	s.filter.FilterBy(object)
 	return s
 }
 
@@ -101,7 +103,12 @@ func (s *session) Distinct(ctx context.Context, doc interface{}, columns string)
 	if err != nil {
 		return nil, err
 	}
-	return coll.Distinct(ctx, columns, s.filter.Filters(), s.distinctOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.Distinct(ctx, columns, filters, s.distinctOpts...)
 }
 
 func (s *session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
@@ -109,7 +116,12 @@ func (s *session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.Updat
 	if err != nil {
 		return nil, err
 	}
-	return coll.ReplaceOne(ctx, s.filter.Filters(), doc, s.replaceOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.ReplaceOne(ctx, filters, doc, s.replaceOpts...)
 }
 
 func (s *session) FindOneAndReplace(ctx context.Context, doc interface{}) error {
@@ -118,7 +130,12 @@ func (s *session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 		return err
 	}
 
-	return coll.FindOneAndReplace(ctx, s.filter.Filters(), doc, s.findOneAndReplaceOpts...).Decode(&doc)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+
+	return coll.FindOneAndReplace(ctx, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
 
 func (s *session) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error) {
@@ -126,7 +143,11 @@ func (s *session) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bs
 	if err != nil {
 		return nil, err
 	}
-	return c.FindOneAndUpdate(ctx, s.filter.Filters(), bson, s.findOneAndUpdateOpts...), nil
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return c.FindOneAndUpdate(ctx, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
 func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
@@ -136,7 +157,12 @@ func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo
 		return nil, err
 	}
 
-	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+
+	return coll.FindOneAndUpdate(ctx, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
 func (s *session) FindAndDelete(ctx context.Context, doc interface{}) error {
@@ -144,7 +170,12 @@ func (s *session) FindAndDelete(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	return coll.FindOneAndDelete(ctx, s.filter.Filters(), s.findOneAndDeleteOpts...).Decode(&doc)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	return coll.FindOneAndDelete(ctx, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
@@ -153,8 +184,11 @@ func (s *session) FindOne(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	result := coll.FindOne(ctx, s.filter.Filters(), s.findOneOptions...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	result := coll.FindOne(ctx, filters, s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -172,7 +206,11 @@ func (s *session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 	if err != nil {
 		return err
 	}
-	cursor, err := coll.Find(ctx, s.filter.Filters(), s.findOptions...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	cursor, err := coll.Find(ctx, filters, s.findOptions...)
 	if err != nil {
 		return err
 	}
@@ -222,7 +260,11 @@ func (s *session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.Delete
 		return nil, err
 	}
 
-	return coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.DeleteOne(ctx, filters, s.deleteOpts...)
 }
 
 func (s *session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
@@ -230,7 +272,12 @@ func (s *session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateOne(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateOne(ctx, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
@@ -241,8 +288,11 @@ func (s *session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.Delet
 	if err != nil {
 		return nil, err
 	}
-
-	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.DeleteMany(ctx, filters, s.deleteOpts...)
 }
 
 func (s *session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
@@ -250,7 +300,12 @@ func (s *session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateMany(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateMany(ctx, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
@@ -290,7 +345,13 @@ func (s *session) Count(i interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return coll.CountDocuments(context.Background(), s.filter.Filters(), s.countOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return 0, err
+	}
+
+	return coll.CountDocuments(context.Background(), filters, s.countOpts...)
 }
 
 func (s *session) UpdateOne(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
@@ -299,7 +360,12 @@ func (s *session) UpdateOne(ctx context.Context, bean interface{}) (*mongo.Updat
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.UpdateOne(ctx, filters, bson.M{"$set": bean}, s.updateOpts...)
 }
 
 func (s *session) UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
@@ -307,7 +373,12 @@ func (s *session) UpdateOneBson(ctx context.Context, coll interface{}, bson inte
 	if err != nil {
 		return nil, err
 	}
-	return c.UpdateOne(ctx, s.filter.Filters(), bson, s.updateOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return c.UpdateOne(ctx, filters, bson, s.updateOpts...)
 }
 
 func (s *session) UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
@@ -315,7 +386,11 @@ func (s *session) UpdateManyBson(ctx context.Context, coll interface{}, bson int
 	if err != nil {
 		return nil, err
 	}
-	return c.UpdateMany(ctx, s.filter.Filters(), bson, s.updateOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return c.UpdateMany(ctx, filters, bson, s.updateOpts...)
 }
 
 func (s *session) toBson(obj interface{}) bson.M {
@@ -386,7 +461,11 @@ func (s *session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.Upda
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateMany(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	return coll.UpdateMany(ctx, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
 
@@ -699,29 +778,29 @@ func (c *session) collectionByName(name string) *mongo.Collection {
 	return c.engine.SetDatabase(db).Collection(name)
 }
 
-func (s *session) makeFilterValue(field string, value interface{}) {
-	if utils.IsZero(value) {
-		return
-	}
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Struct:
-		s.makeStructValue(field, v)
-	case reflect.Array:
-		return
-	}
-	s.Filter(field, value)
-}
-
-func (s *session) makeStructValue(field string, value reflect.Value) {
-	for index := 0; index < value.NumField(); index++ {
-		docType := reflect.TypeOf(value.Interface())
-		tag := docType.Field(index).Tag.Get("bson")
-		if tag != "" {
-			if !utils.IsZero(value.Field(index)) {
-				fieldTags := fmt.Sprintf("%s.%s", field, tag)
-				s.makeFilterValue(fieldTags, value.Field(index).Interface())
-			}
-		}
-	}
-}
+//func (s *session) makeFilterValue(field string, value interface{}) {
+//	if utils.IsZero(value) {
+//		return
+//	}
+//	v := reflect.ValueOf(value)
+//	switch v.Kind() {
+//	case reflect.Struct:
+//		s.makeStructValue(field, v)
+//	case reflect.Array:
+//		return
+//	}
+//	s.Filter(field, value)
+//}
+//
+//func (s *session) makeStructValue(field string, value reflect.Value) {
+//	for index := 0; index < value.NumField(); index++ {
+//		docType := reflect.TypeOf(value.Interface())
+//		tag := docType.Field(index).Tag.Get("bson")
+//		if tag != "" {
+//			if !utils.IsZero(value.Field(index)) {
+//				fieldTags := fmt.Sprintf("%s.%s", field, tag)
+//				s.makeFilterValue(fieldTags, value.Field(index).Interface())
+//			}
+//		}
+//	}
+//}

@@ -1,21 +1,68 @@
 package internal
 
 import (
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/NSObjects/pie/utils"
+
 	"github.com/NSObjects/pie/driver"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type filter struct {
-	d bson.D
+	d   bson.D
+	err error
+}
+
+func (f *filter) FilterBy(object interface{}) driver.Condition {
+	beanValue := reflect.ValueOf(object)
+	if beanValue.Kind() != reflect.Struct {
+		if m, ok := object.(bson.M); ok {
+			for key, value := range m {
+				f.Eq(key, value)
+			}
+			return f
+		}
+
+		if d, ok := object.(bson.D); ok {
+			for _, v := range d {
+				f.Eq(v.Key, v.Value)
+			}
+			return f
+		}
+
+		f.err = errors.New("needs a struct")
+		return f
+	}
+
+	docType := reflect.TypeOf(object)
+	for index := 0; index < docType.NumField(); index++ {
+		fieldTag := docType.Field(index).Tag.Get("filter")
+		if fieldTag != "" && fieldTag != "-" {
+			split := strings.Split(fieldTag, ",")
+			if len(split) > 0 {
+				f.makeFilterValue(split[0], beanValue.Field(index).Interface())
+			}
+		}
+	}
+
+	return f
+}
+
+func (f *filter) Err() error {
+	return f.err
 }
 
 func DefaultCondition() driver.Condition {
 	return &filter{d: bson.D{}}
 }
 
-func (f *filter) Filters() bson.D {
-	return f.d
+func (f *filter) Filters() (bson.D, error) {
+	return f.d, f.err
 }
 
 func (f *filter) RegexFilter(key, pattern string) driver.Condition {
@@ -35,19 +82,21 @@ func (f *filter) ID(id interface{}) driver.Condition {
 	case string:
 		objectId, err := primitive.ObjectIDFromHex(id.(string))
 		if err != nil {
-			panic("id type must be string or primitive.ObjectID")
+			f.err = fmt.Errorf("id can't parse %v %v", id, err)
 		}
 		if objectId == primitive.NilObjectID {
-			panic("id type must be string or primitive.ObjectID")
+			f.err = fmt.Errorf("id type must be string or primitive.ObjectID %v", id)
 		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: objectId})
 	case primitive.ObjectID:
 		if id == primitive.NilObjectID {
-			panic("id type must be string or primitive.ObjectID")
+			f.err = fmt.Errorf("id can't be nil %v", id)
+			return f
+
 		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: id})
 	default:
-		panic("id type must be string or primitive.ObjectID")
+		f.err = fmt.Errorf("id type must be string or primitive.ObjectID %v", id)
 	}
 
 	return f
@@ -169,8 +218,14 @@ func (f *filter) Exists(key string, exists bool, filter ...driver.Condition) dri
 	m := bson.M{
 		"$exists": exists,
 	}
+
 	for _, v := range filter {
-		for _, fv := range v.Filters() {
+		filters, err := v.Filters()
+		if err != nil {
+			f.err = err
+			return f
+		}
+		for _, fv := range filters {
 			m[fv.Key] = fv.Value
 		}
 	}
@@ -218,4 +273,31 @@ func (f *filter) A() bson.A {
 		fs = append(fs, value)
 	}
 	return fs
+}
+
+func (f *filter) makeFilterValue(field string, value interface{}) {
+	if utils.IsZero(value) {
+		return
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Struct:
+		f.makeStructValue(field, v)
+	case reflect.Array:
+		return
+	}
+	f.Eq(field, value)
+}
+
+func (f *filter) makeStructValue(field string, value reflect.Value) {
+	for index := 0; index < value.NumField(); index++ {
+		docType := reflect.TypeOf(value.Interface())
+		tag := docType.Field(index).Tag.Get("bson")
+		if tag != "" {
+			if !utils.IsZero(value.Field(index)) {
+				fieldTags := fmt.Sprintf("%s.%s", field, tag)
+				f.makeFilterValue(fieldTags, value.Field(index).Interface())
+			}
+		}
+	}
 }
