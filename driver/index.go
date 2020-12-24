@@ -8,11 +8,11 @@ import (
 )
 
 type Indexes interface {
-	CreateIndexes(ctx context.Context, doc interface{}) ([]string, error)
+	CreateIndexes(doc interface{}, ctx ...context.Context) ([]string, error)
 
-	DropAll(ctx context.Context, doc interface{}) error
+	DropAll(doc interface{}, ctx ...context.Context) error
 
-	DropOne(ctx context.Context, doc interface{}, name string) error
+	DropOne(doc interface{}, name string, ctx ...context.Context) error
 
 	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
 

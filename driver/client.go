@@ -21,43 +21,43 @@ import (
 
 type Client interface {
 	//find
-	FindPagination(ctx context.Context, page, count int64, doc interface{}) error
-	FindOneAndReplace(ctx context.Context, doc interface{}) error
-	FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error)
-	FindAndDelete(ctx context.Context, doc interface{}) error
-	FindOne(ctx context.Context, doc interface{}) error
-	FindAll(ctx context.Context, docs interface{}) error
+	FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error
+	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
+	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+	FindAndDelete(doc interface{}, ctx ...context.Context) error
+	FindOne(doc interface{}, ctx ...context.Context) error
+	FindAll(docs interface{}, ctx ...context.Context) error
 	RegexFilter(key, pattern string) Session
-	Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error)
-	FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error)
+	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
+	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 
 	//insert
-	InsertOne(ctx context.Context, v interface{}) (primitive.ObjectID, error)
-	InsertMany(ctx context.Context, v interface{}) (*mongo.InsertManyResult, error)
-	BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error)
-	ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error)
+	InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
+	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
+	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	//update
-	Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 	//The following operation updates all of the documents with quantity value less than 50.
-	UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	//delete
-	SoftDeleteOne(ctx context.Context, filter interface{}) error
-	SoftDeleteMany(ctx context.Context, filter interface{}) error
-	DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error)
-	DeleteMany(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error)
+	SoftDeleteOne(filter interface{}, ctx ...context.Context) error
+	SoftDeleteMany(filter interface{}, ctx ...context.Context) error
+	DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
 
 	//db operation
 	DataBase() *mongo.Database
 	Collection(name string) *mongo.Collection
 	Ping() error
-	Connect(ctx context.Context) (err error)
-	Disconnect(ctx context.Context) error
+	Connect(ctx ...context.Context) (err error)
+	Disconnect(ctx ...context.Context) error
 
 	//filter
 	FilterBy(object interface{}) Session
@@ -82,13 +82,13 @@ type Client interface {
 	Or(filter Condition) Session
 	Limit(limit int64) Session
 	Skip(skip int64) Session
-	Count(i interface{}) (int64, error)
+	Count(i interface{}, ctx ...context.Context) (int64, error)
 	Desc(s1 ...string) Session
 
 	// indexes
 	NewIndexes() Indexes
-	DropAll(ctx context.Context, doc interface{}) error
-	DropOne(ctx context.Context, doc interface{}, name string) error
+	DropAll(doc interface{}, ctx ...context.Context) error
+	DropOne(doc interface{}, name string, ctx ...context.Context) error
 	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
 
 	//session

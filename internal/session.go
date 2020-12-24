@@ -49,7 +49,7 @@ func NewSession(engine driver.Client) driver.Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
-func (s *session) FindPagination(ctx context.Context, page, count int64, rowsSlicePtr interface{}) error {
+func (s *session) FindPagination(page, count int64, rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
 		return err
@@ -68,18 +68,23 @@ func (s *session) FindPagination(ctx context.Context, page, count int64, rowsSli
 		return err
 	}
 
-	cursor, err := coll.Find(ctx, filters, s.findOptions...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	cursor, err := coll.Find(c, filters, s.findOptions...)
 	if err != nil {
 		return err
 	}
 
-	if err = cursor.All(ctx, rowsSlicePtr); err != nil {
+	if err = cursor.All(c, rowsSlicePtr); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
+func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
@@ -89,8 +94,12 @@ func (s *session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 	for i := 0; i < values.Len(); i++ {
 		mods = append(mods, mongo.NewInsertOneModel().SetDocument(docs))
 	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
 
-	return coll.BulkWrite(ctx, mods, s.bulkWriteOptions...)
+	return coll.BulkWrite(c, mods, s.bulkWriteOptions...)
 }
 
 func (s *session) FilterBy(object interface{}) driver.Session {
@@ -98,7 +107,7 @@ func (s *session) FilterBy(object interface{}) driver.Session {
 	return s
 }
 
-func (s *session) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
+func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
 	coll, err := s.collectionForSlice(doc)
 	if err != nil {
 		return nil, err
@@ -108,10 +117,15 @@ func (s *session) Distinct(ctx context.Context, doc interface{}, columns string)
 	if err != nil {
 		return nil, err
 	}
-	return coll.Distinct(ctx, columns, filters, s.distinctOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.Distinct(c, columns, filters, s.distinctOpts...)
 }
 
-func (s *session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
+func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -121,10 +135,16 @@ func (s *session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.Updat
 	if err != nil {
 		return nil, err
 	}
-	return coll.ReplaceOne(ctx, filters, doc, s.replaceOpts...)
+
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.ReplaceOne(c, filters, doc, s.replaceOpts...)
 }
 
-func (s *session) FindOneAndReplace(ctx context.Context, doc interface{}) error {
+func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -135,10 +155,15 @@ func (s *session) FindOneAndReplace(ctx context.Context, doc interface{}) error 
 		return err
 	}
 
-	return coll.FindOneAndReplace(ctx, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.FindOneAndReplace(c, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
 
-func (s *session) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error) {
+func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -147,10 +172,15 @@ func (s *session) FindOneAndUpdateBson(ctx context.Context, coll interface{}, bs
 	if err != nil {
 		return nil, err
 	}
-	return c.FindOneAndUpdate(ctx, filters, bson, s.findOneAndUpdateOpts...), nil
+
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
-func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
+func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -161,11 +191,14 @@ func (s *session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo
 	if err != nil {
 		return nil, err
 	}
-
-	return coll.FindOneAndUpdate(ctx, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
-func (s *session) FindAndDelete(ctx context.Context, doc interface{}) error {
+func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -175,11 +208,15 @@ func (s *session) FindAndDelete(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	return coll.FindOneAndDelete(ctx, filters, s.findOneAndDeleteOpts...).Decode(&doc)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
-func (s *session) FindOne(ctx context.Context, doc interface{}) error {
+func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -188,7 +225,11 @@ func (s *session) FindOne(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	result := coll.FindOne(ctx, filters, s.findOneOptions...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	result := coll.FindOne(c, filters, s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -201,7 +242,7 @@ func (s *session) FindOne(ctx context.Context, doc interface{}) error {
 }
 
 // Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
-func (s *session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
+func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
 		return err
@@ -210,12 +251,16 @@ func (s *session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 	if err != nil {
 		return err
 	}
-	cursor, err := coll.Find(ctx, filters, s.findOptions...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	cursor, err := coll.Find(c, filters, s.findOptions...)
 	if err != nil {
 		return err
 	}
 
-	if err = cursor.All(ctx, rowsSlicePtr); err != nil {
+	if err = cursor.All(c, rowsSlicePtr); err != nil {
 		return err
 	}
 
@@ -223,12 +268,16 @@ func (s *session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 }
 
 // InsertOne executes an insert command to insert a single document into the collectionByName.
-func (s *session) InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error) {
+func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return [12]byte{}, err
 	}
-	result, err := coll.InsertOne(ctx, doc, s.insertOneOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	result, err := coll.InsertOne(c, doc, s.insertOneOpts...)
 	if err != nil {
 		return [12]byte{}, err
 	}
@@ -239,7 +288,7 @@ func (s *session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 }
 
 // InsertMany executes an insert command to insert multiple documents into the collectionByName.
-func (s *session) InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error) {
+func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
@@ -250,11 +299,15 @@ func (s *session) InsertMany(ctx context.Context, docs interface{}) (*mongo.Inse
 	for index := 0; index < value.Len(); index++ {
 		many = append(many, value.Index(index).Interface())
 	}
-	return coll.InsertMany(ctx, many, s.insertManyOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.InsertMany(c, many, s.insertManyOpts...)
 }
 
 // DeleteOne executes a delete command to delete at most one document from the collectionByName.
-func (s *session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
+func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -264,10 +317,14 @@ func (s *session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.Delete
 	if err != nil {
 		return nil, err
 	}
-	return coll.DeleteOne(ctx, filters, s.deleteOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.DeleteOne(c, filters, s.deleteOpts...)
 }
 
-func (s *session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
+func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -277,13 +334,17 @@ func (s *session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateOne(ctx, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.UpdateOne(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
 
 // DeleteMany executes a delete command to delete documents from the collectionByName.
-func (s *session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
+func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -292,10 +353,14 @@ func (s *session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.Delet
 	if err != nil {
 		return nil, err
 	}
-	return coll.DeleteMany(ctx, filters, s.deleteOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.DeleteMany(c, filters, s.deleteOpts...)
 }
 
-func (s *session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
+func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -305,7 +370,11 @@ func (s *session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateMany(ctx, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.UpdateMany(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
@@ -326,7 +395,7 @@ func (s *session) Skip(i int64) driver.Session {
 	return s
 }
 
-func (s *session) Count(i interface{}) (int64, error) {
+func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 	kind := reflect.TypeOf(i).Kind()
 	if kind == reflect.Ptr {
 		kind = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(i)).Interface()).Kind()
@@ -351,10 +420,15 @@ func (s *session) Count(i interface{}) (int64, error) {
 		return 0, err
 	}
 
-	return coll.CountDocuments(context.Background(), filters, s.countOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.CountDocuments(c, filters, s.countOpts...)
 }
 
-func (s *session) UpdateOne(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(bean)
 
 	if err != nil {
@@ -365,10 +439,14 @@ func (s *session) UpdateOne(ctx context.Context, bean interface{}) (*mongo.Updat
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, filters, bson.M{"$set": bean}, s.updateOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 }
 
-func (s *session) UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -378,10 +456,14 @@ func (s *session) UpdateOneBson(ctx context.Context, coll interface{}, bson inte
 	if err != nil {
 		return nil, err
 	}
-	return c.UpdateOne(ctx, filters, bson, s.updateOpts...)
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.UpdateOne(cc, filters, bson, s.updateOpts...)
 }
 
-func (s *session) UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error) {
+func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -390,7 +472,11 @@ func (s *session) UpdateManyBson(ctx context.Context, coll interface{}, bson int
 	if err != nil {
 		return nil, err
 	}
-	return c.UpdateMany(ctx, filters, bson, s.updateOpts...)
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.UpdateMany(cc, filters, bson, s.updateOpts...)
 }
 
 func (s *session) toBson(obj interface{}) bson.M {
@@ -456,7 +542,7 @@ func (s *session) makeStruct(field string, value reflect.Value, ret bson.M) {
 	}
 }
 
-func (s *session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
+func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForSlice(bean)
 	if err != nil {
 		return nil, err
@@ -465,7 +551,11 @@ func (s *session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.Upda
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateMany(ctx, filters, bson.M{"$set": bean}, s.updateOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
 

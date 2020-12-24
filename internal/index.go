@@ -33,30 +33,42 @@ func NewIndexes(driver driver.Client) driver.Indexes {
 	return &index{engine: driver}
 }
 
-func (i *index) CreateIndexes(ctx context.Context, doc interface{}) ([]string, error) {
+func (i *index) CreateIndexes(doc interface{}, ctx ...context.Context) ([]string, error) {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	return coll.Indexes().CreateMany(ctx, i.indexes, i.createIndexOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.Indexes().CreateMany(c, i.indexes, i.createIndexOpts...)
 }
 
-func (i *index) DropAll(ctx context.Context, doc interface{}) error {
+func (i *index) DropAll(doc interface{}, ctx ...context.Context) error {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.Indexes().DropAll(ctx, i.dropIndexesOptions...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.Indexes().DropAll(c, i.dropIndexesOptions...)
 	return err
 }
 
-func (i *index) DropOne(ctx context.Context, doc interface{}, name string) error {
+func (i *index) DropOne(doc interface{}, name string, ctx ...context.Context) error {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.Indexes().DropOne(ctx, name, i.dropIndexesOptions...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.Indexes().DropOne(c, name, i.dropIndexesOptions...)
 	return err
 }
 

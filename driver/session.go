@@ -10,59 +10,59 @@ import (
 )
 
 type Session interface {
-	BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error)
+	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
 
 	FilterBy(object interface{}) Session
 
-	Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error)
+	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
 
-	ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error)
+	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	FindOneAndReplace(ctx context.Context, doc interface{}) error
+	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
 
-	FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error)
+	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	FindOneAndUpdateBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.SingleResult, error)
+	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	FindPagination(ctx context.Context, page, count int64, doc interface{}) error
+	FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error
 
-	FindAndDelete(ctx context.Context, doc interface{}) error
+	FindAndDelete(doc interface{}, ctx ...context.Context) error
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
-	FindOne(ctx context.Context, doc interface{}) error
+	FindOne(doc interface{}, ctx ...context.Context) error
 
 	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
-	FindAll(ctx context.Context, rowsSlicePtr interface{}) error
+	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
 
 	// InsertOne executes an insert command to insert a single document into the collectionByName.
-	InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error)
+	InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error)
 
 	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
-	InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error)
+	InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
 
 	// DeleteOne executes a delete command to delete at most one document from the collectionByName.
-	DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error)
-	SoftDeleteOne(ctx context.Context, doc interface{}) error
+	DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	SoftDeleteOne(doc interface{}, ctx ...context.Context) error
 
 	// DeleteMany executes a delete command to delete documents from the collectionByName.
-	DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error)
+	DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
 
-	SoftDeleteMany(ctx context.Context, doc interface{}) error
+	SoftDeleteMany(doc interface{}, ctx ...context.Context) error
 
 	Clone() Session
 	Limit(i int64) Session
 
 	Skip(i int64) Session
 
-	Count(i interface{}) (int64, error)
+	Count(i interface{}, ctx ...context.Context) (int64, error)
 
-	UpdateOne(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateOneBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateManyBson(ctx context.Context, coll interface{}, bson interface{}) (*mongo.UpdateResult, error)
+	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error)
+	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	RegexFilter(key, pattern string) Session
 
