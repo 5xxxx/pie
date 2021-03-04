@@ -47,3 +47,7 @@ import (
 func NewClient(db string, options ...*options.ClientOptions) (driver.Client, error) {
 	return internal.NewClient(db, options...)
 }
+
+func NewCondition() driver.Condition {
+	return internal.DefaultCondition()
+}
