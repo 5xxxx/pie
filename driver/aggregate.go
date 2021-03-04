@@ -9,8 +9,8 @@ import (
 )
 
 type Aggregate interface {
-	One(ctx context.Context, result interface{}) error
-	All(ctx context.Context, result interface{}) error
+	One(result interface{}, ctx ...context.Context) error
+	All(result interface{}, ctx ...context.Context) error
 	// SetAllowDiskUse sets the value for the AllowDiskUse field.
 	SetAllowDiskUse(b bool) Aggregate
 

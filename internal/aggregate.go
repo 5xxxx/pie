@@ -36,7 +36,15 @@ func NewAggregate(engine driver.Client) driver.Aggregate {
 	return &aggregate{engine: engine}
 }
 
-func (a *aggregate) One(ctx context.Context, result interface{}) error {
+func (a *aggregate) One(result interface{}, ctx ...context.Context) error {
+
+	var c context.Context
+	if len(ctx) > 0 {
+		c = ctx[0]
+	} else {
+		c = context.Background()
+	}
+
 	var coll *mongo.Collection
 	var err error
 	if a.doc != nil {
@@ -49,11 +57,11 @@ func (a *aggregate) One(ctx context.Context, result interface{}) error {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(ctx, a.pipeline, a.opts...)
+	aggregate, err := coll.Aggregate(c, a.pipeline, a.opts...)
 	if err != nil {
 		return err
 	}
-	if next := aggregate.Next(ctx); next {
+	if next := aggregate.Next(c); next {
 		if err := aggregate.Decode(result); err != nil {
 			return err
 		}
@@ -63,7 +71,14 @@ func (a *aggregate) One(ctx context.Context, result interface{}) error {
 	return nil
 }
 
-func (a *aggregate) All(ctx context.Context, result interface{}) error {
+func (a *aggregate) All(result interface{}, ctx ...context.Context) error {
+	var c context.Context
+	if len(ctx) > 0 {
+		c = ctx[0]
+	} else {
+		c = context.Background()
+	}
+
 	var coll *mongo.Collection
 	var err error
 	if a.doc != nil {
@@ -75,12 +90,12 @@ func (a *aggregate) All(ctx context.Context, result interface{}) error {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(ctx, a.pipeline, a.opts...)
+	aggregate, err := coll.Aggregate(c, a.pipeline, a.opts...)
 	if err != nil {
 		return err
 	}
 
-	return aggregate.All(ctx, result)
+	return aggregate.All(c, result)
 }
 
 // SetAllowDiskUse sets the value for the AllowDiskUse field.
