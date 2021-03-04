@@ -8,7 +8,7 @@
  *
  */
 
-package pie
+package internal
 
 import (
 	"context"
@@ -18,8 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NSObjects/pie/schemas"
-
+	"github.com/NSObjects/pie/driver"
 	"github.com/NSObjects/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -27,11 +26,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Session struct {
+type session struct {
 	db                    string
-	doc                   interface{}
-	engine                *Driver
-	filter                Condition
+	engine                driver.Client
+	filter                driver.Condition
 	findOneOptions        []*options.FindOneOptions
 	findOptions           []*options.FindOptions
 	insertManyOpts        []*options.InsertManyOptions
@@ -47,11 +45,46 @@ type Session struct {
 	bulkWriteOptions      []*options.BulkWriteOptions
 }
 
-func NewSession(engine *Driver) *Session {
-	return &Session{engine: engine, filter: DefaultCondition()}
+func NewSession(engine driver.Client) driver.Session {
+	return &session{engine: engine, filter: DefaultCondition()}
 }
 
-func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkWriteResult, error) {
+func (s *session) FindPagination(page, count int64, rowsSlicePtr interface{}, ctx ...context.Context) error {
+	coll, err := s.collectionForSlice(rowsSlicePtr)
+	if err != nil {
+		return err
+	}
+	if page == 0 {
+		return errors.New("page must be greater that 0")
+	}
+
+	if count == 0 {
+		count = 10
+	}
+
+	s.Skip((page - 1) * count).Limit(count)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	cursor, err := coll.Find(c, filters, s.findOptions...)
+	if err != nil {
+		return err
+	}
+
+	if err = cursor.All(c, rowsSlicePtr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
@@ -61,117 +94,142 @@ func (s *Session) BulkWrite(ctx context.Context, docs interface{}) (*mongo.BulkW
 	for i := 0; i < values.Len(); i++ {
 		mods = append(mods, mongo.NewInsertOneModel().SetDocument(docs))
 	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
 
-	return coll.BulkWrite(ctx, mods, s.bulkWriteOptions...)
+	return coll.BulkWrite(c, mods, s.bulkWriteOptions...)
 }
 
-func (s *Session) FilterBy(object interface{}) *Session {
-
-	beanValue := reflect.ValueOf(object)
-	if beanValue.Kind() != reflect.Struct {
-		if m, ok := object.(bson.M); ok {
-			for key, value := range m {
-				s.Filter(key, value)
-			}
-			return s
-		}
-
-		if d, ok := object.(bson.D); ok {
-			for _, v := range d {
-				s.Filter(v.Key, v.Value)
-			}
-			return s
-		}
-		panic(errors.New("needs a struct"))
-	}
-
-	docType := reflect.TypeOf(object)
-	for index := 0; index < docType.NumField(); index++ {
-		fieldTag := docType.Field(index).Tag.Get("filter")
-		if fieldTag != "" && fieldTag != "-" {
-			split := strings.Split(fieldTag, ",")
-			if len(split) > 0 {
-				s.makeFilterValue(split[0], beanValue.Field(index).Interface())
-			}
-		}
-	}
-
+func (s *session) FilterBy(object interface{}) driver.Session {
+	s.filter.FilterBy(object)
 	return s
 }
 
-func (s *Session) Distinct(ctx context.Context, doc interface{}, columns string) ([]interface{}, error) {
+func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
 	coll, err := s.collectionForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return coll.Distinct(ctx, columns, s.filter.Filters(), s.distinctOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.Distinct(c, columns, filters, s.distinctOpts...)
 }
 
-func (s *Session) ReplaceOne(ctx context.Context, doc interface{}) (*mongo.UpdateResult, error) {
+func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-	return coll.ReplaceOne(ctx, s.filter.Filters(), doc, s.replaceOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.ReplaceOne(c, filters, doc, s.replaceOpts...)
 }
 
-func (s *Session) FindOneAndReplace(ctx context.Context, doc interface{}) error {
+func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
 
-	return coll.FindOneAndReplace(ctx, s.filter.Filters(), doc, s.findOneAndReplaceOpts...).Decode(&doc)
-}
-
-func (s *Session) FindOneAndUpdate(ctx context.Context, doc interface{}) (*mongo.SingleResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := doc.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), m, s.findOneAndUpdateOpts...), nil
-	} else if d, ok := doc.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-
-		return coll.FindOneAndUpdate(ctx, s.filter.Filters(), d, s.findOneAndUpdateOpts...), nil
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
 	}
 
-	coll, err = s.collectionForStruct(doc)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.FindOneAndReplace(c, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
+}
+
+func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
+	}
+	filters, err := s.filter.Filters()
 	if err != nil {
 		return nil, err
 	}
 
-	return coll.FindOneAndUpdate(ctx, s.filter.Filters(), bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
-func (s *Session) FindAndDelete(ctx context.Context, doc interface{}) error {
+func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+
+	coll, err := s.collectionForStruct(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
+}
+
+func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	return coll.FindOneAndDelete(ctx, s.filter.Filters(), s.findOneAndDeleteOpts...).Decode(&doc)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
-func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
+func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-
-	result := coll.FindOne(ctx, s.filter.Filters(), s.findOneOptions...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	result := coll.FindOne(c, filters, s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -184,17 +242,25 @@ func (s *Session) FindOne(ctx context.Context, doc interface{}) error {
 }
 
 // Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
-func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
+func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
 		return err
 	}
-	cursor, err := coll.Find(ctx, s.filter.Filters(), s.findOptions...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	cursor, err := coll.Find(c, filters, s.findOptions...)
 	if err != nil {
 		return err
 	}
 
-	if err = cursor.All(ctx, rowsSlicePtr); err != nil {
+	if err = cursor.All(c, rowsSlicePtr); err != nil {
 		return err
 	}
 
@@ -202,12 +268,16 @@ func (s *Session) FindAll(ctx context.Context, rowsSlicePtr interface{}) error {
 }
 
 // InsertOne executes an insert command to insert a single document into the collectionByName.
-func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.ObjectID, error) {
+func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return [12]byte{}, err
 	}
-	result, err := coll.InsertOne(ctx, doc, s.insertOneOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	result, err := coll.InsertOne(c, doc, s.insertOneOpts...)
 	if err != nil {
 		return [12]byte{}, err
 	}
@@ -218,7 +288,7 @@ func (s *Session) InsertOne(ctx context.Context, doc interface{}) (primitive.Obj
 }
 
 // InsertMany executes an insert command to insert multiple documents into the collectionByName.
-func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.InsertManyResult, error) {
+func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
@@ -229,66 +299,103 @@ func (s *Session) InsertMany(ctx context.Context, docs interface{}) (*mongo.Inse
 	for index := 0; index < value.Len(); index++ {
 		many = append(many, value.Index(index).Interface())
 	}
-	return coll.InsertMany(ctx, many, s.insertManyOpts...)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.InsertMany(c, many, s.insertManyOpts...)
 }
 
 // DeleteOne executes a delete command to delete at most one document from the collectionByName.
-func (s *Session) DeleteOne(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
+func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	return coll.DeleteOne(ctx, s.filter.Filters(), s.deleteOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.DeleteOne(c, filters, s.deleteOpts...)
 }
 
-func (s *Session) SoftDeleteOne(ctx context.Context, doc interface{}) error {
+func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateOne(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.UpdateOne(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
 
 // DeleteMany executes a delete command to delete documents from the collectionByName.
-func (s *Session) DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error) {
+func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
-
-	return coll.DeleteMany(ctx, s.filter.Filters(), s.deleteOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.DeleteMany(c, filters, s.deleteOpts...)
 }
 
-func (s *Session) SoftDeleteMany(ctx context.Context, doc interface{}) error {
+func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
 	}
-	_, err = coll.UpdateMany(ctx, s.filter.Filters(), bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	_, err = coll.UpdateMany(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
 }
 
-func (s *Session) Clone() *Session {
+func (s *session) Clone() driver.Session {
 	var sess = *s
 	return &sess
 }
 
-func (s *Session) Limit(i int64) *Session {
+func (s *session) Limit(i int64) driver.Session {
 	s.findOptions = append(s.findOptions, options.Find().SetLimit(i))
 	return s
 }
 
-func (s *Session) Skip(i int64) *Session {
+func (s *session) Skip(i int64) driver.Session {
 	s.findOptions = append(s.findOptions, options.Find().SetSkip(i))
 	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSkip(i))
 	return s
 }
 
-func (s *Session) Count(i interface{}) (int64, error) {
+func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 	kind := reflect.TypeOf(i).Kind()
 	if kind == reflect.Ptr {
 		kind = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(i)).Interface()).Kind()
@@ -307,52 +414,72 @@ func (s *Session) Count(i interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return coll.CountDocuments(context.Background(), s.filter.Filters(), s.countOpts...)
-}
 
-func (s *Session) Update(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := bean.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateOne(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d, ok := bean.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateOne(ctx, s.filter.Filters(), d, s.updateOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return 0, err
 	}
 
-	coll, err = s.collectionForStruct(bean)
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return coll.CountDocuments(c, filters, s.countOpts...)
+}
+
+func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+	coll, err := s.collectionForStruct(bean)
 
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateOne(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 }
 
-func (s *Session) toBson(obj interface{}) bson.M {
-	if _, ok := obj.(bson.M); ok {
-		return obj.(bson.M)
+func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
 	}
 
-	if d, ok := obj.(bson.D); ok {
-		ret := bson.M{}
-		for _, v := range d {
-			ret[v.Key] = v.Value
-		}
-		return obj.(bson.M)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
 	}
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.UpdateOne(cc, filters, bson, s.updateOpts...)
+}
+
+func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+	c, err := s.collectionForStruct(coll)
+	if err != nil {
+		return nil, err
+	}
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	cc := context.Background()
+	if len(ctx) > 0 {
+		cc = ctx[0]
+	}
+	return c.UpdateMany(cc, filters, bson, s.updateOpts...)
+}
+
+func (s *session) toBson(obj interface{}) bson.M {
 	beanValue := reflect.ValueOf(obj).Elem()
 	if beanValue.Kind() != reflect.Struct ||
 		//Todo how to fix array?
@@ -371,7 +498,7 @@ func (s *Session) toBson(obj interface{}) bson.M {
 	return ret
 }
 
-func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
+func (s *session) makeValue(field string, value interface{}, ret bson.M) {
 	split := strings.Split(field, ",")
 	if len(split) <= 0 {
 		return
@@ -393,7 +520,7 @@ func (s *Session) makeValue(field string, value interface{}, ret bson.M) {
 	ret[split[0]] = value
 }
 
-func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
+func (s *session) makeStruct(field string, value reflect.Value, ret bson.M) {
 	for index := 0; index < value.NumField(); index++ {
 		docType := reflect.TypeOf(value.Interface())
 		tag := docType.Field(index).Tag.Get("bson")
@@ -415,48 +542,34 @@ func (s *Session) makeStruct(field string, value reflect.Value, ret bson.M) {
 	}
 }
 
-func (s *Session) UpdateMany(ctx context.Context, bean interface{}) (*mongo.UpdateResult, error) {
-	var coll *mongo.Collection
-	var err error
-	if m, ok := bean.(bson.M); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.M must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateMany(ctx, s.filter.Filters(), m, s.updateOpts...)
-	} else if d, ok := bean.(bson.D); ok {
-		if s.doc == nil {
-			return nil, errors.New("update bson.D must call Collection(struct{}) first")
-		}
-		coll, err = s.collectionForStruct(s.doc)
-		if err != nil {
-			return nil, err
-		}
-		return coll.UpdateMany(ctx, s.filter.Filters(), d, s.updateOpts...)
-	}
-
-	coll, err = s.collectionForSlice(bean)
+func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+	coll, err := s.collectionForSlice(bean)
 	if err != nil {
 		return nil, err
 	}
-	return coll.UpdateMany(ctx, s.filter.Filters(), bson.M{"$set": bean}, s.updateOpts...)
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return nil, err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
 
-func (s *Session) RegexFilter(key, pattern string) *Session {
+func (s *session) RegexFilter(key, pattern string) driver.Session {
 	s.filter.RegexFilter(key, pattern)
 	return s
 }
 
-func (s *Session) ID(id interface{}) *Session {
+func (s *session) ID(id interface{}) driver.Session {
 	s.filter.ID(id)
 	return s
 }
 
-func (s *Session) Asc(colNames ...string) *Session {
+func (s *session) Asc(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -470,7 +583,7 @@ func (s *Session) Asc(colNames ...string) *Session {
 	return s
 }
 
-func (s *Session) Desc(colNames ...string) *Session {
+func (s *session) Desc(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -485,7 +598,7 @@ func (s *Session) Desc(colNames ...string) *Session {
 	return s
 }
 
-func (s *Session) Sort(colNames ...string) *Session {
+func (s *session) Sort(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -505,7 +618,7 @@ func (s *Session) Sort(colNames ...string) *Session {
 	return s
 }
 
-func (s *Session) Filter(key string, value interface{}) *Session {
+func (s *session) Filter(key string, value interface{}) driver.Session {
 	return s.Eq(key, value)
 }
 
@@ -515,19 +628,19 @@ func (s *Session) Filter(key string, value interface{}) *Session {
 //{"item.name": "ab" }
 // Equals an Array Value
 //{ tags: [ "A", "B" ] }
-func (s *Session) Eq(key string, value interface{}) *Session {
+func (s *session) Eq(key string, value interface{}) driver.Session {
 	s.filter.Eq(key, value)
 	return s
 }
 
 //{field: {$gt: value} } >
-func (s *Session) Gt(key string, gt interface{}) *Session {
+func (s *session) Gt(key string, gt interface{}) driver.Session {
 	s.filter.Gt(key, gt)
 	return s
 }
 
 //{ qty: { $gte: 20 } } >=
-func (s *Session) Gte(key string, gte interface{}) *Session {
+func (s *session) Gte(key string, gte interface{}) driver.Session {
 	s.filter.Gte(key, gte)
 	return s
 }
@@ -535,31 +648,31 @@ func (s *Session) Gte(key string, gte interface{}) *Session {
 //{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
-func (s *Session) In(key string, in interface{}) *Session {
+func (s *session) In(key string, in interface{}) driver.Session {
 	s.filter.In(key, in)
 	return s
 }
 
 //{field: {$lt: value} } <
-func (s *Session) Lt(key string, lt interface{}) *Session {
+func (s *session) Lt(key string, lt interface{}) driver.Session {
 	s.filter.Lt(key, lt)
 	return s
 }
 
 //{ field: { $lte: value} } <=
-func (s *Session) Lte(key string, lte interface{}) *Session {
+func (s *session) Lte(key string, lte interface{}) driver.Session {
 	s.filter.Lte(key, lte)
 	return s
 }
 
 //{field: {$ne: value} } !=
-func (s *Session) Ne(key string, ne interface{}) *Session {
+func (s *session) Ne(key string, ne interface{}) driver.Session {
 	s.filter.Ne(key, ne)
 	return s
 }
 
 //{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
-func (s *Session) Nin(key string, nin interface{}) *Session {
+func (s *session) Nin(key string, nin interface{}) driver.Session {
 	s.filter.Nin(key, nin)
 	return s
 }
@@ -569,7 +682,7 @@ func (s *Session) Nin(key string, nin interface{}) *Session {
 //        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
 //        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 // ]
-func (s *Session) And(c Condition) *Session {
+func (s *session) And(c driver.Condition) driver.Session {
 	s.filter.And(c)
 	return s
 
@@ -578,7 +691,7 @@ func (s *Session) And(c Condition) *Session {
 //{ field: { $not: { <operator-expression> } } }
 //not and Regular Expressions
 //{ item: { $not: /^p.*/ } }
-func (s *Session) Not(key string, not interface{}) *Session {
+func (s *session) Not(key string, not interface{}) driver.Session {
 	s.filter.Not(key, not)
 	return s
 }
@@ -586,24 +699,24 @@ func (s *Session) Not(key string, not interface{}) *Session {
 // { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 // { sale: true }, { sale: { $exists: false } } ] }
 // price != 1.99 || sale != true || sale exists || sale exists
-func (s *Session) Nor(c Condition) *Session {
+func (s *session) Nor(c driver.Condition) driver.Session {
 	s.filter.Nor(c)
 	return s
 }
 
 // { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-func (s *Session) Or(c Condition) *Session {
+func (s *session) Or(c driver.Condition) driver.Session {
 	s.filter.Or(c)
 	return s
 }
 
-func (s *Session) Exists(key string, exists bool, filter ...Condition) *Session {
+func (s *session) Exists(key string, exists bool, filter ...driver.Condition) driver.Session {
 	s.filter.Exists(key, exists, filter...)
 	return s
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (s *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
+func (s *session) SetArrayFilters(filters options.ArrayFilters) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetArrayFilters(filters))
 	s.updateOpts = append(s.updateOpts, options.Update().SetArrayFilters(filters))
@@ -611,13 +724,13 @@ func (s *Session) SetArrayFilters(filters options.ArrayFilters) *Session {
 }
 
 // SetOrdered sets the value for the Ordered field.
-func (s *Session) SetOrdered(ordered bool) *Session {
+func (s *session) SetOrdered(ordered bool) driver.Session {
 	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetOrdered(ordered))
 	return s
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (s *Session) SetBypassDocumentValidation(b bool) *Session {
+func (s *session) SetBypassDocumentValidation(b bool) driver.Session {
 	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetBypassDocumentValidation(b))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
@@ -628,7 +741,7 @@ func (s *Session) SetBypassDocumentValidation(b bool) *Session {
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
-func (s *Session) SetReturnDocument(rd options.ReturnDocument) *Session {
+func (s *session) SetReturnDocument(rd options.ReturnDocument) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetReturnDocument(rd))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -637,7 +750,7 @@ func (s *Session) SetReturnDocument(rd options.ReturnDocument) *Session {
 }
 
 // SetUpsert sets the value for the Upsert field.
-func (s *Session) SetUpsert(b bool) *Session {
+func (s *session) SetUpsert(b bool) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetUpsert(b))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -647,7 +760,7 @@ func (s *Session) SetUpsert(b bool) *Session {
 }
 
 // SetCollation sets the value for the Collation field.
-func (s *Session) SetCollation(collation *options.Collation) *Session {
+func (s *session) SetCollation(collation *options.Collation) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetCollation(collation))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -658,7 +771,7 @@ func (s *Session) SetCollation(collation *options.Collation) *Session {
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (s *Session) SetMaxTime(d time.Duration) *Session {
+func (s *session) SetMaxTime(d time.Duration) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetMaxTime(d))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -668,7 +781,7 @@ func (s *Session) SetMaxTime(d time.Duration) *Session {
 }
 
 // SetProjection sets the value for the Projection field.
-func (s *Session) SetProjection(projection interface{}) *Session {
+func (s *session) SetProjection(projection interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -678,7 +791,7 @@ func (s *Session) SetProjection(projection interface{}) *Session {
 }
 
 // SetSort sets the value for the Sort field.
-func (s *Session) SetSort(sort interface{}) *Session {
+func (s *session) SetSort(sort interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -688,7 +801,7 @@ func (s *Session) SetSort(sort interface{}) *Session {
 }
 
 // SetHint sets the value for the Hint field.
-func (s *Session) SetHint(hint interface{}) *Session {
+func (s *session) SetHint(hint interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -703,7 +816,7 @@ func (s *Session) SetHint(hint interface{}) *Session {
 // { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
 // db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 // return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
-func (s *Session) Type(key string, t interface{}) *Session {
+func (s *session) Type(key string, t interface{}) driver.Session {
 	s.filter.Type(key, t)
 	return s
 }
@@ -712,94 +825,72 @@ func (s *Session) Type(key string, t interface{}) *Session {
 //{ $expr: { <expression> } }
 //$expr can build query expressions that compare fields from the same document in a $match stage
 //todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
-func (s *Session) Expr(c Condition) *Session {
+func (s *session) Expr(c driver.Condition) driver.Session {
 	s.filter.Expr(c)
 	return s
 }
 
 //todo 简单实现，后续增加支持
-func (s *Session) Regex(key string, value interface{}) *Session {
+func (s *session) Regex(key string, value interface{}) driver.Session {
 	s.filter.Regex(key, value)
 	return s
 }
 
-//type collection struct {
-//	db     string
-//	doc    interface{}
-//	engine *Driver
-//}
-
-func (c *Session) SetDatabase(db string) *Session {
+func (c *session) SetDatabase(db string) driver.Session {
 	c.db = db
 	return c
 }
 
-func (c *Session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
-	} else {
-		coll, err = c.engine.CollectionNameForStruct(doc)
+func (c *session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	coll, err := c.engine.CollectionNameForStruct(doc)
+	if err != nil {
+		return nil, err
 	}
+
+	return c.collectionByName(coll.Name), nil
+}
+
+func (c *session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	coll, err := c.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
 	return c.collectionByName(coll.Name), nil
 }
 
-func (c *Session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
-	} else {
-		coll, err = c.engine.CollectionNameForSlice(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return c.collectionByName(coll.Name), nil
-}
-
-func (c *Session) collectionByName(name string) *mongo.Collection {
+func (c *session) collectionByName(name string) *mongo.Collection {
 	var db string
 	if c.db != "" {
 		db = c.db
 	} else {
-		db = c.engine.db
+		db = c.engine.DataBase().Name()
 	}
-	return c.engine.client.Database(db).Collection(name)
+	return c.engine.SetDatabase(db).Collection(name)
 }
 
-func (c *Session) Collection(doc interface{}) *Session {
-	c.doc = doc
-	return c
-}
-
-func (s *Session) makeFilterValue(field string, value interface{}) {
-	if utils.IsZero(value) {
-		return
-	}
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Struct:
-		s.makeStructValue(field, v)
-	case reflect.Array:
-		return
-	}
-	s.Filter(field, value)
-}
-
-func (s *Session) makeStructValue(field string, value reflect.Value) {
-	for index := 0; index < value.NumField(); index++ {
-		docType := reflect.TypeOf(value.Interface())
-		tag := docType.Field(index).Tag.Get("bson")
-		if tag != "" {
-			if !utils.IsZero(value.Field(index)) {
-				fieldTags := fmt.Sprintf("%s.%s", field, tag)
-				s.makeFilterValue(fieldTags, value.Field(index).Interface())
-			}
-		}
-	}
-}
+//func (s *session) makeFilterValue(field string, value interface{}) {
+//	if utils.IsZero(value) {
+//		return
+//	}
+//	v := reflect.ValueOf(value)
+//	switch v.Kind() {
+//	case reflect.Struct:
+//		s.makeStructValue(field, v)
+//	case reflect.Array:
+//		return
+//	}
+//	s.Filter(field, value)
+//}
+//
+//func (s *session) makeStructValue(field string, value reflect.Value) {
+//	for index := 0; index < value.NumField(); index++ {
+//		docType := reflect.TypeOf(value.Interface())
+//		tag := docType.Field(index).Tag.Get("bson")
+//		if tag != "" {
+//			if !utils.IsZero(value.Field(index)) {
+//				fieldTags := fmt.Sprintf("%s.%s", field, tag)
+//				s.makeFilterValue(fieldTags, value.Field(index).Interface())
+//			}
+//		}
+//	}
+//}

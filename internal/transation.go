@@ -8,7 +8,7 @@
  *
  */
 
-package pie
+package internal
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 
 type TransFunc func(context.Context) error
 
-func (d Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+func (d defaultClient) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
 	session, err := d.client.StartSession(opt...)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (d Driver) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...
 	return session.CommitTransaction(ctx)
 }
 
-func (d Driver) Transaction(ctx context.Context, f TransFunc) error {
+func (d defaultClient) Transaction(ctx context.Context, f TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))

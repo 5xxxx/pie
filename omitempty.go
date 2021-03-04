@@ -157,7 +157,7 @@ func compareStructTypes(source, result reflect.Type) {
 	}
 }
 
-//func insertOmitemptyTag(u interface{}) interface{} {
+//func insertOmitemptyTag(u driver{}) driver{} {
 //	strPtrVal := reflect.ValueOf(u)
 //	t := strPtrVal.Type().Elem()
 //	num := t.NumField()
