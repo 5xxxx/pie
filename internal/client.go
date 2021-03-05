@@ -344,10 +344,10 @@ func (d *defaultClient) CollectionNameForStruct(doc interface{}) (*schemas.Colle
 	return t, nil
 }
 
-func (d *defaultClient) SetDatabase(string string) driver.Client {
-	d.db = string
-	return d
-}
+//func (d *defaultClient) SetDatabase(string string) driver.Client {
+//	d.db = string
+//	return d
+//}
 
 func (d *defaultClient) CollectionNameForSlice(doc interface{}) (*schemas.Collection, error) {
 	sliceValue := reflect.Indirect(reflect.ValueOf(doc))

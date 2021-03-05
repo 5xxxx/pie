@@ -61,7 +61,7 @@ func Test_aggregate_All(t *testing.T) {
 				pipeline: tt.fields.pipeline,
 				opts:     tt.fields.opts,
 			}
-			if err := a.All(tt.args.ctx, tt.args.result); (err != nil) != tt.wantErr {
+			if err := a.All(tt.args.result); (err != nil) != tt.wantErr {
 				t.Errorf("All() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -167,7 +167,7 @@ func Test_aggregate_One(t *testing.T) {
 				pipeline: tt.fields.pipeline,
 				opts:     tt.fields.opts,
 			}
-			if err := a.One(tt.args.ctx, tt.args.result); (err != nil) != tt.wantErr {
+			if err := a.One(tt.args.result); (err != nil) != tt.wantErr {
 				t.Errorf("One() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

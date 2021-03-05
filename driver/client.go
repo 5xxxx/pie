@@ -94,7 +94,7 @@ type Client interface {
 	//session
 	NewSession() Session
 	Aggregate() Aggregate
-	SetDatabase(string string) Client
+	//SetDatabase(string string) Client
 	CollectionNameForStruct(doc interface{}) (*schemas.Collection, error)
 	CollectionNameForSlice(doc interface{}) (*schemas.Collection, error)
 }
