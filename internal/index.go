@@ -148,13 +148,7 @@ func (c *index) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 }
 
 func (c *index) collectionByName(name string) *mongo.Collection {
-	var db string
-	if c.db != "" {
-		db = c.db
-	} else {
-		db = c.engine.DataBase().Name()
-	}
-	return c.engine.SetDatabase(db).Collection(name)
+	return c.engine.Collection(name, c.db)
 }
 
 func (c *index) Collection(doc interface{}) driver.Indexes {

@@ -196,13 +196,7 @@ func (a *aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, erro
 }
 
 func (a *aggregate) collectionByName(name string) *mongo.Collection {
-	var db string
-	if a.db != "" {
-		db = a.db
-	} else {
-		db = a.engine.DataBase().Name()
-	}
-	return a.engine.SetDatabase(db).Collection(name)
+	return a.engine.Collection(name, a.db)
 }
 
 func (a *aggregate) Collection(doc interface{}) driver.Aggregate {

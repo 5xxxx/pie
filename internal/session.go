@@ -859,13 +859,7 @@ func (c *session) collectionForSlice(doc interface{}) (*mongo.Collection, error)
 }
 
 func (c *session) collectionByName(name string) *mongo.Collection {
-	var db string
-	if c.db != "" {
-		db = c.db
-	} else {
-		db = c.engine.DataBase().Name()
-	}
-	return c.engine.SetDatabase(db).Collection(name)
+	return c.engine.Collection(name, c.db)
 }
 
 //func (s *session) makeFilterValue(field string, value interface{}) {

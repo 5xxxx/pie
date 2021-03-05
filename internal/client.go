@@ -171,8 +171,12 @@ func (d *defaultClient) DataBase() *mongo.Database {
 	return d.client.Database(d.db)
 }
 
-func (d *defaultClient) Collection(name string) *mongo.Collection {
-	return d.client.Database(d.db).Collection(name)
+func (d *defaultClient) Collection(name string, db ...string) *mongo.Collection {
+	var database = d.db
+	if len(db) > 0 && len(db[0]) > 0 {
+		database = db[0]
+	}
+	return d.client.Database(database).Collection(name)
 }
 
 func (d *defaultClient) Ping() error {

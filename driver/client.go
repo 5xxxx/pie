@@ -54,7 +54,7 @@ type Client interface {
 
 	//db operation
 	DataBase() *mongo.Database
-	Collection(name string) *mongo.Collection
+	Collection(name string, db ...string) *mongo.Collection
 	Ping() error
 	Connect(ctx ...context.Context) (err error)
 	Disconnect(ctx ...context.Context) error
