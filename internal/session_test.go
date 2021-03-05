@@ -261,7 +261,7 @@ func Test_session_BulkWrite(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.BulkWrite(tt.args.ctx, tt.args.docs)
+			got, err := s.BulkWrite(tt.args.docs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BulkWrite() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -441,7 +441,7 @@ func Test_session_DeleteMany(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.DeleteMany(tt.args.ctx, tt.args.doc)
+			got, err := s.DeleteMany(tt.args.doc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -505,7 +505,7 @@ func Test_session_DeleteOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.DeleteOne(tt.args.ctx, tt.args.doc)
+			got, err := s.DeleteOne(tt.args.doc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -627,7 +627,7 @@ func Test_session_Distinct(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.Distinct(tt.args.ctx, tt.args.doc, tt.args.columns)
+			got, err := s.Distinct(tt.args.doc, tt.args.columns)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Distinct() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -979,7 +979,7 @@ func Test_session_FindAll(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.FindAll(tt.args.ctx, tt.args.rowsSlicePtr); (err != nil) != tt.wantErr {
+			if err := s.FindAll(tt.args.rowsSlicePtr); (err != nil) != tt.wantErr {
 				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1037,7 +1037,7 @@ func Test_session_FindAndDelete(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.FindAndDelete(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := s.FindAndDelete(tt.args.doc); (err != nil) != tt.wantErr {
 				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1095,7 +1095,7 @@ func Test_session_FindOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.FindOne(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := s.FindOne(tt.args.doc); (err != nil) != tt.wantErr {
 				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1153,7 +1153,7 @@ func Test_session_FindOneAndReplace(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.FindOneAndReplace(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := s.FindOneAndReplace(tt.args.doc); (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndReplace() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1212,7 +1212,7 @@ func Test_session_FindOneAndUpdate(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.FindOneAndUpdate(tt.args.ctx, tt.args.doc)
+			got, err := s.FindOneAndUpdate(tt.args.doc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1277,7 +1277,7 @@ func Test_session_FindOneAndUpdateBson(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.FindOneAndUpdateBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			got, err := s.FindOneAndUpdateBson(tt.args.coll, tt.args.bson)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndUpdateBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1572,7 +1572,7 @@ func Test_session_InsertMany(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.InsertMany(tt.args.ctx, tt.args.docs)
+			got, err := s.InsertMany(tt.args.docs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InsertMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1636,7 +1636,7 @@ func Test_session_InsertOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.InsertOne(tt.args.ctx, tt.args.doc)
+			got, err := s.InsertOne(tt.args.doc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -2277,7 +2277,7 @@ func Test_session_ReplaceOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.ReplaceOne(tt.args.ctx, tt.args.doc)
+			got, err := s.ReplaceOne(tt.args.doc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReplaceOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -3024,7 +3024,7 @@ func Test_session_SoftDeleteMany(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.SoftDeleteMany(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := s.SoftDeleteMany(tt.args.doc); (err != nil) != tt.wantErr {
 				t.Errorf("SoftDeleteMany() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -3082,7 +3082,7 @@ func Test_session_SoftDeleteOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			if err := s.SoftDeleteOne(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := s.SoftDeleteOne(tt.args.doc); (err != nil) != tt.wantErr {
 				t.Errorf("SoftDeleteOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -3256,7 +3256,7 @@ func Test_session_UpdateMany(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.UpdateMany(tt.args.ctx, tt.args.bean)
+			got, err := s.UpdateMany(tt.args.bean)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -3321,7 +3321,7 @@ func Test_session_UpdateManyBson(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.UpdateManyBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			got, err := s.UpdateManyBson(tt.args.coll, tt.args.bson)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateManyBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -3385,7 +3385,7 @@ func Test_session_UpdateOne(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.UpdateOne(tt.args.ctx, tt.args.bean)
+			got, err := s.UpdateOne(tt.args.bean)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -3450,7 +3450,7 @@ func Test_session_UpdateOneBson(t *testing.T) {
 				replaceOpts:           tt.fields.replaceOpts,
 				bulkWriteOptions:      tt.fields.bulkWriteOptions,
 			}
-			got, err := s.UpdateOneBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			got, err := s.UpdateOneBson(tt.args.coll, tt.args.bson)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateOneBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
