@@ -83,9 +83,11 @@ func (f *filter) ID(id interface{}) driver.Condition {
 		objectId, err := primitive.ObjectIDFromHex(id.(string))
 		if err != nil {
 			f.err = fmt.Errorf("id can't parse %v %v", id, err)
+			return f
 		}
 		if objectId == primitive.NilObjectID {
 			f.err = fmt.Errorf("id type must be string or primitive.ObjectID %v", id)
+			return f
 		}
 		f.d = append(f.d, bson.E{Key: "_id", Value: objectId})
 	case primitive.ObjectID:
