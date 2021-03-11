@@ -31,6 +31,7 @@ type Session interface {
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 	FindOne(doc interface{}, ctx ...context.Context) error
 
+	FindOneBson(bean interface{}, doc interface{}, ctx ...context.Context) error
 	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
 

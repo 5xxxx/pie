@@ -112,6 +112,11 @@ func (d *defaultClient) FindOne(doc interface{}, ctx ...context.Context) error {
 	return session.FindOne(doc, ctx...)
 }
 
+func (d defaultClient) FindOneBson(coll interface{}, doc interface{}, ctx ...context.Context) error {
+	session := d.NewSession()
+	return session.FindOneBson(coll, doc, ctx...)
+}
+
 func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error {
 	session := d.NewSession()
 	return session.FindAll(docs, ctx...)

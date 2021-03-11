@@ -241,6 +241,32 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	return nil
 }
 
+func (s *session) FindOneBson(bean interface{}, doc interface{}, ctx ...context.Context) error {
+	coll, err := s.collectionForStruct(bean)
+
+	if err != nil {
+		return err
+	}
+
+	filters, err := s.filter.Filters()
+	if err != nil {
+		return err
+	}
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+	result := coll.FindOne(c, filters, s.findOneOptions...)
+	if err = result.Err(); err != nil {
+		return err
+	}
+
+	if err = result.Decode(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)

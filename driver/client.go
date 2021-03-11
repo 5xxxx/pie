@@ -26,6 +26,7 @@ type Client interface {
 	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 	FindAndDelete(doc interface{}, ctx ...context.Context) error
 	FindOne(doc interface{}, ctx ...context.Context) error
+	FindOneBson(coll interface{}, doc interface{}, ctx ...context.Context) error
 	FindAll(docs interface{}, ctx ...context.Context) error
 	RegexFilter(key, pattern string) Session
 	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
