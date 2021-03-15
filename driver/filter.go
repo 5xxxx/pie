@@ -88,6 +88,6 @@ type Condition interface {
 	Filters() (bson.D, error)
 	A() bson.A
 	Err() error
-
+	FilterBson(d bson.D) Condition
 	FilterBy(object interface{}) Condition
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,7 +33,6 @@ type Session interface {
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 	FindOne(doc interface{}, ctx ...context.Context) error
 
-	FindOneBson(bean interface{}, doc interface{}, ctx ...context.Context) error
 	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
 
@@ -76,6 +77,7 @@ type Session interface {
 	Sort(colNames ...string) Session
 
 	Filter(key string, value interface{}) Session
+	FilterBson(d bson.D) Session
 	//Equals a Specified Value
 	//{ qty: 20 }
 	//Field in Embedded Document Equals a Value

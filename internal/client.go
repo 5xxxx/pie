@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/NSObjects/pie/driver"
 	"github.com/NSObjects/pie/names"
 	"github.com/NSObjects/pie/schemas"
@@ -112,14 +114,14 @@ func (d *defaultClient) FindOne(doc interface{}, ctx ...context.Context) error {
 	return session.FindOne(doc, ctx...)
 }
 
-func (d defaultClient) FindOneBson(coll interface{}, doc interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindOneBson(coll, doc, ctx...)
-}
-
 func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error {
 	session := d.NewSession()
 	return session.FindAll(docs, ctx...)
+}
+
+func (d *defaultClient) FilterBson(x bson.D) driver.Session {
+	session := d.NewSession()
+	return session.FilterBson(x)
 }
 
 func (d *defaultClient) RegexFilter(key, pattern string) driver.Session {

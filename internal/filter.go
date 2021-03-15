@@ -18,6 +18,11 @@ type filter struct {
 	err error
 }
 
+func (f *filter) FilterBson(d bson.D) driver.Condition {
+	f.d = d
+	return f
+}
+
 func (f *filter) FilterBy(object interface{}) driver.Condition {
 	beanValue := reflect.ValueOf(object)
 	if beanValue.Kind() != reflect.Struct {
