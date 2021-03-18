@@ -97,7 +97,7 @@ func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.Bu
 	values := reflect.ValueOf(docs)
 	var mods []mongo.WriteModel
 	for i := 0; i < values.Len(); i++ {
-		mods = append(mods, mongo.NewInsertOneModel().SetDocument(docs))
+		mods = append(mods, mongo.NewInsertOneModel().SetDocument(values.Index(i).Interface()))
 	}
 	c := context.Background()
 	if len(ctx) > 0 {
