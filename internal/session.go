@@ -441,6 +441,10 @@ func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.Up
 		return nil, err
 	}
 
+	if utils.IsStructZero(reflect.ValueOf(bean).Elem()) {
+		return nil, nil
+	}
+
 	filters, err := s.filter.Filters()
 	if err != nil {
 		return nil, err
@@ -553,6 +557,7 @@ func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.U
 	if err != nil {
 		return nil, err
 	}
+
 	filters, err := s.filter.Filters()
 	if err != nil {
 		return nil, err
