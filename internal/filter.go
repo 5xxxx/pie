@@ -193,7 +193,6 @@ func (f *filter) Nin(key string, nin interface{}) driver.Condition {
 func (f *filter) And(filter driver.Condition) driver.Condition {
 	f.d = append(f.d, bson.E{Key: "$and", Value: filter.A()})
 	return f
-
 }
 
 //{ field: { $not: { <operator-expression> } } }
@@ -264,11 +263,8 @@ func (f *filter) Expr(filter driver.Condition) driver.Condition {
 }
 
 //todo 简单实现，后续增加支持
-func (f *filter) Regex(key string, value interface{}) driver.Condition {
-	v := bson.M{
-		"$regex":   value,
-		"$options": "i",
-	}
+func (f *filter) Regex(key string, value string) driver.Condition {
+	v := primitive.Regex{Pattern: value, Options: ""}
 	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }

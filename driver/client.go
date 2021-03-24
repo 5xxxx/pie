@@ -72,7 +72,7 @@ type Client interface {
 	Exists(key string, exists bool, filter ...Condition) Session
 	Type(key string, t interface{}) Session
 	Expr(filter Condition) Session
-	Regex(key string, value interface{}) Session
+	Regex(key string, value string) Session
 	ID(id interface{}) Session
 	Gt(key string, value interface{}) Session
 	Gte(key string, value interface{}) Session

@@ -842,7 +842,7 @@ func (s *session) Expr(c driver.Condition) driver.Session {
 }
 
 //todo 简单实现，后续增加支持
-func (s *session) Regex(key string, value interface{}) driver.Session {
+func (s *session) Regex(key string, value string) driver.Session {
 	s.filter.Regex(key, value)
 	return s
 }

@@ -175,7 +175,7 @@ type Session interface {
 	Expr(c Condition) Session
 
 	//todo 简单实现，后续增加支持
-	Regex(key string, value interface{}) Session
+	Regex(key string, value string) Session
 
 	SetDatabase(db string) Session
 }

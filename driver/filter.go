@@ -83,7 +83,7 @@ type Condition interface {
 	Expr(filter Condition) Condition
 
 	//todo 简单实现，后续增加支持
-	Regex(key string, value interface{}) Condition
+	Regex(key string, value string) Condition
 
 	Filters() (bson.D, error)
 	A() bson.A

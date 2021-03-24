@@ -169,7 +169,7 @@ func (d *defaultClient) Expr(filter driver.Condition) driver.Session {
 	return session.Expr(filter)
 }
 
-func (d *defaultClient) Regex(key string, value interface{}) driver.Session {
+func (d *defaultClient) Regex(key string, value string) driver.Session {
 	session := d.NewSession()
 	return session.Regex(key, value)
 }
