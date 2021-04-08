@@ -76,9 +76,87 @@ func (i *index) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.
 	m := mongo.IndexModel{
 		Keys: keys,
 	}
-	if len(opt) > 0 {
-		m.Options = opt[0]
+	op := new(options.IndexOptions)
+	for _, v := range opt {
+		if v.Background != nil {
+			op.Background = v.Background
+		}
+		if v.ExpireAfterSeconds != nil {
+			op.ExpireAfterSeconds = v.ExpireAfterSeconds
+		}
+
+		if v.Name != nil {
+			op.Name = v.Name
+		}
+
+		if v.Sparse != nil {
+			op.Sparse = v.Sparse
+		}
+		if v.StorageEngine != nil {
+			op.StorageEngine = v.StorageEngine
+		}
+		if v.Unique != nil {
+			op.Unique = v.Unique
+		}
+
+		if v.Version != nil {
+			op.Version = v.Version
+		}
+
+		if v.DefaultLanguage != nil {
+			op.DefaultLanguage = v.DefaultLanguage
+		}
+
+		if v.LanguageOverride != nil {
+			op.LanguageOverride = v.LanguageOverride
+		}
+
+		if v.TextVersion != nil {
+			op.TextVersion = v.TextVersion
+		}
+
+		if v.Weights != nil {
+			op.Weights = v.Weights
+		}
+
+		if v.SphereVersion != nil {
+			op.SphereVersion = v.SphereVersion
+		}
+
+		if v.Bits != nil {
+			op.Bits = v.Bits
+		}
+
+		if v.Max != nil {
+			op.Max = v.Max
+		}
+
+		if v.Min != nil {
+			op.Min = v.Min
+		}
+
+		if v.BucketSize != nil {
+			op.BucketSize = v.BucketSize
+		}
+
+		if v.PartialFilterExpression != nil {
+			op.PartialFilterExpression = v.PartialFilterExpression
+		}
+
+		if v.Collation != nil {
+			op.Collation = v.Collation
+		}
+
+		if v.WildcardProjection != nil {
+			op.WildcardProjection = v.WildcardProjection
+		}
+
+		if v.Hidden != nil {
+			op.Hidden = v.Hidden
+		}
+
 	}
+	m.Options = op
 	i.indexes = append(i.indexes, m)
 	return i
 }
