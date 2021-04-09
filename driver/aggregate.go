@@ -40,6 +40,8 @@ type Aggregate interface {
 	Match(c Condition) Aggregate
 
 	SetDatabase(db string) Aggregate
+
+	Collection(doc interface{}) Aggregate
 	//AddFields() Aggregate
 	//Bucket() Aggregate
 	//BucketAuto() Aggregate
