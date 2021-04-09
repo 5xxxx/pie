@@ -147,7 +147,7 @@ func (a *aggregate) SetHint(h interface{}) driver.Aggregate {
 }
 
 func (a *aggregate) Pipeline(pipeline bson.A) driver.Aggregate {
-	a.pipeline = pipeline
+	a.pipeline = append(a.pipeline, pipeline...)
 	return a
 }
 
