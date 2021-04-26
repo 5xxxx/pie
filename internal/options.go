@@ -1,13 +1,3 @@
-/*
- *
- * options.go
- * pie
- *
- * Created by lintao on 2020/6/8 4:05 下午
- * Copyright © 2020-2020 LINTAO. All rights reserved.
- *
- */
-
 package internal
 
 import (

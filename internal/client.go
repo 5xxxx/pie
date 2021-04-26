@@ -31,13 +31,13 @@ func NewClient(db string, opts ...*options.ClientOptions) (driver.Client, error)
 		return nil, err
 	}
 	parser := driver.NewParser(mapper, mapper)
-	driver := &defaultClient{
+	d := defaultClient{
 		clientOpts: opts,
 		parser:     parser,
 		client:     client,
 		db:         db,
 	}
-	return driver, nil
+	return &d, nil
 }
 
 func (d *defaultClient) Connect(ctx ...context.Context) (err error) {
@@ -78,17 +78,17 @@ func (d *defaultClient) ReplaceOne(doc interface{}, ctx ...context.Context) (*mo
 	return session.ReplaceOne(doc, ctx...)
 }
 
-func (d defaultClient) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	session := d.NewSession()
 	return session.UpdateOneBson(coll, bson, ctx...)
 }
 
-func (d defaultClient) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+func (d *defaultClient) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 	session := d.NewSession()
 	return session.FindOneAndUpdateBson(coll, bson, ctx...)
 }
 
-func (d defaultClient) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	session := d.NewSession()
 	return session.UpdateManyBson(coll, bson, ctx...)
 }
@@ -122,6 +122,11 @@ func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error 
 func (d *defaultClient) FilterBson(x bson.D) driver.Session {
 	session := d.NewSession()
 	return session.FilterBson(x)
+}
+
+func (d *defaultClient) Soft(s bool) driver.Session {
+	session := d.NewSession()
+	return session.Soft(s)
 }
 
 func (d *defaultClient) RegexFilter(key, pattern string) driver.Session {
@@ -279,7 +284,7 @@ func (d *defaultClient) Update(bean interface{}, ctx ...context.Context) (*mongo
 	return session.UpdateOne(bean, ctx...)
 }
 
-//The following operation updates all of the documents with quantity value less than 50.
+// UpdateMany The following operation updates all of the documents with quantity value less than 50.
 func (d *defaultClient) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	session := d.NewSession()
 	return session.UpdateMany(bean, ctx...)

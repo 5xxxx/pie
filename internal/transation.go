@@ -1,13 +1,3 @@
-/*
- *
- * transation.go
- * pie
- *
- * Created by lintao on 2020/8/11 8:33 上午
- * Copyright © 2020-2020 LINTAO. All rights reserved.
- *
- */
-
 package internal
 
 import (

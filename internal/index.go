@@ -1,13 +1,3 @@
-/*
- *
- * index.go
- * pie
- *
- * Created by lintao on 2020/8/15 4:29 下午
- * Copyright © 2020-2020 LINTAO. All rights reserved.
- *
- */
-
 package internal
 
 import (
@@ -192,44 +182,44 @@ func (i *index) SetCommitQuorumVotingMembers() driver.Indexes {
 	return i
 }
 
-func (c *index) SetDatabase(db string) driver.Indexes {
-	c.db = db
-	return c
+func (i *index) SetDatabase(db string) driver.Indexes {
+	i.db = db
+	return i
 }
 
-func (c *index) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+func (i *index) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	if i.doc != nil {
+		coll, err = i.engine.CollectionNameForStruct(i.doc)
 	} else {
-		coll, err = c.engine.CollectionNameForStruct(doc)
+		coll, err = i.engine.CollectionNameForStruct(doc)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return c.collectionByName(coll.Name), nil
+	return i.collectionByName(coll.Name), nil
 }
 
-func (c *index) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+func (i *index) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
-	if c.doc != nil {
-		coll, err = c.engine.CollectionNameForStruct(c.doc)
+	if i.doc != nil {
+		coll, err = i.engine.CollectionNameForStruct(i.doc)
 	} else {
-		coll, err = c.engine.CollectionNameForSlice(doc)
+		coll, err = i.engine.CollectionNameForSlice(doc)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return c.collectionByName(coll.Name), nil
+	return i.collectionByName(coll.Name), nil
 }
 
-func (c *index) collectionByName(name string) *mongo.Collection {
-	return c.engine.Collection(name, c.db)
+func (i *index) collectionByName(name string) *mongo.Collection {
+	return i.engine.Collection(name, i.db)
 }
 
-func (c *index) Collection(doc interface{}) driver.Indexes {
-	c.doc = doc
-	return c
+func (i *index) Collection(doc interface{}) driver.Indexes {
+	i.doc = doc
+	return i
 }

@@ -33,7 +33,7 @@ type Session interface {
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 	FindOne(doc interface{}, ctx ...context.Context) error
 
-	// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
+	// FindAll Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
 
 	// InsertOne executes an insert command to insert a single document into the collectionByName.
@@ -75,10 +75,10 @@ type Session interface {
 	Desc(colNames ...string) Session
 
 	Sort(colNames ...string) Session
-
+	Soft(f bool) Session
 	Filter(key string, value interface{}) Session
 	FilterBson(d bson.D) Session
-	//Equals a Specified Value
+	// Eq Equals a Specified Value
 	//{ qty: 20 }
 	//Field in Embedded Document Equals a Value
 	//{"item.name": "ab" }
@@ -86,47 +86,47 @@ type Session interface {
 	//{ tags: [ "A", "B" ] }
 	Eq(key string, value interface{}) Session
 
-	//{field: {$gt: value} } >
+	// Gt {field: {$gt: value} } >
 	Gt(key string, gt interface{}) Session
 
-	//{ qty: { $gte: 20 } } >=
+	// Gte { qty: { $gte: 20 } } >=
 	Gte(key string, gte interface{}) Session
 
-	//{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }
+	// In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 	// tags: { $in: [ /^be/, /^st/ ] } }
 	// in []string []int ...
 	In(key string, in interface{}) Session
 
-	//{field: {$lt: value} } <
+	// Lt {field: {$lt: value} } <
 	Lt(key string, lt interface{}) Session
 
-	//{ field: { $lte: value} } <=
+	// Lte { field: { $lte: value} } <=
 	Lte(key string, lte interface{}) Session
 
-	//{field: {$ne: value} } !=
+	// Ne {field: {$ne: value} } !=
 	Ne(key string, ne interface{}) Session
 
-	//{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
+	// Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
 	Nin(key string, nin interface{}) Session
 
-	//{ $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
+	// And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
 	//$and: [
 	//        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
 	//        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 	// ]
 	And(c Condition) Session
 
-	//{ field: { $not: { <operator-expression> } } }
+	// Not { field: { $not: { <operator-expression> } } }
 	//not and Regular Expressions
 	//{ item: { $not: /^p.*/ } }
 	Not(key string, not interface{}) Session
 
-	// { $nor: [ { price: 1.99 }, { price: { $exists: false } },
+	// Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 	// { sale: true }, { sale: { $exists: false } } ] }
 	// price != 1.99 || sale != true || sale exists || sale exists
 	Nor(c Condition) Session
 
-	// { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
+	// Or { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
 	Or(c Condition) Session
 
 	Exists(key string, exists bool, filter ...Condition) Session
@@ -161,20 +161,20 @@ type Session interface {
 	// SetHint sets the value for the Hint field.
 	SetHint(hint interface{}) Session
 
-	//{ field: { $type: <BSON type> } }
+	// Type { field: { $type: <BSON type> } }
 	// { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
 	// { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
 	// db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 	// return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
 	Type(key string, t interface{}) Session
 
-	//Allows the use of aggregation expressions within the query language.
+	// Expr Allows the use of aggregation expressions within the query language.
 	//{ $expr: { <expression> } }
 	//$expr can build query expressions that compare fields from the same document in a $match stage
 	//todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
 	Expr(c Condition) Session
 
-	//todo 简单实现，后续增加支持
+	// Regex todo 简单实现，后续增加支持
 	Regex(key string, value string) Session
 
 	SetDatabase(db string) Session

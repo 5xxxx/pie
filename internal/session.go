@@ -1,13 +1,3 @@
-/*
- *
- * find_one_session.go
- * pie
- *
- * Created by lintao on 2020/7/17 10:16 下午
- * Copyright © 2020-2020 LINTAO. All rights reserved.
- *
- */
-
 package internal
 
 import (
@@ -43,6 +33,11 @@ type session struct {
 	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
 	replaceOpts           []*options.ReplaceOptions
 	bulkWriteOptions      []*options.BulkWriteOptions
+}
+
+func (s *session) Soft(f bool) driver.Session {
+	s.filter.Exists("deleted_at", f)
+	return s
 }
 
 func (s *session) FilterBson(d bson.D) driver.Session {
@@ -246,7 +241,7 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	return nil
 }
 
-// Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
+// FindAll Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
 func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -414,7 +409,7 @@ func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 	case reflect.Struct:
 		coll, err = s.collectionForStruct(i)
 	default:
-		return 0, errors.New("neet slice or struct")
+		return 0, errors.New("need slice or struct")
 	}
 
 	if err != nil {
@@ -618,9 +613,9 @@ func (s *session) Sort(colNames ...string) driver.Session {
 		if field != "" {
 			switch field[0] {
 			case '-':
-				es = append(es, bson.E{field[1:], -1})
+				es = append(es, bson.E{Key: field[1:], Value: -1})
 			default:
-				es = append(es, bson.E{field, 1})
+				es = append(es, bson.E{Key: field, Value: 1})
 			}
 		}
 	}
@@ -633,7 +628,7 @@ func (s *session) Filter(key string, value interface{}) driver.Session {
 	return s.Eq(key, value)
 }
 
-//Equals a Specified Value
+// Eq Equals a Specified Value
 //{ qty: 20 }
 //Field in Embedded Document Equals a Value
 //{"item.name": "ab" }
@@ -644,19 +639,19 @@ func (s *session) Eq(key string, value interface{}) driver.Session {
 	return s
 }
 
-//{field: {$gt: value} } >
+// Gt {field: {$gt: value} } >
 func (s *session) Gt(key string, gt interface{}) driver.Session {
 	s.filter.Gt(key, gt)
 	return s
 }
 
-//{ qty: { $gte: 20 } } >=
+// Gte { qty: { $gte: 20 } } >=
 func (s *session) Gte(key string, gte interface{}) driver.Session {
 	s.filter.Gte(key, gte)
 	return s
 }
 
-//{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }
+// In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
 func (s *session) In(key string, in interface{}) driver.Session {
@@ -664,31 +659,31 @@ func (s *session) In(key string, in interface{}) driver.Session {
 	return s
 }
 
-//{field: {$lt: value} } <
+// Lt {field: {$lt: value} } <
 func (s *session) Lt(key string, lt interface{}) driver.Session {
 	s.filter.Lt(key, lt)
 	return s
 }
 
-//{ field: { $lte: value} } <=
+// Lte { field: { $lte: value} } <=
 func (s *session) Lte(key string, lte interface{}) driver.Session {
 	s.filter.Lte(key, lte)
 	return s
 }
 
-//{field: {$ne: value} } !=
+// Ne {field: {$ne: value} } !=
 func (s *session) Ne(key string, ne interface{}) driver.Session {
 	s.filter.Ne(key, ne)
 	return s
 }
 
-//{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
+// Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
 func (s *session) Nin(key string, nin interface{}) driver.Session {
 	s.filter.Nin(key, nin)
 	return s
 }
 
-//{ $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
+// And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
 //$and: [
 //        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
 //        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
@@ -699,7 +694,7 @@ func (s *session) And(c driver.Condition) driver.Session {
 
 }
 
-//{ field: { $not: { <operator-expression> } } }
+// Not { field: { $not: { <operator-expression> } } }
 //not and Regular Expressions
 //{ item: { $not: /^p.*/ } }
 func (s *session) Not(key string, not interface{}) driver.Session {
@@ -707,7 +702,7 @@ func (s *session) Not(key string, not interface{}) driver.Session {
 	return s
 }
 
-// { $nor: [ { price: 1.99 }, { price: { $exists: false } },
+// Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 // { sale: true }, { sale: { $exists: false } } ] }
 // price != 1.99 || sale != true || sale exists || sale exists
 func (s *session) Nor(c driver.Condition) driver.Session {
@@ -715,7 +710,7 @@ func (s *session) Nor(c driver.Condition) driver.Session {
 	return s
 }
 
-// { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
+// Or { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
 func (s *session) Or(c driver.Condition) driver.Session {
 	s.filter.Or(c)
 	return s
@@ -822,7 +817,7 @@ func (s *session) SetHint(hint interface{}) driver.Session {
 	return s
 }
 
-//{ field: { $type: <BSON type> } }
+// Type { field: { $type: <BSON type> } }
 // { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
 // { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
 // db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
@@ -832,7 +827,7 @@ func (s *session) Type(key string, t interface{}) driver.Session {
 	return s
 }
 
-//Allows the use of aggregation expressions within the query language.
+// Expr Allows the use of aggregation expressions within the query language.
 //{ $expr: { <expression> } }
 //$expr can build query expressions that compare fields from the same document in a $match stage
 //todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
@@ -841,36 +836,36 @@ func (s *session) Expr(c driver.Condition) driver.Session {
 	return s
 }
 
-//todo 简单实现，后续增加支持
+// Regex todo 简单实现，后续增加支持
 func (s *session) Regex(key string, value string) driver.Session {
 	s.filter.Regex(key, value)
 	return s
 }
 
-func (c *session) SetDatabase(db string) driver.Session {
-	c.db = db
-	return c
+func (s *session) SetDatabase(db string) driver.Session {
+	s.db = db
+	return s
 }
 
-func (c *session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
-	coll, err := c.engine.CollectionNameForStruct(doc)
+func (s *session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+	coll, err := s.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.collectionByName(coll.Name), nil
+	return s.collectionByName(coll.Name), nil
 }
 
-func (c *session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
-	coll, err := c.engine.CollectionNameForSlice(doc)
+func (s *session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+	coll, err := s.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
 	}
-	return c.collectionByName(coll.Name), nil
+	return s.collectionByName(coll.Name), nil
 }
 
-func (c *session) collectionByName(name string) *mongo.Collection {
-	return c.engine.Collection(name, c.db)
+func (s *session) collectionByName(name string) *mongo.Collection {
+	return s.engine.Collection(name, s.db)
 }
 
 //func (s *session) makeFilterValue(field string, value interface{}) {

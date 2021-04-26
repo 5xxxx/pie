@@ -1,13 +1,3 @@
-/*
- *
- * client.go
- * pie
- *
- * Created by lintao on 2020/8/9 11:02 下午
- * Copyright © 2020-2020 LINTAO. All rights reserved.
- *
- */
-
 package driver
 
 import (
@@ -62,6 +52,7 @@ type Client interface {
 	Disconnect(ctx ...context.Context) error
 
 	//filter
+	Soft(s bool) Session
 	FilterBy(object interface{}) Session
 	Filter(key string, value interface{}) Session
 	Asc(colNames ...string) Session
