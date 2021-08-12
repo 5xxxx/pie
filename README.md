@@ -10,7 +10,7 @@ pie 是基于官方[mongo-go-driver](https://github.com/mongodb/mongo-go-driver)
 ### 安装
 
 ```
-go get github.com/NSObjects/pie
+go get github.com/5xxxx/pie
 ```
 
 ### 连接到数据库

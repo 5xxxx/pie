@@ -10,7 +10,7 @@ import (
 	"time"
 
 
-	"github.com/NSObjects/pie"
+	"github.com/5xxxx/pie"
 )
 
 func main() {
@@ -39,8 +39,8 @@ func main() {
 package pie
 
 import (
-	"github.com/NSObjects/pie/driver"
-	"github.com/NSObjects/pie/internal"
+	"github.com/5xxxx/pie/driver"
+	"github.com/5xxxx/pie/internal"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 

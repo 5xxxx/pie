@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/NSObjects/pie/names"
-	"github.com/NSObjects/pie/schemas"
+	"github.com/5xxxx/pie/names"
+	"github.com/5xxxx/pie/schemas"
 )
 
 var (
