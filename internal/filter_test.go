@@ -174,7 +174,7 @@ func Test_filter_Filters(t *testing.T) {
 			f := &filter{
 				d: tt.fields.d,
 			}
-			if got := f.Filters(); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := f.Filters(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Filters() = %v, want %v", got, tt.want)
 			}
 		})
@@ -492,7 +492,7 @@ func Test_filter_Regex(t *testing.T) {
 	}
 	type args struct {
 		key   string
-		value interface{}
+		value string
 	}
 	tests := []struct {
 		name   string

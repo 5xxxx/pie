@@ -138,7 +138,7 @@ func Test_index_CreateIndexes(t *testing.T) {
 				createIndexOpts:    tt.fields.createIndexOpts,
 				dropIndexesOptions: tt.fields.dropIndexesOptions,
 			}
-			got, err := i.CreateIndexes(tt.args.ctx, tt.args.doc)
+			got, err := i.CreateIndexes(tt.args.doc, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateIndexes() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -181,7 +181,7 @@ func Test_index_DropAll(t *testing.T) {
 				createIndexOpts:    tt.fields.createIndexOpts,
 				dropIndexesOptions: tt.fields.dropIndexesOptions,
 			}
-			if err := i.DropAll(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := i.DropAll(tt.args.doc, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("DropAll() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -220,7 +220,7 @@ func Test_index_DropOne(t *testing.T) {
 				createIndexOpts:    tt.fields.createIndexOpts,
 				dropIndexesOptions: tt.fields.dropIndexesOptions,
 			}
-			if err := i.DropOne(tt.args.ctx, tt.args.doc, tt.args.name); (err != nil) != tt.wantErr {
+			if err := i.DropOne(tt.args.doc, tt.args.name, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("DropOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

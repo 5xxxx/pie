@@ -12,7 +12,7 @@ import (
 )
 
 type Client interface {
-	//find
+	// FindPagination find
 	FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error
 	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
 	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
@@ -23,35 +23,35 @@ type Client interface {
 	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
 	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	//insert
+	// InsertOne insert
 	InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error)
 	InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
 	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
 	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	//update
+	// Update update
 	Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
-	//The following operation updates all of the documents with quantity value less than 50.
+	// UpdateMany The following operation updates all of the documents with quantity value less than 50.
 	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	//delete
+	// SoftDeleteOne delete
 	SoftDeleteOne(filter interface{}, ctx ...context.Context) error
 	SoftDeleteMany(filter interface{}, ctx ...context.Context) error
 	DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
 	DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
 
-	//db operation
+	// DataBase db operation
 	DataBase() *mongo.Database
 	Collection(name string, db ...string) *mongo.Collection
 	Ping() error
 	Connect(ctx ...context.Context) (err error)
 	Disconnect(ctx ...context.Context) error
 
-	//filter
+	// Soft filter
 	Soft(s bool) Session
 	FilterBy(object interface{}) Session
 	Filter(key string, value interface{}) Session
@@ -78,16 +78,16 @@ type Client interface {
 	Count(i interface{}, ctx ...context.Context) (int64, error)
 	Desc(s1 ...string) Session
 	FilterBson(d bson.D) Session
-	// indexes
+	// NewIndexes indexes
 	NewIndexes() Indexes
 	DropAll(doc interface{}, ctx ...context.Context) error
 	DropOne(doc interface{}, name string, ctx ...context.Context) error
 	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
 
-	//session
+	// NewSession session
 	NewSession() Session
 	Aggregate() Aggregate
-	//SetDatabase(string string) Client
+	// CollectionNameForStruct SetDatabase(string string) Client
 	CollectionNameForStruct(doc interface{}) (*schemas.Collection, error)
 	CollectionNameForSlice(doc interface{}) (*schemas.Collection, error)
 }

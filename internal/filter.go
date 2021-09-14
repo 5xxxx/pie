@@ -18,35 +18,27 @@ type filter struct {
 	err error
 }
 
-func (f *filter) FilterBson(d bson.D) driver.Condition {
-	f.d = d
+func (f *filter) FilterBson(object interface{}) driver.Condition {
+	if m, ok := object.(bson.M); ok {
+		for key, value := range m {
+			f.d = append(f.d, bson.E{Key: key, Value: value})
+		}
+	} else if d, ok := object.(bson.D); ok {
+		f.d = append(f.d, d...)
+	}
 	return f
 }
 
 func (f *filter) FilterBy(object interface{}) driver.Condition {
 	beanValue := reflect.ValueOf(object)
 	if beanValue.Kind() != reflect.Struct {
-		if m, ok := object.(bson.M); ok {
-			for key, value := range m {
-				f.Eq(key, value)
-			}
-			return f
-		}
-
-		if d, ok := object.(bson.D); ok {
-			for _, v := range d {
-				f.Eq(v.Key, v.Value)
-			}
-			return f
-		}
-
 		f.err = errors.New("needs a struct")
 		return f
 	}
 
 	docType := reflect.TypeOf(object)
 	for index := 0; index < docType.NumField(); index++ {
-		fieldTag := docType.Field(index).Tag.Get("filter")
+		fieldTag := docType.Field(index).Tag.Get("bson")
 		if fieldTag != "" && fieldTag != "-" {
 			split := strings.Split(fieldTag, ",")
 			if len(split) > 0 {
