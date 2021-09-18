@@ -582,7 +582,7 @@ func (s *session) Asc(colNames ...string) driver.Session {
 
 	es := bson.M{}
 	for _, c := range colNames {
-		es[c] = -1
+		es[c] = 1
 	}
 	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSort(es))
 	s.findOptions = append(s.findOptions, options.Find().SetSort(es))
@@ -596,7 +596,7 @@ func (s *session) Desc(colNames ...string) driver.Session {
 
 	es := bson.M{}
 	for _, c := range colNames {
-		es[c] = 1
+		es[c] = -1
 	}
 
 	s.findOptions = append(s.findOptions, options.Find().SetSort(es))
