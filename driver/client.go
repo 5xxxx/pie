@@ -90,4 +90,6 @@ type Client interface {
 	// CollectionNameForStruct SetDatabase(string string) Client
 	CollectionNameForStruct(doc interface{}) (*schemas.Collection, error)
 	CollectionNameForSlice(doc interface{}) (*schemas.Collection, error)
+	Transaction(ctx context.Context, f schemas.TransFunc) error
+	TransactionWithOptions(ctx context.Context, f schemas.TransFunc, opt ...*options.SessionOptions) error
 }

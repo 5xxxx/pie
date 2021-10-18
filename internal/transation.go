@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 
+	"github.com/5xxxx/pie/schemas"
+
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -10,9 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type TransFunc func(context.Context) error
-
-func (d defaultClient) TransactionWithOptions(ctx context.Context, f TransFunc, opt ...*options.SessionOptions) error {
+func (d defaultClient) TransactionWithOptions(ctx context.Context, f schemas.TransFunc, opt ...*options.SessionOptions) error {
 	session, err := d.client.StartSession(opt...)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func (d defaultClient) TransactionWithOptions(ctx context.Context, f TransFunc, 
 	return session.CommitTransaction(ctx)
 }
 
-func (d defaultClient) Transaction(ctx context.Context, f TransFunc) error {
+func (d defaultClient) Transaction(ctx context.Context, f schemas.TransFunc) error {
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority()).
 		SetDefaultWriteConcern(writeconcern.New(writeconcern.WMajority()))
