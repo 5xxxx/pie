@@ -24,7 +24,7 @@ func (d defaultClient) TransactionWithOptions(ctx context.Context, f schemas.Tra
 	txnOpts := options.Transaction().
 		SetReadPreference(readpref.PrimaryPreferred())
 	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		return nil, f(ctx)
+		return nil, f(sessCtx)
 	}, txnOpts)
 
 	return err
