@@ -1,3 +1,5 @@
+![Alt](https://repobeats.axiom.co/api/embed/3925555e0ce56f9d8fdfce801a830d9547718942.svg "Repobeats analytics image")
+
 ## pie
 pie 是基于官方[mongo-go-driver](https://github.com/mongodb/mongo-go-driver) 封装，所有操作都是通过链式调用，可以方便的对MongoDB进行操作
 
