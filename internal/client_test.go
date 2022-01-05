@@ -124,7 +124,7 @@ func Test_defaultDriver_InsertMany(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := newClient()
-			_, err := d.InsertMany(tt.args.ctx, tt.args.v)
+			_, err := d.InsertMany(tt.args.v, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InsertMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -178,7 +178,7 @@ func Test_defaultDriver_InsertOne(t *testing.T) {
 				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			got, err := d.InsertOne(tt.args.ctx, &tt.args.v)
+			got, err := d.InsertOne(&tt.args.v, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InsertOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -220,7 +220,7 @@ func Test_defaultDriver_FindAll(t *testing.T) {
 				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err = d.FindAll(tt.args.ctx, &tt.args.docs); (err != nil) != tt.wantErr {
+			if err = d.FindAll(&tt.args.docs, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("FindAll() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -259,7 +259,7 @@ func Test_defaultDriver_FindAndDelete(t *testing.T) {
 				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err := d.FindAndDelete(tt.args.ctx, &tt.args.doc); (err != nil) != tt.wantErr {
+			if err := d.FindAndDelete(&tt.args.doc, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("FindAndDelete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -294,7 +294,7 @@ func Test_defaultDriver_FindOne(t *testing.T) {
 				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err := d.FindOne(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := d.FindOne(tt.args.doc, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -334,7 +334,7 @@ func Test_defaultDriver_FindOneAndReplace(t *testing.T) {
 				t.Errorf("FindOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err := d.FindOneAndReplace(tt.args.ctx, &tt.args.doc); (err != nil) != tt.wantErr {
+			if err := d.FindOneAndReplace(&tt.args.doc, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndReplace() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -370,7 +370,7 @@ func Test_defaultDriver_FindOneAndUpdate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := newClient()
-			_, err := d.FindOneAndUpdate(tt.args.ctx, &tt.args.doc)
+			_, err := d.FindOneAndUpdate(&tt.args.doc, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -412,7 +412,7 @@ func Test_defaultDriver_FindOneAndUpdateBson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := newClient()
-			_, err := d.FindOneAndUpdateBson(tt.args.ctx, &tt.args.coll, tt.args.bson)
+			_, err := d.FindOneAndUpdateBson(tt.args.bson, &tt.args.coll, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindOneAndUpdateBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -577,7 +577,7 @@ func Test_defaultDriver_BulkWrite(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.BulkWrite(tt.args.ctx, tt.args.docs)
+			got, err := d.BulkWrite(tt.args.docs, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BulkWrite() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -829,7 +829,7 @@ func Test_defaultDriver_DeleteMany(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.DeleteMany(tt.args.ctx, tt.args.filter)
+			got, err := d.DeleteMany(tt.args.filter, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -869,7 +869,7 @@ func Test_defaultDriver_DeleteOne(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.DeleteOne(tt.args.ctx, tt.args.filter)
+			got, err := d.DeleteOne(tt.args.filter, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -976,7 +976,7 @@ func Test_defaultDriver_Distinct(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.Distinct(tt.args.ctx, tt.args.doc, tt.args.columns)
+			got, err := d.Distinct(tt.args.doc, tt.args.columns, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Distinct() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1015,7 +1015,7 @@ func Test_defaultDriver_DropAll(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			if err := d.DropAll(tt.args.ctx, tt.args.doc); (err != nil) != tt.wantErr {
+			if err := d.DropAll(tt.args.doc, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("DropAll() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1050,7 +1050,7 @@ func Test_defaultDriver_DropOne(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			if err := d.DropOne(tt.args.ctx, tt.args.doc, tt.args.name); (err != nil) != tt.wantErr {
+			if err := d.DropOne(tt.args.doc, tt.args.name, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("DropOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1726,7 +1726,7 @@ func Test_defaultDriver_Regex(t *testing.T) {
 	}
 	type args struct {
 		key   string
-		value interface{}
+		value string
 	}
 	tests := []struct {
 		name   string
@@ -1813,46 +1813,13 @@ func Test_defaultDriver_ReplaceOne(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.ReplaceOne(tt.args.ctx, tt.args.doc)
+			got, err := d.ReplaceOne(tt.args.doc, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReplaceOne() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ReplaceOne() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_defaultDriver_SetDatabase(t *testing.T) {
-	type fields struct {
-		client     *mongo.Client
-		parser     *driver.Parser
-		db         string
-		clientOpts []*options.ClientOptions
-	}
-	type args struct {
-		string string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   driver.Client
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &defaultClient{
-				client:     tt.fields.client,
-				parser:     tt.fields.parser,
-				db:         tt.fields.db,
-				clientOpts: tt.fields.clientOpts,
-			}
-			if got := d.SetDatabase(tt.args.string); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SetDatabase() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -1918,7 +1885,7 @@ func Test_defaultDriver_SoftDeleteMany(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			if err := d.SoftDeleteMany(tt.args.ctx, tt.args.filter); (err != nil) != tt.wantErr {
+			if err := d.SoftDeleteMany(tt.args.filter, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("SoftDeleteMany() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1952,7 +1919,7 @@ func Test_defaultDriver_SoftDeleteOne(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			if err := d.SoftDeleteOne(tt.args.ctx, tt.args.filter); (err != nil) != tt.wantErr {
+			if err := d.SoftDeleteOne(tt.args.filter, tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("SoftDeleteOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -2021,7 +1988,7 @@ func Test_defaultDriver_Update(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.Update(tt.args.ctx, tt.args.bean)
+			got, err := d.Update(tt.args.bean, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -2061,7 +2028,7 @@ func Test_defaultDriver_UpdateMany(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.UpdateMany(tt.args.ctx, tt.args.bean)
+			got, err := d.UpdateMany(tt.args.bean, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateMany() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -2102,7 +2069,7 @@ func Test_defaultDriver_UpdateManyBson(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.UpdateManyBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			got, err := d.UpdateManyBson(tt.args.coll, tt.args.bson, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateManyBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -2143,7 +2110,7 @@ func Test_defaultDriver_UpdateOneBson(t *testing.T) {
 				db:         tt.fields.db,
 				clientOpts: tt.fields.clientOpts,
 			}
-			got, err := d.UpdateOneBson(tt.args.ctx, tt.args.coll, tt.args.bson)
+			got, err := d.UpdateOneBson(tt.args.coll, tt.args.bson, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateOneBson() error = %v, wantErr %v", err, tt.wantErr)
 				return
