@@ -381,7 +381,25 @@ func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error 
 }
 
 func (s *session) Clone() driver.Session {
-	var sess = *s
+	sess := session{
+		db:                    s.db,
+		engine:                s.engine,
+		filter:                s.filter,
+		findOneOptions:        s.findOneOptions,
+		findOptions:           s.findOptions,
+		insertManyOpts:        s.insertManyOpts,
+		insertOneOpts:         s.insertOneOpts,
+		deleteOpts:            s.deleteOpts,
+		findOneAndDeleteOpts:  s.findOneAndDeleteOpts,
+		updateOpts:            s.updateOpts,
+		countOpts:             s.countOpts,
+		distinctOpts:          s.distinctOpts,
+		findOneAndReplaceOpts: s.findOneAndReplaceOpts,
+		findOneAndUpdateOpts:  s.findOneAndUpdateOpts,
+		replaceOpts:           s.replaceOpts,
+		bulkWriteOptions:      s.bulkWriteOptions,
+	}
+
 	return &sess
 }
 
