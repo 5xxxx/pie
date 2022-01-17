@@ -18,6 +18,13 @@ type filter struct {
 	err error
 }
 
+func (f *filter) Clone() driver.Condition {
+	return &filter{
+		d:   f.d,
+		err: f.err,
+	}
+}
+
 func (f *filter) FilterBson(object interface{}) driver.Condition {
 	if m, ok := object.(bson.M); ok {
 		for key, value := range m {

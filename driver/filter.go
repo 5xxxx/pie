@@ -80,4 +80,6 @@ type Condition interface {
 	Err() error
 	FilterBson(d interface{}) Condition
 	FilterBy(object interface{}) Condition
+
+	Clone() Condition
 }

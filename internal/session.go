@@ -384,7 +384,7 @@ func (s *session) Clone() driver.Session {
 	sess := session{
 		db:                    s.db,
 		engine:                s.engine,
-		filter:                s.filter,
+		filter:                s.filter.Clone(),
 		findOneOptions:        s.findOneOptions,
 		findOptions:           s.findOptions,
 		insertManyOpts:        s.insertManyOpts,
