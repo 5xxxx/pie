@@ -59,136 +59,113 @@ func (d *defaultClient) Disconnect(ctx ...context.Context) error {
 }
 
 func (d *defaultClient) FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindPagination(page, count, doc, ctx...)
+	return d.NewSession().FindPagination(page, count, doc, ctx...)
 }
 
 func (d *defaultClient) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
-	session := d.NewSession()
-	return session.BulkWrite(docs, ctx...)
+	return d.NewSession().BulkWrite(docs, ctx...)
 }
 
 func (d *defaultClient) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
-	session := d.NewSession()
-	return session.Distinct(doc, columns, ctx...)
+	return d.NewSession().Distinct(doc, columns, ctx...)
 }
 
 func (d *defaultClient) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
-	session := d.NewSession()
-	return session.ReplaceOne(doc, ctx...)
+	return d.NewSession().ReplaceOne(doc, ctx...)
 }
 
 func (d *defaultClient) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
-	session := d.NewSession()
-	return session.UpdateOneBson(coll, bson, ctx...)
+	return d.NewSession().UpdateOneBson(coll, bson, ctx...)
 }
 
 func (d *defaultClient) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
-	session := d.NewSession()
-	return session.FindOneAndUpdateBson(coll, bson, ctx...)
+	return d.NewSession().FindOneAndUpdateBson(coll, bson, ctx...)
 }
 
 func (d *defaultClient) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
-	session := d.NewSession()
-	return session.UpdateManyBson(coll, bson, ctx...)
+	return d.NewSession().UpdateManyBson(coll, bson, ctx...)
 }
 
 func (d *defaultClient) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindOneAndReplace(doc, ctx...)
+	return d.NewSession().FindOneAndReplace(doc, ctx...)
 }
 
 func (d *defaultClient) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
-	session := d.NewSession()
-	return session.FindOneAndUpdate(doc, ctx...)
+	return d.NewSession().FindOneAndUpdate(doc, ctx...)
 }
 
 func (d *defaultClient) FindAndDelete(doc interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindAndDelete(doc, ctx...)
+	return d.NewSession().FindAndDelete(doc, ctx...)
 }
 
 // FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
 func (d *defaultClient) FindOne(doc interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindOne(doc, ctx...)
+	return d.NewSession().FindOne(doc, ctx...)
 }
 
 func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.FindAll(docs, ctx...)
+	return d.NewSession().FindAll(docs, ctx...)
 }
 
 func (d *defaultClient) FilterBson(x bson.D) driver.Session {
-	session := d.NewSession()
-	return session.FilterBson(x)
+	return d.NewSession().FilterBson(x)
 }
 
 func (d *defaultClient) Soft(s bool) driver.Session {
-	session := d.NewSession()
-	return session.Soft(s)
+	return d.NewSession().Soft(s)
 }
 
 func (d *defaultClient) RegexFilter(key, pattern string) driver.Session {
-	session := d.NewSession()
-	return session.RegexFilter(key, pattern)
+	return d.NewSession().RegexFilter(key, pattern)
 }
 
 func (d *defaultClient) Asc(colNames ...string) driver.Session {
-	session := d.NewSession()
-	return session.Asc(colNames...)
+	return d.NewSession().Asc(colNames...)
 }
 
 func (d *defaultClient) Eq(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Eq(key, value)
+	return d.NewSession().Eq(key, value)
 }
 
 func (d *defaultClient) Ne(key string, ne interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Gt(key, ne)
+	return d.NewSession().Gt(key, ne)
 }
 
 func (d *defaultClient) Nin(key string, nin interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Nin(key, nin)
+	return d.NewSession().Nin(key, nin)
 }
 
 func (d *defaultClient) Nor(c driver.Condition) driver.Session {
-	session := d.NewSession()
-	return session.Nor(c)
+	return d.NewSession().Nor(c)
 }
 
 func (d *defaultClient) Exists(key string, exists bool, filter ...driver.Condition) driver.Session {
-	session := d.NewSession()
-	return session.Exists(key, exists, filter...)
+	return d.NewSession().Exists(key, exists, filter...)
 }
 
 func (d *defaultClient) Type(key string, t interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Gt(key, t)
+	return d.NewSession().Gt(key, t)
 }
 
 func (d *defaultClient) Expr(filter driver.Condition) driver.Session {
-	session := d.NewSession()
-	return session.Expr(filter)
+	return d.NewSession().Expr(filter)
 }
 
 func (d *defaultClient) Regex(key string, value string) driver.Session {
-	session := d.NewSession()
-	return session.Regex(key, value)
+	return d.NewSession().Regex(key, value)
 }
 
 func (d *defaultClient) DataBase() *mongo.Database {
 	return d.client.Database(d.db)
 }
 
-func (d *defaultClient) Collection(name string, db ...string) *mongo.Collection {
+func (d *defaultClient) Collection(name string, collOpts []*options.CollectionOptions, db ...string) *mongo.Collection {
 	var database = d.db
 	if len(db) > 0 && len(db[0]) > 0 {
 		database = db[0]
 	}
-	return d.client.Database(database).Collection(name)
+
+	return d.client.Database(database).Collection(name, collOpts...)
 }
 
 func (d *defaultClient) Ping() error {
@@ -196,137 +173,107 @@ func (d *defaultClient) Ping() error {
 }
 
 func (d *defaultClient) Filter(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Filter(key, value)
+	return d.NewSession().Filter(key, value)
 }
 
 func (d *defaultClient) ID(id interface{}) driver.Session {
-	session := d.NewSession()
-	return session.ID(id)
+	return d.NewSession().ID(id)
 }
 
 func (d *defaultClient) Gt(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Gt(key, value)
+	return d.NewSession().Gt(key, value)
 }
 
 func (d *defaultClient) Gte(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Gte(key, value)
+	return d.NewSession().Gte(key, value)
 }
 
 func (d *defaultClient) Lt(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Lt(key, value)
+	return d.NewSession().Lt(key, value)
 }
 
 func (d *defaultClient) Lte(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	return session.Lte(key, value)
+	return d.NewSession().Lte(key, value)
 }
 
 func (d *defaultClient) In(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	session.In(key, value)
-	return session
+	return d.NewSession().In(key, value)
 }
 
 func (d *defaultClient) And(filter driver.Condition) driver.Session {
-	session := d.NewSession()
-	session.And(filter)
-	return session
+	return d.NewSession().And(filter)
 }
 
 func (d *defaultClient) Not(key string, value interface{}) driver.Session {
-	session := d.NewSession()
-	session.Not(key, value)
-	return session
+	return d.NewSession().Not(key, value)
 }
 
 func (d *defaultClient) Or(filter driver.Condition) driver.Session {
-	session := d.NewSession()
-	session.Or(filter)
-	return session
+	return d.NewSession().Or(filter)
 }
 
 func (d *defaultClient) InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
-	session := d.NewSession()
-	return session.InsertOne(v, ctx...)
+	return d.NewSession().InsertOne(v, ctx...)
 }
 
 func (d *defaultClient) InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
-	session := d.NewSession()
-	return session.InsertMany(v, ctx...)
+	return d.NewSession().InsertMany(v, ctx...)
 }
 
 func (d *defaultClient) Limit(limit int64) driver.Session {
-	session := d.NewSession()
-	return session.Limit(limit)
+	return d.NewSession().Limit(limit)
 }
 
 func (d *defaultClient) Skip(skip int64) driver.Session {
-	session := d.NewSession()
-	return session.Limit(skip)
+	return d.NewSession().Limit(skip)
 }
 
 func (d *defaultClient) Count(i interface{}, ctx ...context.Context) (int64, error) {
-	session := d.NewSession()
-	return session.Count(i, ctx...)
+	return d.NewSession().Count(i, ctx...)
 }
 
 func (d *defaultClient) Desc(s2 ...string) driver.Session {
-	session := d.NewSession()
-	return session.Desc(s2...)
+	return d.NewSession().Desc(s2...)
 }
 
 func (d *defaultClient) Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
-	session := d.NewSession()
-	return session.UpdateOne(bean, ctx...)
+	return d.NewSession().UpdateOne(bean, ctx...)
 }
 
 // UpdateMany The following operation updates all of the documents with quantity value less than 50.
 func (d *defaultClient) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
-	session := d.NewSession()
-	return session.UpdateMany(bean, ctx...)
+	return d.NewSession().UpdateMany(bean, ctx...)
 }
 
 func (d *defaultClient) DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
-	session := d.NewSession()
-	return session.DeleteOne(filter, ctx...)
+	return d.NewSession().DeleteOne(filter, ctx...)
 }
 
 func (d *defaultClient) DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
-	session := d.NewSession()
-	return session.DeleteMany(filter, ctx...)
+	return d.NewSession().DeleteMany(filter, ctx...)
 }
 func (d *defaultClient) SoftDeleteOne(filter interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.SoftDeleteOne(filter, ctx...)
+	return d.NewSession().SoftDeleteOne(filter, ctx...)
 }
 
 func (d *defaultClient) SoftDeleteMany(filter interface{}, ctx ...context.Context) error {
-	session := d.NewSession()
-	return session.SoftDeleteMany(filter, ctx...)
+	return d.NewSession().SoftDeleteMany(filter, ctx...)
 }
 
 func (d *defaultClient) FilterBy(object interface{}) driver.Session {
-	session := d.NewSession()
-	return session.FilterBy(object)
+	return d.NewSession().FilterBy(object)
 }
 
 func (d *defaultClient) DropAll(doc interface{}, ctx ...context.Context) error {
-	indexes := d.NewIndexes()
-	return indexes.DropAll(doc, ctx...)
+	return d.NewIndexes().DropAll(doc, ctx...)
 }
 
 func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Context) error {
-	indexes := d.NewIndexes()
-	return indexes.DropOne(doc, name, ctx...)
+	return d.NewIndexes().DropOne(doc, name, ctx...)
 }
 
 func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.Indexes {
-	indexes := d.NewIndexes()
-	return indexes.AddIndex(keys, opt...)
+	return d.NewIndexes().AddIndex(keys, opt...)
 }
 
 func (d *defaultClient) NewIndexes() driver.Indexes {

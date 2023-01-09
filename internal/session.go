@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"reflect"
 	"strings"
 	"time"
@@ -33,6 +37,7 @@ type session struct {
 	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
 	replaceOpts           []*options.ReplaceOptions
 	bulkWriteOptions      []*options.BulkWriteOptions
+	collOpts              []*options.CollectionOptions
 }
 
 func (s *session) Soft(f bool) driver.Session {
@@ -408,6 +413,31 @@ func (s *session) Limit(i int64) driver.Session {
 	return s
 }
 
+// SetReadConcern sets the value for the ReadConcern field.
+func (s *session) SetReadConcern(rc *readconcern.ReadConcern) driver.Session {
+	s.collOpts = append(s.collOpts, options.Collection().SetReadConcern(rc))
+
+	return s
+}
+
+// SetCollWriteConcern sets the value for the WriteConcern field.
+func (s *session) SetCollWriteConcern(wc *writeconcern.WriteConcern) driver.Session {
+	s.collOpts = append(s.collOpts, options.Collection().SetWriteConcern(wc))
+	return s
+}
+
+// SetCollReadPreference sets the value for the ReadPreference field.
+func (s *session) SetCollReadPreference(rp *readpref.ReadPref) driver.Session {
+	s.collOpts = append(s.collOpts, options.Collection().SetReadPreference(rp))
+	return s
+}
+
+// SetCollRegistry sets the value for the Registry field.
+func (s *session) SetCollRegistry(r *bsoncodec.Registry) driver.Session {
+	s.collOpts = append(s.collOpts, options.Collection().SetRegistry(r))
+	return s
+}
+
 func (s *session) Skip(i int64) driver.Session {
 	s.findOptions = append(s.findOptions, options.Find().SetSkip(i))
 	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSkip(i))
@@ -647,11 +677,11 @@ func (s *session) Filter(key string, value interface{}) driver.Session {
 }
 
 // Eq Equals a Specified Value
-//{ qty: 20 }
-//Field in Embedded Document Equals a Value
-//{"item.name": "ab" }
+// { qty: 20 }
+// Field in Embedded Document Equals a Value
+// {"item.name": "ab" }
 // Equals an Array Value
-//{ tags: [ "A", "B" ] }
+// { tags: [ "A", "B" ] }
 func (s *session) Eq(key string, value interface{}) driver.Session {
 	s.filter.Eq(key, value)
 	return s
@@ -702,9 +732,11 @@ func (s *session) Nin(key string, nin interface{}) driver.Session {
 }
 
 // And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
-//$and: [
-//        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
-//        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
+// $and: [
+//
+//	{ $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
+//	{ $or: [ { sale: true }, { price : { $lt : 5 } } ] }
+//
 // ]
 func (s *session) And(c driver.Condition) driver.Session {
 	s.filter.And(c)
@@ -713,8 +745,8 @@ func (s *session) And(c driver.Condition) driver.Session {
 }
 
 // Not { field: { $not: { <operator-expression> } } }
-//not and Regular Expressions
-//{ item: { $not: /^p.*/ } }
+// not and Regular Expressions
+// { item: { $not: /^p.*/ } }
 func (s *session) Not(key string, not interface{}) driver.Session {
 	s.filter.Not(key, not)
 	return s
@@ -846,9 +878,9 @@ func (s *session) Type(key string, t interface{}) driver.Session {
 }
 
 // Expr Allows the use of aggregation expressions within the query language.
-//{ $expr: { <expression> } }
-//$expr can build query expressions that compare fields from the same document in a $match stage
-//todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
+// { $expr: { <expression> } }
+// $expr can build query expressions that compare fields from the same document in a $match stage
+// todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
 func (s *session) Expr(c driver.Condition) driver.Session {
 	s.filter.Expr(c)
 	return s
@@ -883,7 +915,11 @@ func (s *session) collectionForSlice(doc interface{}) (*mongo.Collection, error)
 }
 
 func (s *session) collectionByName(name string) *mongo.Collection {
-	return s.engine.Collection(name, s.db)
+	if s.collOpts == nil {
+		s.collOpts = make([]*options.CollectionOptions, 0)
+	}
+
+	return s.engine.Collection(name, s.collOpts, s.db)
 }
 
 //func (s *session) makeFilterValue(field string, value interface{}) {

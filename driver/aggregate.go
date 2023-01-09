@@ -2,6 +2,10 @@ package driver
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -42,6 +46,14 @@ type Aggregate interface {
 	SetDatabase(db string) Aggregate
 
 	Collection(doc interface{}) Aggregate
+
+	SetCollReadPreference(rp *readpref.ReadPref) Aggregate
+
+	SetCollRegistry(r *bsoncodec.Registry) Aggregate
+
+	SetCollWriteConcern(wc *writeconcern.WriteConcern) Aggregate
+	
+	SetReadConcern(rc *readconcern.ReadConcern) Aggregate
 	//AddFields() Aggregate
 	//Bucket() Aggregate
 	//BucketAuto() Aggregate

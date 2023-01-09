@@ -2,6 +2,10 @@ package internal
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"time"
 
 	"github.com/5xxxx/pie/driver"
@@ -20,6 +24,7 @@ type aggregate struct {
 	engine   driver.Client
 	pipeline bson.A
 	opts     []*options.AggregateOptions
+	collOpts []*options.CollectionOptions
 }
 
 func NewAggregate(engine driver.Client) driver.Aggregate {
@@ -186,7 +191,34 @@ func (a *aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, erro
 }
 
 func (a *aggregate) collectionByName(name string) *mongo.Collection {
-	return a.engine.Collection(name, a.db)
+	if a.collOpts == nil {
+		a.collOpts = make([]*options.CollectionOptions, 0)
+	}
+	return a.engine.Collection(name, a.collOpts, a.db)
+}
+
+// SetReadConcern sets the value for the ReadConcern field.
+func (a *aggregate) SetReadConcern(rc *readconcern.ReadConcern) driver.Aggregate {
+	a.collOpts = append(a.collOpts, options.Collection().SetReadConcern(rc))
+	return a
+}
+
+// SetCollWriteConcern sets the value for the WriteConcern field.
+func (a *aggregate) SetCollWriteConcern(wc *writeconcern.WriteConcern) driver.Aggregate {
+	a.collOpts = append(a.collOpts, options.Collection().SetWriteConcern(wc))
+	return a
+}
+
+// SetCollReadPreference sets the value for the ReadPreference field.
+func (a *aggregate) SetCollReadPreference(rp *readpref.ReadPref) driver.Aggregate {
+	a.collOpts = append(a.collOpts, options.Collection().SetReadPreference(rp))
+	return a
+}
+
+// SetCollRegistry sets the value for the Registry field.
+func (a *aggregate) SetCollRegistry(r *bsoncodec.Registry) driver.Aggregate {
+	a.collOpts = append(a.collOpts, options.Collection().SetRegistry(r))
+	return a
 }
 
 func (a *aggregate) Collection(doc interface{}) driver.Aggregate {

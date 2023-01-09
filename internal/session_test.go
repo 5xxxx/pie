@@ -2130,7 +2130,7 @@ func Test_session_Regex(t *testing.T) {
 	}
 	type args struct {
 		key   string
-		value interface{}
+		value string
 	}
 	tests := []struct {
 		name   string

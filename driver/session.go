@@ -2,6 +2,10 @@ package driver
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -178,4 +182,12 @@ type Session interface {
 	Regex(key string, value string) Session
 
 	SetDatabase(db string) Session
+
+	SetCollRegistry(r *bsoncodec.Registry) Session
+
+	SetCollReadPreference(rp *readpref.ReadPref) Session
+
+	SetCollWriteConcern(wc *writeconcern.WriteConcern) Session
+
+	SetReadConcern(rc *readconcern.ReadConcern) Session
 }

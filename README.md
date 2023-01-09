@@ -18,11 +18,18 @@ go get github.com/5xxxx/pie
 ### 连接到数据库
 
 ```go
-driver := pie.NewDriver("demo",options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
+package main
 
+import (
+    "github.com/5xxxx/pie"
+    "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+
+client, err := pie.NewClient("baz", options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 or
 
-driver, err := pie.NewDriver("demo")
+driver, err := pie.NewClient("demo")
 driver.SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
