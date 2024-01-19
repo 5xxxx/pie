@@ -15,15 +15,15 @@ import (
 )
 
 func (d *defaultClient) TransactionWithOptions(ctx context.Context, f schemas.TransFunc, opt ...*options.SessionOptions) error {
-	session, err := d.client.StartSession(opt...)
+	transaction, err := d.client.StartSession(opt...)
 	if err != nil {
 		return err
 	}
-	defer session.EndSession(context.Background())
+	defer transaction.EndSession(context.Background())
 
 	txnOpts := options.Transaction().
 		SetReadPreference(readpref.PrimaryPreferred())
-	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	_, err = transaction.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
 		return nil, f(sessCtx)
 	}, txnOpts)
 

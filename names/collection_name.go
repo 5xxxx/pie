@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-// CollectionName collection name driver to define customerize collection name
+// CollectionName interface to define custom collection name
 type CollectionName interface {
 	CollectionName() string
 }
@@ -25,37 +25,53 @@ var (
 	tvCache          sync.Map
 )
 
-func GetCollectionName(mapper Mapper, v reflect.Value) string {
+func implementsCollectionName(v reflect.Value) (string, bool) {
 	if v.Type().Implements(tpCollectionName) {
-		return v.Interface().(CollectionName).CollectionName()
+		return v.Interface().(CollectionName).CollectionName(), true
+	}
+
+	return "", false
+}
+
+func checkAndStoreInCache(v reflect.Value) string {
+	name, ok := tvCache.Load(v.Type())
+	if ok {
+		if name.(string) != "" {
+			return name.(string)
+		}
+	} else {
+		v2 := reflect.New(v.Type())
+		if v2.Type().Implements(tpCollectionName) {
+			tableName := v2.Interface().(CollectionName).CollectionName()
+			tvCache.Store(v.Type(), tableName)
+			return tableName
+		}
+		tvCache.Store(v.Type(), "")
+	}
+
+	return ""
+}
+
+func GetCollectionName(mapper Mapper, v reflect.Value) string {
+	if result, ok := implementsCollectionName(v); ok {
+		return result
 	}
 
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
-		if v.Type().Implements(tpCollectionName) {
-			return v.Interface().(CollectionName).CollectionName()
+		if result, ok := implementsCollectionName(v); ok {
+			return result
 		}
 	} else if v.CanAddr() {
 		v1 := v.Addr()
-		if v1.Type().Implements(tpCollectionName) {
-			return v1.Interface().(CollectionName).CollectionName()
+		if result, ok := implementsCollectionName(v1); ok {
+			return result
 		}
-	} else {
-		name, ok := tvCache.Load(v.Type())
-		if ok {
-			if name.(string) != "" {
-				return name.(string)
-			}
-		} else {
-			v2 := reflect.New(v.Type())
-			if v2.Type().Implements(tpCollectionName) {
-				tableName := v2.Interface().(CollectionName).CollectionName()
-				tvCache.Store(v.Type(), tableName)
-				return tableName
-			}
+	}
 
-			tvCache.Store(v.Type(), "")
-		}
+	name := checkAndStoreInCache(v)
+	if name != "" {
+		return name
 	}
 
 	return mapper.Obj2Collection(v.Type().Name())

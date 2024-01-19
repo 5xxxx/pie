@@ -216,7 +216,7 @@ func (i *index) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
 }
 
 func (i *index) collectionByName(name string) *mongo.Collection {
-	return i.engine.Collection(name, i.db)
+	return i.engine.Collection(name, nil, i.db)
 }
 
 func (i *index) Collection(doc interface{}) driver.Indexes {

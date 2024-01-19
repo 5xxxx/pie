@@ -45,15 +45,26 @@ func (s *session) Soft(f bool) driver.Session {
 	return s
 }
 
+// FilterBson applies a BSON filter to the session's filter object.
+// The provided BSON filter is added to the existing filter conditions.
+// The method then returns the session object itself for method chaining.
 func (s *session) FilterBson(d bson.D) driver.Session {
 	s.filter.FilterBson(d)
 	return s
 }
 
+// NewSession creates a new session with the specified engine and default condition filter.
+// It returns a driver.Session interface which can be used to interact with the engine.
 func NewSession(engine driver.Client) driver.Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
+// FindPagination executes a find command with pagination and populates a slice with the result documents.
+// - `page` specifies the page number to retrieve (must be greater than 0).
+// - `count` specifies the number of documents per page. If `count` is 0, it defaults to 10.
+// - `rowsSlicePtr` is the pointer to the slice where the result documents will be stored.
+// - `ctx` (optional) is an optional context that can be passed to the find command.
+// The method returns an error if any operation fails, otherwise, it returns nil.
 func (s *session) FindPagination(page, count int64, rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -89,6 +100,16 @@ func (s *session) FindPagination(page, count int64, rowsSlicePtr interface{}, ct
 	return nil
 }
 
+// BulkWrite executes a bulk write operation on the collection for the given slice of documents.
+// It takes an optional context.Context as an argument.
+// The method returns a *mongo.BulkWriteResult and an error.
+// The method first checks if the collection exists for the given slice of documents.
+// If the collection does not exist, it returns an error.
+// It then iterates over each document in the slice and creates an insert model using mongo.NewInsertOneModel.
+// The insert model is set with the document and appended to the mods slice.
+// A context is created, using the default context if no optional context is provided.
+// The method calls coll.BulkWrite with the created context, the mods slice, and s.bulkWriteOptions.
+// Finally, it returns the *mongo.BulkWriteResult and any error that occurred during the operation.
 func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
@@ -107,6 +128,9 @@ func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.Bu
 	return coll.BulkWrite(c, mods, s.bulkWriteOptions...)
 }
 
+// FilterBy sets the filter for the session to be used in the subsequent database operations.
+// The filter is specified by the given object.
+// The function returns the session itself to allow method chaining.
 func (s *session) FilterBy(object interface{}) driver.Session {
 	s.filter.FilterBy(object)
 	return s
@@ -130,6 +154,14 @@ func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Conte
 	return coll.Distinct(c, columns, filters, s.distinctOpts...)
 }
 
+// ReplaceOne executes a replace command and returns the UpdateResult for the document in the collection.
+// It replaces a single document in the collection that matches the specified filter with the given replacement document.
+// The replacement document can be of any type that can be encoded into BSON.
+// If the replacement document does not contain an "_id" field, one will be generated and added to the replacement document.
+// The method accepts an optional context.Context as the first parameter to allow for cancellation or deadline.
+// If no context is provided, a background context will be used.
+// The method returns the UpdateResult, which contains information about the operation such as the number of matched documents and modified documents.
+// If any error occurs during the operation, it will be returned along with the nil UpdateResult.
 func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -149,6 +181,12 @@ func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.Up
 	return coll.ReplaceOne(c, filters, doc, s.replaceOpts...)
 }
 
+// FindOneAndReplace executes a find and replace command for one document in the collection.
+// It takes the specified document and replaces the first document that matches the given filters.
+// If the document is not found, an error is returned.
+// The function returns an error if there was an issue finding the collection or if there was an error
+// decoding the replaced document into the original document variable.
+// If a context is provided, it is used for the operation. Otherwise, a default background context is used.
 func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -168,6 +206,15 @@ func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) err
 	return coll.FindOneAndReplace(c, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
 
+// FindOneAndUpdateBson executes a find and update command on the collection.
+// It takes in the following parameters:
+// - coll: the collection on which to execute the command
+// - bson: the update document in BSON format
+// - ctx: optional context.Context object for cancellation and deadline propagation
+//
+// It returns a *mongo.SingleResult and an error. The SingleResult contains
+// the result of the operation, and the error indicates any encountered errors
+// during the execution of the command.
 func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
@@ -185,6 +232,10 @@ func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx .
 	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
+// FindOneAndUpdate executes a find and update command on the collection and returns the SingleResult for the updated document.
+// It takes the document to be updated and an optional context.
+// If the operation is successful, it returns the SingleResult containing the updated document and nil error.
+// If there is an error during the operation, it returns nil for the SingleResult and the error.
 func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 
 	coll, err := s.collectionForStruct(doc)
@@ -203,6 +254,17 @@ func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mo
 	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
+// FindAndDelete executes a findAndDelete command and returns a SingleResult for the deleted document in the collection.
+// It takes in a document and an optional context as parameters. The document is used to determine the collection.
+// If an error occurs during the collection retrieval, it is returned immediately.
+// The filters for the find command are retrieved using the filter object of the session.
+// If an error occurs during the retrieval of filters, it is returned immediately.
+// The context is either obtained from the parameter or from a newly created background context if no parameter is provided.
+// The findAndDelete command is executed using the obtained collection, filters, and findOneAndDelete options of the session.
+// If an error occurs during the execution of the command, it is returned immediately.
+// The retrieved document is decoded and stored in the provided document interface{}.
+// If an error occurs during the decoding process, it is returned immediately.
+// Finally, if all operations succeed without any errors, nil is returned to indicate success.
 func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -220,7 +282,39 @@ func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
-// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
+// FindOne FindOne executes a find command and returns a single document from the collectionByName.
+//
+// Parameters:
+// - "doc" : a pointer to a struct where the result will be decoded into.
+// - "ctx" (optional) : context.Context containing any additional options or settings for the operation.
+//
+// Returns:
+// - "error" : the error encountered during the operation, if any. If the operation is successful, it returns nil.
+//
+// Example usage:
+//
+//	type User struct {
+//	    Name  string `bson:"name"`
+//	    Email string `bson:"email"`
+//	}
+//
+//	session := NewSession()
+//	var user User
+//	err := session.FindOne(&user)
+//	if err != nil {
+//	    // handle error
+//	}
+//
+//	// use the user data
+//	fmt.Println(user.Name, user.Email)
+//
+// Note:
+// The function uses the "collectionForStruct" method to get the collection associated with "doc".
+// It then applies the provided filters using the "filter.Filters" method.
+// If "ctx" is provided, it uses it as the context for the operation. Otherwise, it uses the default context.
+// The function retrieves the first document that matches the filters using the "FindOne" method of the collection.
+// If there is any error during the operation, it returns the error.
+// Otherwise, it decodes the document into the provided "doc" using the "Decode" method of the result.
 func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -246,7 +340,11 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	return nil
 }
 
-// FindAll Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
+// FindAll retrieves all documents from the collection and stores them in the provided slice.
+// The slice pointer should point to a slice of structs that match the documents schema.
+// The retrieved documents are unmarshalled and stored in the slice.
+// If the provided context is not empty, it is used for the database operation.
+// If an error occurs during the execution, it is returned. Otherwise, nil is returned.
 func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -273,7 +371,18 @@ func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) erro
 	return nil
 }
 
-// InsertOne executes an insert command to insert a single document into the collectionByName.
+// InsertOne inserts a single document into the collection.
+// It returns the inserted document's ObjectID and any error that occurred during the insertion.
+// If an error occurs during the insertion, the returned ObjectID will be [12]byte{} and the error will be non-nil.
+// The inserted document's ObjectID can be retrieved by performing a type assertion on the InsertedID field of the returned result.
+// Example:
+//
+//	insertedID, err := session.InsertOne(document)
+//	if err != nil {
+//	  // handle error
+//	} else {
+//	  // handle success
+//	}
 func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -293,7 +402,13 @@ func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.
 	return [12]byte{}, err
 }
 
-// InsertMany executes an insert command to insert multiple documents into the collectionByName.
+// InsertMany inserts multiple documents into the collection.
+// It takes a pointer to a slice of documents as the first argument,
+// and an optional context as the second argument.
+// The documents are converted to a slice of interfaces using reflection.
+// The function then retrieves the collection associated with the documents,
+// and inserts the documents into the collection using the InsertMany method.
+// The function returns the InsertManyResult and an error, if any.
 func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
@@ -312,7 +427,17 @@ func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.I
 	return coll.InsertMany(c, many, s.insertManyOpts...)
 }
 
-// DeleteOne executes a delete command to delete at most one document from the collectionByName.
+// DeleteOne executes a delete command and returns a DeleteResult for one document in the collection.
+// It takes in the document to be deleted and allows for an optional context.
+// If an error occurs during the operation, it returns nil for DeleteResult and the error.
+// Example usage:
+//
+//	result, err := session.DeleteOne(&user, context.Background())
+//	if err != nil {
+//	  // handle error
+//	}
+//	fmt.Printf("Deleted %d documents\n", result.DeletedCount)
+//	// Output: Deleted 1 documents
 func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -330,6 +455,16 @@ func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.Del
 	return coll.DeleteOne(c, filters, s.deleteOpts...)
 }
 
+// SoftDeleteOne soft deletes one document in the collection.
+// It updates the document by setting the "deleted_at" field to the current time.
+// The document is identified by the provided filters.
+//
+// The method first retrieves the collection for the given document.
+// It then prepares the filters to be used in the update operation.
+// If a context is provided, it uses that context; otherwise, it uses the background context.
+// Finally, it performs the update operation by calling UpdateOne on the collection.
+// The "deleted_at" field is updated with the current time using the $set operator.
+// If any error occurs during the update operation, it is returned.
 func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -349,7 +484,17 @@ func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	return err
 }
 
-// DeleteMany executes a delete command to delete documents from the collectionByName.
+// DeleteMany deletes multiple documents from the collection.
+// It takes the following parameters:
+// - doc: The document or value representing the document to delete.
+// - ctx: Optional context(s) for the operation.
+// It returns:
+// - *mongo.DeleteResult: The result of the delete operation.
+// - error: If an error occurs during the delete operation.
+// This method retrieves the collection for the specified document,
+// converts the filter into a MongoDB filter, executes the delete operation
+// using the specified context and delete options, and returns
+// the result of the delete operation or an error if any.
 func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -366,6 +511,10 @@ func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.De
 	return coll.DeleteMany(c, filters, s.deleteOpts...)
 }
 
+// SoftDeleteMany executes an update command to "soft delete" multiple documents in the collection.
+// It adds a "deleted_at" field with the current timestamp to the matching documents.
+// The method takes an interface{} type parameter (doc) representing the document(s) to be soft deleted.
+// It returns an error if any error occurs during the update operation.
 func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -385,6 +534,10 @@ func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error 
 	return err
 }
 
+// Clone creates a new instance of the session and returns it as a driver.Session.
+// The new session has the same values for the db, engine, filter, and various options
+// as the original session.
+// The cloned session is independent from the original session and can be used separately.
 func (s *session) Clone() driver.Session {
 	sess := session{
 		db:                    s.db,
@@ -408,6 +561,8 @@ func (s *session) Clone() driver.Session {
 	return &sess
 }
 
+// Limit sets the maximum number of documents to be returned by a find operation in the session.
+// The limit value must be a positive integer.
 func (s *session) Limit(i int64) driver.Session {
 	s.findOptions = append(s.findOptions, options.Find().SetLimit(i))
 	return s
@@ -420,24 +575,41 @@ func (s *session) SetReadConcern(rc *readconcern.ReadConcern) driver.Session {
 	return s
 }
 
-// SetCollWriteConcern sets the value for the WriteConcern field.
+// SetCollWriteConcern sets the write concern for the collection in the current session.
+// It appends the options.Collection().SetWriteConcern(wc) to the s.collOpts field.
+// The updated session is returned.
 func (s *session) SetCollWriteConcern(wc *writeconcern.WriteConcern) driver.Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetWriteConcern(wc))
 	return s
 }
 
-// SetCollReadPreference sets the value for the ReadPreference field.
+// SetCollReadPreference sets the read preference for the session's collection options.
+// The read preference determines how the driver routes read operations to replica set members or shards.
+// The parameter rp is a pointer to a readpref.ReadPref instance representing the desired read preference.
+// It modifies the session's collection options and returns the modified session.
+// Example usage:
+//
+//	session := &session{}
+//	readPref := readpref.Primary()
+//	session.SetCollReadPreference(readPref)
+//	// Continue using the session with the updated collection options.
 func (s *session) SetCollReadPreference(rp *readpref.ReadPref) driver.Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetReadPreference(rp))
 	return s
 }
 
-// SetCollRegistry sets the value for the Registry field.
+// SetCollRegistry sets the bsoncodec.Registry for the session's collection.
+// It appends the options.Collection().SetRegistry() to the session's collOpts
+// and returns the updated session.
 func (s *session) SetCollRegistry(r *bsoncodec.Registry) driver.Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetRegistry(r))
 	return s
 }
 
+// Skip sets the number of documents to skip before returning results.
+// It adds the skip option to the find and findOne options in the session.
+// The skip value is specified by the i parameter.
+// It returns the session.
 func (s *session) Skip(i int64) driver.Session {
 	s.findOptions = append(s.findOptions, options.Find().SetSkip(i))
 	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSkip(i))
@@ -477,6 +649,20 @@ func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 	return coll.CountDocuments(c, filters, s.countOpts...)
 }
 
+// UpdateOne executes an update command and returns a *mongo.UpdateResult for the matched document in the collection.
+// Parameters:
+// - `bean` : The document to update. Must be a non-zero value.
+// - `ctx` : Optional context.Context. If provided, it will be used as the context for the operation.
+// Returns:
+// - *mongo.UpdateResult : The result of the update operation, including the number of documents matched and modified.
+// - error : Any error that occurred during the update operation.
+// Example usage:
+//
+//	result, err := session.UpdateOne(bean)
+//	if err != nil {
+//	  // Handle error
+//	}
+//	fmt.Printf("Updated documents: %v\n", result.ModifiedCount)
 func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(bean)
 
@@ -499,6 +685,24 @@ func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.Up
 	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 }
 
+// UpdateOneBson updates a single document in the collection corresponding to the given struct
+// using the provided BSON filter.
+// It returns a pointer to mongo.UpdateResult, which contains information about the update operation,
+// and an error if any.
+// Parameters:
+// - coll: the collection or struct for which the update operation needs to be performed.
+// - bson: the BSON filter to identify the document to be updated.
+// - ctx: optional context.Context for the update operation.
+// Usage:
+// result, err := session.UpdateOneBson(collection, bsonFilter)
+//
+//	if err != nil {
+//	    fmt.Println("Error:", err)
+//	    return
+//	}
+//
+// fmt.Println("Matched Count:", result.MatchedCount)
+// fmt.Println("Modified Count:", result.ModifiedCount)
 func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
@@ -516,6 +720,19 @@ func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...conte
 	return c.UpdateOne(cc, filters, bson, s.updateOpts...)
 }
 
+// UpdateManyBson updates multiple documents in the collection
+// based on the specified BSON document.
+// It returns the UpdateResult that contains information about
+// the update operation and any errors encountered.
+//
+// Parameters:
+// - coll: The collection or struct to update.
+// - bson: The BSON document specifying the update.
+// - ctx: Optional context for the operation.
+//
+// Returns:
+// - *mongo.UpdateResult: The result of the update operation.
+// - error: Any error encountered during the operation.
 func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
@@ -573,6 +790,7 @@ func (s *session) makeValue(field string, value interface{}, ret bson.M) {
 	ret[split[0]] = value
 }
 
+// makeStruct iterates through the fields of a struct and populates a bson.M map with the field values.
 func (s *session) makeStruct(field string, value reflect.Value, ret bson.M) {
 	for index := 0; index < value.NumField(); index++ {
 		docType := reflect.TypeOf(value.Interface())
@@ -836,7 +1054,11 @@ func (s *session) SetMaxTime(d time.Duration) driver.Session {
 	return s
 }
 
-// SetProjection sets the value for the Projection field.
+// SetProjection sets the projection for findOneAndUpdate, findOneAndReplace, and findOneAndDelete operations in the session.
+// The projection parameter specifies which fields to include or exclude in the result documents.
+// The projection value should be a document with field names as keys and a value of 1 to include the field in the result,
+// or a value of 0 to exclude the field from the result.
+// This method returns the session itself to allow for method chaining.
 func (s *session) SetProjection(projection interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
@@ -846,7 +1068,22 @@ func (s *session) SetProjection(projection interface{}) driver.Session {
 	return s
 }
 
-// SetSort sets the value for the Sort field.
+// SetSort sets the sort order for the find one and update, find one and replace,
+// and find one and delete operations in the session.
+//
+// The sort parameter specifies the sorting criteria in the form of a document.
+// The document should contain field-value pairs, where the field is the name of the field
+// by which to sort and the value is either 1 for ascending sort or -1 for descending sort.
+// Example:
+//
+//	session.SetSort(bson.D{{"name", 1}}) // sort by name in ascending order
+//	session.SetSort(bson.D{{"age", -1}}) // sort by age in descending order
+//
+// This method appends the specified sort option to the find one and update, find one and replace,
+// and find one and delete options in the session. The options are used when executing the operations
+// on the collection.
+//
+// This method returns the session itself, allowing for method chaining.
 func (s *session) SetSort(sort interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
@@ -856,7 +1093,7 @@ func (s *session) SetSort(sort interface{}) driver.Session {
 	return s
 }
 
-// SetHint sets the value for the Hint field.
+// SetHint appends the hint option to the `findOneAndUpdateOpts`, `findOneAndReplaceOpts`, `findOneAndDeleteOpts`, and `updateOpts` slices of the session and returns the modified session
 func (s *session) SetHint(hint interface{}) driver.Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
@@ -867,20 +1104,19 @@ func (s *session) SetHint(hint interface{}) driver.Session {
 	return s
 }
 
-// Type { field: { $type: <BSON type> } }
-// { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
-// { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
-// db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
-// return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
+// Type sets a type filter for the specified key in the driver session.
+// The type filter is used to restrict the types of documents retrieved
+// during a database query.
+// This method takes in two parameters: key, which is the key used to specify
+// the type filter, and t, which is the interface{} representing the type filter.
+// The function returns the driver.Session object.
 func (s *session) Type(key string, t interface{}) driver.Session {
 	s.filter.Type(key, t)
 	return s
 }
 
-// Expr Allows the use of aggregation expressions within the query language.
-// { $expr: { <expression> } }
-// $expr can build query expressions that compare fields from the same document in a $match stage
-// todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
+// Expr applies the given condition to the current filter of the session.
+// It returns the session itself to allow method chaining.
 func (s *session) Expr(c driver.Condition) driver.Session {
 	s.filter.Expr(c)
 	return s
@@ -892,6 +1128,9 @@ func (s *session) Regex(key string, value string) driver.Session {
 	return s
 }
 
+// SetDatabase sets the database name for the session.
+// It takes a string argument representing the name of the database.
+// It updates the session's `db` field with the provided name and returns the updated session object.
 func (s *session) SetDatabase(db string) driver.Session {
 	s.db = db
 	return s
