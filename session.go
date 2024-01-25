@@ -217,10 +217,10 @@ type session struct {
 	collOpts              []*options.CollectionOptions
 }
 
-// Soft sets the "deleted_at" filter condition on the session's filter object.
-// The provided boolean value is used to determine if the filter should include or exclude deleted records.
-// When 'true' is passed, the "deleted_at" field exists condition is added to the filter, including deleted records.
-// When 'false' is passed, the "deleted_at" field does not exist condition is added to the filter, excluding deleted records.
+// Soft sets the `deleted_at` field of the session's filter object to the given value.
+// If `f` is true, it indicates that the session is soft-deleted.
+// If `f` is false, it indicates that the session is not soft-deleted.
+// The updated filter conditions are applied to the session.
 // The method then returns the session object itself for method chaining.
 func (s *session) Soft(f bool) Session {
 	s.filter.Exists("deleted_at", f)
@@ -248,27 +248,21 @@ func (s *session) prepareContext(ctx ...context.Context) context.Context {
 	return context.Background()
 }
 
-// FindPagination returns a paginated result of documents from the MongoDB collection associated with the session.
-// It takes a boolean parameter 'needCount' to determine if the count of documents should be returned as well.
-// The 'rowsSlicePtr' parameter is a pointer to the slice where the documents will be stored.
-// Optionally, it accepts a 'ctx' parameter of type 'context.Context'.
-// It returns the count of documents returned and an error, if any.
-// First, it gets the collection object for the provided 'rowsSlicePtr' using the 'collectionForSlice' method.
-// If there is an error in getting the collection, it returns 0 and the error.
-// Then, it retrieves the filter conditions from the session's filter object using the 'Filters' method.
-// If there is an error in getting the filters, it returns 0 and the error.
-// It prepares the 'context.Context' using the 'prepareContext' method with the optional 'ctx' parameter.
-// The method queries the collection using the obtained filters and the session's 'findOptions' with the 'Find' method.
-// If there is an error in querying the collection, it returns 0 and the error.
-// The cursor is stored in the 'cursor' variable.
-// A defer statement is used to ensure that the cursor is closed when the method returns.
-// If there is an error in closing the cursor, it prints the error.
-// If the 'needCount' parameter is true, it calls the 'CountDocuments' method on the collection to get the total count of matching documents.
-// If there is an error in getting the count, it returns 0 and the error.
-// The count is stored in the 'rowCount' variable.
-// Then, it retrieves all the documents from the cursor using the 'All' method and stores them in the 'rowsSlicePtr' slice.
-// If there is an error in retrieving the documents, it returns 0 and the error.
-// Finally, it returns the count of documents and a nil error.
+// FindPagination retrieves a paginated set of documents from a collection and optionally returns the total number of matching documents.
+// The method takes a boolean parameter "needCount" to indicate whether or not to count the total number of matching documents.
+// It also accepts a pointer to a slice which will contain the retrieved documents.
+// Optionally, a context.Context object can be passed as a variadic parameter to customize the behavior of the method.
+//
+// The method first obtains the collection associated with the provided rowsSlicePtr using the "collectionForSlice" method.
+// If there is an error obtaining the collection, an error is returned.
+//
+// Next, the method retrieves the filter conditions from the filter object associated with the session.
+// If there is an error obtaining the filter conditions, an error is returned.
+//
+// A context object is prepared by calling the "prepareContext" method with the provided context.Context object(s).
+//
+// The "coll.Find" method is then called with the obtained filter conditions and any additional find options specified.
+// If there is an
 func (s *session) FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error) {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -304,16 +298,18 @@ func (s *session) FindPagination(needCount bool, rowsSlicePtr interface{}, ctx .
 	return rowCount, nil
 }
 
-// BulkWrite executes a bulk write operation on the collection for the given slice of documents.
-// It takes an optional context.Context as an argument.
+// BulkWrite is a method that performs a bulk write operation on the session's collection.
+// It takes in a slice of documents and an optional context.
+// The passed documents can be of any type that can be converted into a BSON document.
 // The method returns a *mongo.BulkWriteResult and an error.
-// The method first checks if the collection exists for the given slice of documents.
-// If the collection does not exist, it returns an error.
-// It then iterates over each document in the slice and creates an insert model using mongo.NewInsertOneModel.
-// The insert model is set with the document and appended to the mods slice.
-// A context is created, using the default context if no optional context is provided.
-// The method calls coll.BulkWrite with the created context, the mods slice, and s.bulkWriteOptions.
-// Finally, it returns the *mongo.BulkWriteResult and any error that occurred during the operation.
+//
+// The method first retrieves the collection from the session using the 'collectionForSlice' method.
+// If an error occurs during the retrieval, the error is returned.
+//
+// Then, it uses reflection to iterate over the values in the 'docs' slice and creates an array of mongo.WriteModel.
+// Each value in the 'docs' slice is converted into a BSON document and added as an insert one model to the 'mods' array.
+//
+// After that, the method prepares the context using the 'prepareContext
 func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
@@ -337,20 +333,16 @@ func (s *session) FilterBy(object interface{}) Session {
 	return s
 }
 
-// Distinct performs a distinct operation on the collection associated with the session object.
-// It takes the following parameters:
-//   - doc: The document or struct to be used for determining the collection to perform the distinct operation on.
-//   - columns: The name of the field(s) for which the distinct values should be returned.
-//   - ctx: Optional context.Context object(s) to use for the operation.
-//
-// The method first retrieves the collection associated with the provided document or struct using the collectionForSlice method.
-// If an error occurs during the collection retrieval, it is returned immediately.
-// It then retrieves the filters from the session's filter object using the Filters method.
-// If an error occurs during the filters retrieval, it is returned immediately.
-// The method creates a new context object using context.Background() and assigns it to the variable c.
-// If any optional context.Context objects were provided, the first one is used instead of context.Background().
-// Finally, the method invokes the Distinct method on the retrieved collection with the provided context c, columns, filters, and session's distinctOpts.
-// The result of the operation is returned as a slice of interface{} and any error encountered is also returned.
+// Distinct retrieves distinct values for the specified columns from the collection associated with the session.
+// The provided 'doc' object is used to determine the collection to perform the distinct operation on.
+// It returns a slice of distinct interface{} values for the specified columns.
+// The 'columns' parameter specifies the columns from which to retrieve distinct values.
+// The optional 'ctx' parameter allows you to provide a context.Context object to control the execution of the operation.
+// It returns an error if any error occurs during the operation.
+// The method internally retrieves the collection based on the provided 'doc' object.
+// It then retrieves the filters associated with the session's filter object.
+// Finally, it performs the distinct operation on the collection using the retrieved context, columns, filters, and distinct options.
+// It returns the result of the distinct operation and any error that occurred.
 func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
 	coll, err := s.collectionForSlice(doc)
 	if err != nil {
@@ -366,14 +358,14 @@ func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Conte
 	return coll.Distinct(c, columns, filters, s.distinctOpts...)
 }
 
-// ReplaceOne executes a replace command and returns the UpdateResult for the document in the collection.
-// It replaces a single document in the collection that matches the specified filter with the given replacement document.
-// The replacement document can be of any type that can be encoded into BSON.
-// If the replacement document does not contain an "_id" field, one will be generated and added to the replacement document.
-// The method accepts an optional context.Context as the first parameter to allow for cancellation or deadline.
-// If no context is provided, a background context will be used.
-// The method returns the UpdateResult, which contains information about the operation such as the number of matched documents and modified documents.
-// If any error occurs during the operation, it will be returned along with the nil UpdateResult.
+// ReplaceOne replaces a single document in the collection that matches the specified filters with the provided document.
+// It returns the *mongo.UpdateResult, indicating the number of documents matched and modified, and an error if any.
+// The method first retrieves the collection associated with the document's struct using the s.collectionForStruct method.
+// If an error occurs during this retrieval, it is returned along with nil as the *mongo.UpdateResult.
+// Then, it retrieves the filters from the session's filter object using the s.filter.Filters method.
+// If an error occurs during this retrieval, it is returned along with nil as the *mongo.UpdateResult.
+// It prepares the context by creating a new context if ctx is not provided or using the provided context otherwise.
+// Finally, it calls the coll.ReplaceOne method to perform the replacement and returns the result or any error encountered.
 func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -435,10 +427,16 @@ func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx .
 	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
-// FindOneAndUpdate executes a find and update command on the collection and returns the SingleResult for the updated document.
-// It takes the document to be updated and an optional context.
-// If the operation is successful, it returns the SingleResult containing the updated document and nil error.
-// If there is an error during the operation, it returns nil for the SingleResult and the error.
+// FindOneAndUpdate updates a single document in the given collection based on the specified filter conditions.
+// The method takes a document interface and an optional context as parameters.
+// It first determines the collection for the given document using the 'collectionForStruct' method.
+// If an error occurs during the determination, it returns nil and the error.
+// Next, it retrieves the filter conditions using the 'Filters' method of the session's filter object.
+// If an error occurs during the retrieval, it returns nil and the error.
+// The method then prepares the context using the 'prepareContext' method.
+// It calls the 'FindOneAndUpdate' method on the collection with the prepared context, filters, and the update document, which is formatted as a '$set' operator.
+// The method also includes the session's 'findOneAndUpdateOpts' as additional options.
+// Finally, it returns the single result and any error that occurred during the update process.
 func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
 
 	coll, err := s.collectionForStruct(doc)
@@ -454,17 +452,18 @@ func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mo
 	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
-// FindAndDelete executes a findAndDelete command and returns a SingleResult for the deleted document in the collection.
-// It takes in a document and an optional context as parameters. The document is used to determine the collection.
-// If an error occurs during the collection retrieval, it is returned immediately.
-// The filters for the find command are retrieved using the filter object of the session.
-// If an error occurs during the retrieval of filters, it is returned immediately.
-// The context is either obtained from the parameter or from a newly created background context if no parameter is provided.
-// The findAndDelete command is executed using the obtained collection, filters, and findOneAndDelete options of the session.
-// If an error occurs during the execution of the command, it is returned immediately.
-// The retrieved document is decoded and stored in the provided document interface{}.
-// If an error occurs during the decoding process, it is returned immediately.
-// Finally, if all operations succeed without any errors, nil is returned to indicate success.
+// FindAndDelete deletes a single document from the collection based on the provided filters.
+// The document to be deleted is specified with the "doc" parameter.
+// The method returns an error if the collection for the provided document cannot be found.
+// If filters cannot be fetched from the session's filter object, an error is returned.
+// The method also accepts an optional context.Context parameter.
+// The context is used to control the behavior of the operation, such as timeouts or cancellation.
+// If no context is provided, a default context is used.
+// The function queries the collection for a document that matches the provided filters
+// and deletes that document using the FindOneAndDelete method.
+// The deleted document is then decoded into the "doc" parameter.
+// If decoding fails, an error is returned.
+// The method
 func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -479,39 +478,12 @@ func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
-// FindOne FindOne executes a find command and returns a single document from the collectionByName.
-//
-// Parameters:
-// - "doc" : a pointer to a struct where the result will be decoded into.
-// - "ctx" (optional) : context.Context containing any additional options or settings for the operation.
-//
-// Returns:
-// - "error" : the error encountered during the operation, if any. If the operation is successful, it returns nil.
-//
-// Example usage:
-//
-//	type User struct {
-//	    Name  string `bson:"name"`
-//	    Email string `bson:"email"`
-//	}
-//
-//	session := NewSession()
-//	var user User
-//	err := session.FindOne(&user)
-//	if err != nil {
-//	    // handle error
-//	}
-//
-//	// use the user data
-//	fmt.Println(user.Name, user.Email)
-//
-// Note:
-// The function uses the "collectionForStruct" method to get the collection associated with "doc".
-// It then applies the provided filters using the "filter.Filters" method.
-// If "ctx" is provided, it uses it as the context for the operation. Otherwise, it uses the default context.
-// The function retrieves the first document that matches the filters using the "FindOne" method of the collection.
-// If there is any error during the operation, it returns the error.
-// Otherwise, it decodes the document into the provided "doc" using the "Decode" method of the result.
+// FindOne finds a single document in the collection that matches the specified filters.
+// The method takes a pointer to a document struct and an optional context as parameters.
+// It returns an error if any error occurs during the process.
+// The document struct must be provided as a pointer, and it will be populated with the found document's data.
+// The method first determines the appropriate collection for the provided document using the collectionForStruct method.
+// If an error occurs during this process, it is
 func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -534,11 +506,11 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	return nil
 }
 
-// FindAll retrieves all documents from the collection and stores them in the provided slice.
-// The slice pointer should point to a slice of structs that match the documents schema.
-// The retrieved documents are unmarshalled and stored in the slice.
-// If the provided context is not empty, it is used for the database operation.
-// If an error occurs during the execution, it is returned. Otherwise, nil is returned.
+// FindAll retrieves all documents from the collection specified by the session's filter
+// and populates the provided slice pointer with the results.
+// The slice pointer should be of type []<document-type>.
+// Optionally, a context can be passed to customize the operation.
+// If no context
 func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
@@ -663,17 +635,10 @@ func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	return err
 }
 
-// DeleteMany deletes multiple documents from the collection.
-// It takes the following parameters:
-// - doc: The document or value representing the document to delete.
-// - ctx: Optional context(s) for the operation.
-// It returns:
-// - *mongo.DeleteResult: The result of the delete operation.
-// - error: If an error occurs during the delete operation.
-// This method retrieves the collection for the specified document,
-// converts the filter into a MongoDB filter, executes the delete operation
-// using the specified context and delete options, and returns
-// the result of the delete operation or an error if any.
+// DeleteMany deletes multiple documents from the collection associated with the session.
+// The method takes the document interface as the first argument, which represents the filter conditions for deleting documents.
+// It also accepts a variadic argument ctx of type context.Context, which allows passing additional context options.
+// The method returns a *mongo.DeleteResult, which contains information about the deletion operation, and an
 func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -994,8 +959,9 @@ func (s *session) RegexFilter(key, pattern string) Session {
 	return s
 }
 
-// ID sets the filter condition on the session's filter object to filter records by their ID.
-// The provided 'id' parameter specifies the ID value to filter by.
+// ID sets the filter condition on the session's filter object
+// to search for records with the specified ID value.
+// The provided 'id' parameter is used as the value to filter by.
 // The method then returns the session object itself for method chaining.
 func (s *session) ID(id interface{}) Session {
 	s.filter.ID(id)
@@ -1097,7 +1063,10 @@ func (s *session) Eq(key string, value interface{}) Session {
 	return s
 }
 
-// Gt {field: {$gt: value} } >
+// Gt sets the "greater than" filter condition on the session's filter object.
+// The provided key parameter indicates the field name on which the condition is applied.
+// The gt parameter specifies the value that the field should be greater than.
+// The method then returns the session object itself for method chaining.
 func (s *session) Gt(key string, gt interface{}) Session {
 	s.filter.Gt(key, gt)
 	return s
@@ -1246,11 +1215,11 @@ func (s *session) SetMaxTime(d time.Duration) Session {
 	return s
 }
 
-// SetProjection sets the projection for findOneAndUpdate, findOneAndReplace, and findOneAndDelete operations in the session.
-// The projection parameter specifies which fields to include or exclude in the result documents.
-// The projection value should be a document with field names as keys and a value of 1 to include the field in the result,
-// or a value of 0 to exclude the field from the result.
-// This method returns the session itself to allow for method chaining.
+// SetProjection sets the projection field on the findOneAndUpdateOpts, findOneAndReplaceOpts,
+// and findOneAndDeleteOpts options objects of the session.
+// The provided projection value is used to specify the fields that should be included or excluded
+// in the query result.
+// The method then returns the session object itself for method chaining.
 func (s *session) SetProjection(projection interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
@@ -1260,22 +1229,10 @@ func (s *session) SetProjection(projection interface{}) Session {
 	return s
 }
 
-// SetSort sets the sort order for the find one and update, find one and replace,
-// and find one and delete operations in the session.
-//
-// The sort parameter specifies the sorting criteria in the form of a document.
-// The document should contain field-value pairs, where the field is the name of the field
-// by which to sort and the value is either 1 for ascending sort or -1 for descending sort.
-// Example:
-//
-//	session.SetSort(bson.D{{"name", 1}}) // sort by name in ascending order
-//	session.SetSort(bson.D{{"age", -1}}) // sort by age in descending order
-//
-// This method appends the specified sort option to the find one and update, find one and replace,
-// and find one and delete options in the session. The options are used when executing the operations
-// on the collection.
-//
-// This method returns the session itself, allowing for method chaining.
+// SetSort sets the sort option for the FindOneAndUpdate, FindOneAndReplace, and FindOneAndDelete methods on the session object.
+// The provided sort parameter specifies the sorting order for the query.
+// The method adds the sort option to the respective findOneAndUpdateOpts, findOneAndReplaceOpts, and findOneAndDeleteOpts options arrays.
+// It then returns the session object itself for method chaining.
 func (s *session) SetSort(sort interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
@@ -1285,7 +1242,8 @@ func (s *session) SetSort(sort interface{}) Session {
 	return s
 }
 
-// SetHint appends the hint option to the `findOneAndUpdateOpts`, `findOneAndReplaceOpts`, `findOneAndDeleteOpts`, and `updateOpts` slices of the session and returns the modified session
+// SetHint sets the hint for the session's operations.
+//
 func (s *session) SetHint(hint interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
@@ -1296,19 +1254,19 @@ func (s *session) SetHint(hint interface{}) Session {
 	return s
 }
 
-// Type sets a type filter for the specified key in the driver session.
-// The type filter is used to restrict the types of documents retrieved
-// during a database query.
-// This method takes in two parameters: key, which is the key used to specify
-// the type filter, and t, which is the interface{} representing the type filter.
-// The function returns the Session object.
+// Type sets the type condition on the session's filter object for the specified key.
+// The type condition checks if the value of the specified key has the same type as the provided interface{} value.
+// The method accepts a string key and an interface{} value as parameters.
+// It then adds the type condition to the filter object using the specified key and value.
+// The method returns the session object itself for method chaining.
 func (s *session) Type(key string, t interface{}) Session {
 	s.filter.Type(key, t)
 	return s
 }
 
-// Expr applies the given condition to the current filter of the session.
-// It returns the session itself to allow method chaining.
+// Expr sets a custom filter expression on the session's filter object.
+// The provided Condition value represents the custom filter expression.
+// The method then returns the session object itself for method chaining.
 func (s *session) Expr(c Condition) Session {
 	s.filter.Expr(c)
 	return s
