@@ -30,16 +30,16 @@ client, err := pie.NewClient("baz", options.Client().ApplyURI("mongodb://127.0.0
 or
 
 driver, err := pie.NewClient("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 var user User
-err = driver.Filter("nickName", "淳朴的润土").FindOne(&user)
+err = Filter("nickName", "淳朴的润土").FindOne(&user)
 if err != nil {
     panic(err)
 }
@@ -51,16 +51,16 @@ pie还处于开发阶段，如果有不能满足需求的功能可以调用DataB
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 
-base := driver.DataBase()
+base := DataBase()
 matchStage := bson.D{{"$match", bson.D{{"operationType", "insert"}}}}
 opts := options.ChangeStream().SetMaxAwaitTime(2 * time.Second)
 
@@ -88,11 +88,11 @@ type User struct {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
@@ -100,7 +100,7 @@ var user User
 user.Username = "小明"
 user.MobileNumber = "138888888"
 
-err := driver.Insert(&user)
+err := Insert(&user)
 if err != nil {
     fmt.Println(err)
 }
@@ -110,11 +110,11 @@ if err != nil {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
@@ -126,7 +126,7 @@ var users = []User{
     {NickName: "eee"},
 }
 
-_, err = driver.InsertMany(context.Background(), users)
+_, err = InsertMany(context.Background(), users)
 if err != nil {
     panic(err)
 }
@@ -136,27 +136,27 @@ if err != nil {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 var u User
-_, err := driver.Filter("username", "小明").Get(&u)
+_, err := Filter("username", "小明").Get(&u)
 if err != nil {
     panic(err)
 }
 
 or
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
@@ -170,7 +170,7 @@ var user User
 user.Id, _ = primitive.ObjectIDFromHex("5f0ace734e2d4100013d8797")
 user.Username = "Jack"
 user.MobileNumber = "+86 10086"
-err = driver.FilterBy(user).FindOne(context.Background(), &user)
+err = FilterBy(user).FindOne(context.Background(), &user)
 if err != nil {
     panic(err)
 }
@@ -181,16 +181,16 @@ if err != nil {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 var user []User
-driver.Gt("age",10).Skip(10).Limit(100).FindAll(&user)
+Gt("age",10).Skip(10).Limit(100).FindAll(&user)
 if err != nil {
     panic(err)
 }
@@ -198,11 +198,11 @@ if err != nil {
 or
 
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
@@ -215,7 +215,7 @@ type User struct {
 var users []User
 var user User
 user.Age = 22
-err = driver.FilterBy(user).FindAll(context.Background(), &users)
+err = FilterBy(user).FindAll(context.Background(), &users)
 if err != nil {
     panic(err)
 }
@@ -228,17 +228,17 @@ fmt.Println(users)
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 u := new(User)
 u.Username = "xiao_ming"
-err := driver.Filter("mobileNumber", "138888888").Id(u.Id).Update(u)
+err := Filter("mobileNumber", "138888888").Id(u.Id).Update(u)
 if err != nil {
     fmt.Println(err)
 }
@@ -248,17 +248,17 @@ if err != nil {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 u := new(User)
 u.MobileNumber = "138888888"
-err := driver.Id(u.Id).Delete(u)
+err := Id(u.Id).Delete(u)
 if err != nil {
     fmt.Println(err)
 }
@@ -268,17 +268,17 @@ if err != nil {
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 u := new(User)
 u.MobileNumber = "138888888"
-err := driver.DeleteMany(u)
+err := DeleteMany(u)
 if err != nil {
     fmt.Println(err)
 }
@@ -287,17 +287,17 @@ if err != nil {
 ### Aggregate
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
 var user []User
 
-err = driver.Aggregate().
+err = Aggregate().
 Match(pie.DefaultCondition().
 Eq("nick_name", "黄晶晶").
 Eq("mobile_number", "c5b013cb2e102e0e743f117220b2acd1")).All(&user)
@@ -311,15 +311,15 @@ fmt.Println(user)
 
 ```go
 driver, err := pie.NewDriver("demo")
-driver.SetURI("mongodb://127.0.0.1:27017")
+SetURI("mongodb://127.0.0.1:27017")
 if err != nil {
     panic(err)
 }
-if err = driver.Connect(context.Background()); err != nil {
+if err = Connect(context.Background()); err != nil {
     panic(err)
 }
 
-indexes, err := driver.
+indexes, err := 
     AddIndex(bson.M{"nickName": 1}, options.Index().SetBackground(true)).
     AddIndex(bson.M{"birthday": 1}).
     AddIndex(bson.M{"createdAt": 1, "mobileNumber": 1},

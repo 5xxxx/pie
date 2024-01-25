@@ -1,33 +1,174 @@
-package internal
+package pie
 
 import (
 	"context"
 	"errors"
+	"github.com/5xxxx/pie/names"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"reflect"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/5xxxx/pie/driver"
-	"github.com/5xxxx/pie/names"
 	"github.com/5xxxx/pie/schemas"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
+
+// Client is an interface that provides various methods for interacting with a MongoDB database.
+//
+// FindPagination retrieves paginated documents from the specified collection based on the given page and count.
+// FindOneAndReplace replaces a single document that matches the filter with the provided document.
+// FindOneAndUpdate updates a single document that matches the filter with the provided update document.
+// FindAndDelete deletes a single document that matches the filter.
+// FindOne retrieves a single document that matches the filter.
+// FindAll retrieves all documents that match the filter.
+// RegexFilter applies a regular expression filter to the session.
+// Distinct returns an array of distinct values for a specified field across a collection.
+// FindOneAndUpdateBson updates a single document that matches the BSON filter with the provided update BSON document.
+// InsertOne inserts a single document into the collection.
+// InsertMany inserts multiple documents into the collection.
+// BulkWrite performs multiple write operations in bulk on the collection.
+// ReplaceOne replaces a single document that matches the filter with the provided replacement document.
+// Update updates a single document that matches the filter with the provided update document.
+// UpdateMany updates multiple documents that match the filter with the provided update document.
+// UpdateOneBson updates a single document that matches the BSON filter with the provided update BSON document.
+// UpdateManyBson updates multiple documents that match the BSON filter with the provided update BSON document.
+// SoftDeleteOne performs a soft delete on a single document that matches the filter.
+// SoftDeleteMany performs a soft delete on multiple documents that match the filter.
+// DeleteOne deletes a single document that matches the filter.
+// DeleteMany deletes multiple documents that match the filter.
+// DataBase returns the underlying mongo.Database associated with the client.
+// Collection returns the mongo.Collection with the specified name and options.
+// Ping checks if the client is connected to the database and returns an error if not.
+// Connect establishes a connection to the database.
+// Disconnect closes the connection to the database.
+// Soft sets the soft filter state of the session.
+// FilterBy applies the specified object as a filter to the session.
+// Filter adds a key-value filter to the session.
+// Asc adds the specified column names as sort order in ascending order to the session.
+// Eq adds an equal filter to the session.
+// Ne adds a not equal filter to the session.
+// Nin adds a not in filter to the session.
+// Nor adds a nor condition to the session.
+// Exists adds an exists condition to the session.
+// Type adds a type condition to the session.
+// Expr adds an expression filter to the session.
+// Regex adds a regex filter to the session.
+// ID adds an _id filter to the session.
+// Gt adds a greater than filter to the session.
+// Gte adds a greater than or equal to filter to the session.
+// Lt adds a less than filter to the session.
+// Lte adds a less than or equal to filter to the session.
+// In adds an in filter to the session.
+// And adds an and condition to the session.
+// Not adds a not condition to the session.
+// Or adds an or condition to the session.
+// Limit sets the maximum number of documents the session should return.
+// Skip sets the number of documents the session should skip.
+// Count returns the number of documents that match the filter.
+// Desc adds the specified column names as sort order in descending order to the session.
+// FilterBson adds a BSON filter to the session.
+// NewIndexes returns a new Indexes instance for managing collection indexes.
+// DropAll drops all indexes from the specified document's collection.
+// DropOne drops the specified index from the specified document's collection.
+// AddIndex adds an index to the specified document's collection.
+// NewSession returns a new session for performing multiple operations.
+// Aggregate returns an aggregate operation for the specified document's collection.
+// CollectionNameForStruct returns the collection name for the specified document struct.
+// CollectionNameForSlice returns the collection name for the specified document slice.
+// Transaction starts a transaction and executes the provided function within the transaction context.
+// TransactionWithOptions starts a transaction with the provided options and executes the provided function within the transaction context.
+type Client interface {
+	FindPagination(needCount bool, doc interface{}, ctx ...context.Context) (int64, error)
+	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
+	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+	FindAndDelete(doc interface{}, ctx ...context.Context) error
+	FindOne(doc interface{}, ctx ...context.Context) error
+	FindAll(docs interface{}, ctx ...context.Context) error
+	RegexFilter(key, pattern string) Session
+	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
+	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+
+	InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
+	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
+	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	SoftDeleteOne(filter interface{}, ctx ...context.Context) error
+	SoftDeleteMany(filter interface{}, ctx ...context.Context) error
+	DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+
+	DataBase() *mongo.Database
+	// Collection(name string, db ...string) *mongo.Collection
+	Collection(name string, collOpts []*options.CollectionOptions, db ...string) *mongo.Collection
+	Ping() error
+	Connect(ctx ...context.Context) (err error)
+	Disconnect(ctx ...context.Context) error
+
+	// Soft filter
+	Soft(s bool) Session
+	FilterBy(object interface{}) Session
+	Filter(key string, value interface{}) Session
+	Asc(colNames ...string) Session
+	Eq(key string, value interface{}) Session
+	Ne(key string, ne interface{}) Session
+	Nin(key string, nin interface{}) Session
+	Nor(c Condition) Session
+	Exists(key string, exists bool, filter ...Condition) Session
+	Type(key string, t interface{}) Session
+	Expr(filter Condition) Session
+	Regex(key string, value string) Session
+	ID(id interface{}) Session
+	Gt(key string, value interface{}) Session
+	Gte(key string, value interface{}) Session
+	Lt(key string, value interface{}) Session
+	Lte(key string, value interface{}) Session
+	In(key string, value interface{}) Session
+	And(filter Condition) Session
+	Not(key string, value interface{}) Session
+	Or(filter Condition) Session
+	Limit(limit int64) Session
+	Skip(skip int64) Session
+	Count(i interface{}, ctx ...context.Context) (int64, error)
+	Desc(s1 ...string) Session
+	FilterBson(d bson.D) Session
+
+	NewIndexes() Indexes
+	DropAll(doc interface{}, ctx ...context.Context) error
+	DropOne(doc interface{}, name string, ctx ...context.Context) error
+	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
+
+	NewSession() Session
+	Aggregate() Aggregate
+
+	CollectionNameForStruct(doc interface{}) (*schemas.Collection, error)
+	CollectionNameForSlice(doc interface{}) (*schemas.Collection, error)
+	Transaction(ctx context.Context, f schemas.TransFunc) error
+	TransactionWithOptions(ctx context.Context, f schemas.TransFunc, opt ...*options.SessionOptions) error
+}
 
 // defaultClient is a struct that represents a default client.
 type defaultClient struct {
 	client     *mongo.Client
-	parser     *driver.Parser
+	parser     *Parser
 	db         string
 	clientOpts []*options.ClientOptions
 }
 
 // NewClient creates a new client with the specified database name and options.
-// It returns a driver.Client interface and an error.
-func NewClient(db string, opts ...*options.ClientOptions) (driver.Client, error) {
+// It returns a Client interface and an error.
+func NewClient(db string, opts ...*options.ClientOptions) (Client, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
 	client, err := mongo.NewClient(opts...)
 	if err != nil {
@@ -42,7 +183,7 @@ func NewClient(db string, opts ...*options.ClientOptions) (driver.Client, error)
 		return nil, err
 	}
 
-	parser := driver.NewParser(mapper, mapper)
+	parser := NewParser(mapper, mapper)
 	d := defaultClient{
 		clientOpts: opts,
 		parser:     parser,
@@ -206,7 +347,7 @@ func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error 
 }
 
 // FilterBson filters the BSON document `x` and returns a new session with the filter applied.
-func (d *defaultClient) FilterBson(x bson.D) driver.Session {
+func (d *defaultClient) FilterBson(x bson.D) Session {
 	return d.NewSession().FilterBson(x)
 }
 
@@ -215,7 +356,7 @@ func (d *defaultClient) FilterBson(x bson.D) driver.Session {
 // database deletions are temporarily disabled. This can be helpful for simulating safe
 // operations without affecting the actual data.
 // The method returns a new session with the soft flag set to the specified value.
-func (d *defaultClient) Soft(s bool) driver.Session {
+func (d *defaultClient) Soft(s bool) Session {
 	return d.NewSession().Soft(s)
 }
 
@@ -223,7 +364,7 @@ func (d *defaultClient) Soft(s bool) driver.Session {
 // It returns a new session with the applied filter.
 // The key parameter specifies the field on which the regular expression filter is applied.
 // The pattern parameter specifies the regular expression pattern to match against the key.
-func (d *defaultClient) RegexFilter(key, pattern string) driver.Session {
+func (d *defaultClient) RegexFilter(key, pattern string) Session {
 	return d.NewSession().RegexFilter(key, pattern)
 }
 
@@ -240,18 +381,18 @@ func (d *defaultClient) RegexFilter(key, pattern string) driver.Session {
 //	The first column specified will be sorted first, followed by the second column, and so on.
 //	If multiple documents have the same value for the first column,
 //	the second column will be used to determine the order, and so on.
-func (d *defaultClient) Asc(colNames ...string) driver.Session {
+func (d *defaultClient) Asc(colNames ...string) Session {
 	return d.NewSession().Asc(colNames...)
 }
 
 // Eq generates a new session with an equality filter applied to the specified key and value.
 // The generated session can be further used to execute find commands with the equality filter.
-func (d *defaultClient) Eq(key string, value interface{}) driver.Session {
+func (d *defaultClient) Eq(key string, value interface{}) Session {
 	return d.NewSession().Eq(key, value)
 }
 
 // Ne is a method that constructs a "not equal" query filter
-// using the given key and value. It returns a driver.Session
+// using the given key and value. It returns a Session
 // that can be used to execute the query.
 //
 // Example:
@@ -264,12 +405,12 @@ func (d *defaultClient) Eq(key string, value interface{}) driver.Session {
 // - ne: the value that the key should not be equal to
 //
 // Returns:
-// - driver.Session: a session that can be used to execute the query.
-func (d *defaultClient) Ne(key string, ne interface{}) driver.Session {
+// - Session: a session that can be used to execute the query.
+func (d *defaultClient) Ne(key string, ne interface{}) Session {
 	return d.NewSession().Gt(key, ne)
 }
 
-// Nin returns a new driver.Session where the specified key does not match the specified value(s).
+// Nin returns a new Session where the specified key does not match the specified value(s).
 // It executes a nin command and returns the resulting session.
 // This can be used to exclude documents from a query based on the values of a specific field.
 // The key parameter specifies the field key on which the nin operation will be performed.
@@ -288,12 +429,12 @@ func (d *defaultClient) Ne(key string, ne interface{}) driver.Session {
 //
 // Note: The value provided for the nin parameter can be of any type, as long as it matches the key's type in MongoDB.
 // If the value is of a different type, an error may occur during the execution of the session.
-func (d *defaultClient) Nin(key string, nin interface{}) driver.Session {
+func (d *defaultClient) Nin(key string, nin interface{}) Session {
 	return d.NewSession().Nin(key, nin)
 }
 
-// Nor constructs a negation condition and returns a new driver.Session with the negation condition applied.
-func (d *defaultClient) Nor(c driver.Condition) driver.Session {
+// Nor constructs a negation condition and returns a new Session with the negation condition applied.
+func (d *defaultClient) Nor(c Condition) Session {
 	return d.NewSession().Nor(c)
 }
 
@@ -310,13 +451,13 @@ func (d *defaultClient) Nor(c driver.Condition) driver.Session {
 //	...
 //	session.Close()
 //	// Close the session to release resources
-func (d *defaultClient) Exists(key string, exists bool, filter ...driver.Condition) driver.Session {
+func (d *defaultClient) Exists(key string, exists bool, filter ...Condition) Session {
 	return d.NewSession().Exists(key, exists, filter...)
 }
 
-// Type executes a GT command with the given key and value and returns a driver.Session.
+// Type executes a GT command with the given key and value and returns a Session.
 // This method is used to filter the results of a find command based on a type field in the documents.
-func (d *defaultClient) Type(key string, t interface{}) driver.Session {
+func (d *defaultClient) Type(key string, t interface{}) Session {
 	return d.NewSession().Gt(key, t)
 }
 
@@ -324,13 +465,13 @@ func (d *defaultClient) Type(key string, t interface{}) driver.Session {
 // The session can be used to execute operations using the given filter condition.
 // The filter parameter specifies the condition to be used for the session.
 // Returns a Session object that allows executing operations using the provided filter.
-func (d *defaultClient) Expr(filter driver.Condition) driver.Session {
+func (d *defaultClient) Expr(filter Condition) Session {
 	return d.NewSession().Expr(filter)
 }
 
 // Regex constructs a regular expression using the specified key and value
 // and returns a Session with the regular expression applied.
-func (d *defaultClient) Regex(key string, value string) driver.Session {
+func (d *defaultClient) Regex(key string, value string) Session {
 	return d.NewSession().Regex(key, value)
 }
 
@@ -369,11 +510,11 @@ func (d *defaultClient) Ping() error {
 //	client.Filter("age", 30)
 //
 // This will only return documents where the "age" field is equal to 30.
-func (d *defaultClient) Filter(key string, value interface{}) driver.Session {
+func (d *defaultClient) Filter(key string, value interface{}) Session {
 	return d.NewSession().Filter(key, value)
 }
 
-// ID returns a driver.Session with the specified ID. The driver.Session object
+// ID returns a Session with the specified ID. The Session object
 // represents a session with a specific ID that can be used to perform various
 // operations on the MongoDB database.
 //
@@ -381,12 +522,12 @@ func (d *defaultClient) Filter(key string, value interface{}) driver.Session {
 // - id: The ID of the session.
 //
 // Returns:
-// A driver.Session object with the specified ID.
-func (d *defaultClient) ID(id interface{}) driver.Session {
+// A Session object with the specified ID.
+func (d *defaultClient) ID(id interface{}) Session {
 	return d.NewSession().ID(id)
 }
 
-// Gt executes a find command with a greater than condition and returns a new driver.Session.
+// Gt executes a find command with a greater than condition and returns a new Session.
 // The condition is applied to the specified key in the document.
 // The value parameter specifies the value that the key should be greater than.
 // Example usage:
@@ -394,7 +535,7 @@ func (d *defaultClient) ID(id interface{}) driver.Session {
 //	err := client.Gt("age", 18).FindOne(&result)
 //
 // This will find a document where the "age" key is greater than 18
-func (d *defaultClient) Gt(key string, value interface{}) driver.Session {
+func (d *defaultClient) Gt(key string, value interface{}) Session {
 	return d.NewSession().Gt(key, value)
 }
 
@@ -407,18 +548,18 @@ func (d *defaultClient) Gt(key string, value interface{}) driver.Session {
 //	client.Gte("age", 30)
 //
 // This will create a query filter where the "age" field must be greater than or equal to 30.
-func (d *defaultClient) Gte(key string, value interface{}) driver.Session {
+func (d *defaultClient) Gte(key string, value interface{}) Session {
 	return d.NewSession().Gte(key, value)
 }
 
 // Lt returns a new session with a query filter that matches documents where the value of the specified key is less than the given value.
-func (d *defaultClient) Lt(key string, value interface{}) driver.Session {
+func (d *defaultClient) Lt(key string, value interface{}) Session {
 	return d.NewSession().Lt(key, value)
 }
 
 // Lte returns a new session with the query filter that matches documents where the value of the specified key is less than or equal to the given value.
 // The returned session can be used to execute further operations using the Lte operator in the query filter.
-func (d *defaultClient) Lte(key string, value interface{}) driver.Session {
+func (d *defaultClient) Lte(key string, value interface{}) Session {
 	return d.NewSession().Lte(key, value)
 }
 
@@ -435,17 +576,17 @@ func (d *defaultClient) Lte(key string, value interface{}) driver.Session {
 // "isAdmin" is another key and the value is a boolean true.
 // The In method is called twice to set two different key-value pairs.
 // The updated session is then stored in the session variable for further method chaining.
-func (d *defaultClient) In(key string, value interface{}) driver.Session {
+func (d *defaultClient) In(key string, value interface{}) Session {
 	return d.NewSession().In(key, value)
 }
 
 // And appends an additional filter to the existing filter list in the session
 // and returns the updated session.
 //
-// filter is the driver.Condition to be added to the existing filter list in the session.
+// filter is the Condition to be added to the existing filter list in the session.
 //
 // Example:
-// addFilter := driver.Eq("name", "John")
+// addFilter := Eq("name", "John")
 // newSession := d.And(addFilter)
 //
 // In the above example, the "name" field should be equal to "John" for the document
@@ -457,20 +598,20 @@ func (d *defaultClient) In(key string, value interface{}) driver.Session {
 //
 // Returns:
 // The updated session with the additional filter applied.
-func (d *defaultClient) And(filter driver.Condition) driver.Session {
+func (d *defaultClient) And(filter Condition) Session {
 	return d.NewSession().And(filter)
 }
 
 // Not excludes documents from a find command that have the specified key-value pair.
 // This method returns a new Session with the exclusion applied.
 // The new Session will return results excluding documents with the given key-value pair.
-func (d *defaultClient) Not(key string, value interface{}) driver.Session {
+func (d *defaultClient) Not(key string, value interface{}) Session {
 	return d.NewSession().Not(key, value)
 }
 
 // Or adds an additional filter condition to the current session using the OR logical operator.
 // It returns a new session with the added filter condition.
-func (d *defaultClient) Or(filter driver.Condition) driver.Session {
+func (d *defaultClient) Or(filter Condition) Session {
 	return d.NewSession().Or(filter)
 }
 
@@ -512,23 +653,23 @@ func (d *defaultClient) InsertMany(v interface{}, ctx ...context.Context) (*mong
 }
 
 // Limit sets the maximum number of documents that the query will return.
-// It takes an integer parameter `limit` and returns a `driver.Session`
+// It takes an integer parameter `limit` and returns a `Session`
 // that allows further query operations with the specified limit.
-func (d *defaultClient) Limit(limit int64) driver.Session {
+func (d *defaultClient) Limit(limit int64) Session {
 	return d.NewSession().Limit(limit)
 }
 
 // Skip returns a new session with the number of documents to skip set to the provided value.
 // The skip parameter determines the number of documents to skip before starting to return documents.
 // It creates a new session using NewSession() method, and then sets the limit on the session using Limit() method with the skip value.
-// The session is returned as a driver.Session interface.
+// The session is returned as a Session interface.
 // Example usage:
 //
 //	session := d.Skip(10)
 //	// use the session to perform operations on the database
 //
 // Note: The Skip method is specific to the defaultClient type and can only be called on instances of that type.
-func (d *defaultClient) Skip(skip int64) driver.Session {
+func (d *defaultClient) Skip(skip int64) Session {
 	return d.NewSession().Limit(skip)
 }
 
@@ -544,8 +685,8 @@ func (d *defaultClient) Count(i interface{}, ctx ...context.Context) (int64, err
 
 // Desc creates a new session with the default client and calls the Desc method on it.
 // It accepts optional session options as variadic input arguments.
-// It returns a driver.Session instance that has the Desc method called on it.
-func (d *defaultClient) Desc(s2 ...string) driver.Session {
+// It returns a Session instance that has the Desc method called on it.
+func (d *defaultClient) Desc(s2 ...string) Session {
 	return d.NewSession().Desc(s2...)
 }
 
@@ -609,13 +750,14 @@ func (d *defaultClient) SoftDeleteMany(filter interface{}, ctx ...context.Contex
 //	// ...
 //
 // Note: The provided object must be compatible with the FilterBy method of session.
-func (d *defaultClient) FilterBy(object interface{}) driver.Session {
+func (d *defaultClient) FilterBy(object interface{}) Session {
 	return d.NewSession().FilterBy(object)
 }
 
 // DropAll drops all indexes in the collection.
 // It returns an error if there was a problem dropping the indexes.
 func (d *defaultClient) DropAll(doc interface{}, ctx ...context.Context) error {
+	//d.
 	return d.NewIndexes().DropAll(doc, ctx...)
 }
 
@@ -627,13 +769,13 @@ func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Con
 // AddIndex adds an index to the collection using the provided keys and options.
 // It delegates the operation to the AddIndex method of the NewIndexes interface
 // returned by the NewIndexes method of the defaultClient instance.
-// It returns the driver.Indexes interface that allows chaining additional index operations.
-func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.Indexes {
+// It returns the Indexes interface that allows chaining additional index operations.
+func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
 	return d.NewIndexes().AddIndex(keys, opt...)
 }
 
-// NewIndexes returns a driver.Indexes implementation.
-// It creates a new instance of the index struct with the provided driver.Client.
+// NewIndexes returns a Indexes implementation.
+// It creates a new instance of the index struct with the provided Client.
 // The index struct is used to perform index-related operations on the collection.
 // Example usage:
 //
@@ -643,22 +785,22 @@ func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions)
 //	func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Context) error {
 //	    return d.NewIndexes().DropOne(doc, name, ctx...)
 //	}
-//	func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.Indexes {
+//	func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
 //	    return d.NewIndexes().AddIndex(keys, opt...)
 //	}
 //
 // This method is declared as:
 //
-//	func NewIndexes(driver driver.Client) driver.Indexes {
+//	func NewIndexes(driver Client) Indexes {
 //	    return &index{engine: driver}
 //	}
-func (d *defaultClient) NewIndexes() driver.Indexes {
+func (d *defaultClient) NewIndexes() Indexes {
 	return NewIndexes(d)
 }
 
 // NewSession creates a new session using the provided defaultClient instance.
 // It calls the NewSession function passing the defaultClient instance as the parameter.
-// It returns a driver.Session instance which represents the new session.
+// It returns a Session instance which represents the new session.
 // Note: The NewSession function must be implemented elsewhere and it is responsible for creating and initializing the session.
 // If an error occurs during the creation of the session, it is the responsibility of the caller to handle it.
 // Example usage:
@@ -669,14 +811,14 @@ func (d *defaultClient) NewIndexes() driver.Indexes {
 //	// Clean up the session after use
 //
 // Note: It is important to always close the session after use to prevent resource leaks.
-func (d *defaultClient) NewSession() driver.Session {
+func (d *defaultClient) NewSession() Session {
 	return NewSession(d)
 }
 
-// Aggregate returns a new instance of the driver.Aggregate interface.
+// Aggregate returns a new instance of the Aggregate interface.
 // It creates and returns a new Aggregate object using the provided defaultClient instance.
 // The created Aggregate object can be used to perform aggregation operations in MongoDB.
-func (d *defaultClient) Aggregate() driver.Aggregate {
+func (d *defaultClient) Aggregate() Aggregate {
 	return NewAggregate(d)
 }
 
@@ -727,7 +869,11 @@ func (d *defaultClient) CollectionNameForStruct(doc interface{}) (*schemas.Colle
 	return t, nil
 }
 
-//func (d *defaultClient) SetDatabase(string string) driver.Client {
+//func (d *defaultClient) NewSession() Session {
+//	return NewSession(d)
+//}
+
+//func (d *defaultClient) SetDatabase(string string) Client {
 //	d.db = string
 //	return d
 //}

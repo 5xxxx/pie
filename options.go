@@ -1,45 +1,53 @@
-package internal
+/*
+ *
+ * options.go
+ * driver
+ *
+ * Created by lintao on 2024/1/25 15:20
+ * Copyright © 2020-2024 LINTAO. All rights reserved.
+ *
+ */
+
+package pie
 
 import (
 	"crypto/tls"
-	"time"
-
-	"github.com/5xxxx/pie/driver"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"time"
 )
 
 // ClientOptions represents the options for configuring a client session.
 type ClientOptions interface {
 	// SetArrayFilters sets the value for the ArrayFilters field.
-	SetArrayFilters(filters options.ArrayFilters) driver.Session
+	SetArrayFilters(filters options.ArrayFilters) Session
 	// SetOrdered sets the value for the Ordered field.
-	SetOrdered(ordered bool) driver.Session
+	SetOrdered(ordered bool) Session
 	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-	SetBypassDocumentValidation(b bool) driver.Session
+	SetBypassDocumentValidation(b bool) Session
 	// SetReturnDocument sets the value for the ReturnDocument field.
-	SetReturnDocument(rd options.ReturnDocument) driver.Session
+	SetReturnDocument(rd options.ReturnDocument) Session
 
 	// SetUpsert sets the value for the Upsert field.
-	SetUpsert(b bool) driver.Session
+	SetUpsert(b bool) Session
 
 	// SetCollation sets the value for the Collation field.
-	SetCollation(collation *options.Collation) driver.Session
+	SetCollation(collation *options.Collation) Session
 
 	// SetMaxTime sets the value for the MaxTime field.
-	SetMaxTime(d time.Duration) driver.Session
+	SetMaxTime(d time.Duration) Session
 	// SetProjection sets the value for the Projection field.
-	SetProjection(projection interface{}) driver.Session
+	SetProjection(projection interface{}) Session
 
 	// SetSort sets the value for the Sort field.
-	SetSort(sort interface{}) driver.Session
+	SetSort(sort interface{}) Session
 
 	// SetHint sets the value for the Hint field.
-	SetHint(hint interface{}) driver.Session
+	SetHint(hint interface{}) Session
 }
 
 type Options struct {
@@ -52,50 +60,50 @@ func (o *Options) SetUpdateEmpty(e bool) {
 }
 
 // SetOrdered sets the value for the Ordered field.
-func (d *defaultClient) SetOrdered(ordered bool) driver.Session {
+func (d *defaultClient) SetOrdered(ordered bool) Session {
 	return d.NewSession().SetOrdered(ordered)
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (d *defaultClient) SetArrayFilters(filters options.ArrayFilters) driver.Session {
+func (d *defaultClient) SetArrayFilters(filters options.ArrayFilters) Session {
 	return d.NewSession().SetArrayFilters(filters)
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (d *defaultClient) SetBypassDocumentValidation(b bool) driver.Session {
+func (d *defaultClient) SetBypassDocumentValidation(b bool) Session {
 	return d.NewSession().SetBypassDocumentValidation(b)
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
-func (d *defaultClient) SetReturnDocument(rd options.ReturnDocument) driver.Session {
+func (d *defaultClient) SetReturnDocument(rd options.ReturnDocument) Session {
 	return d.NewSession().SetReturnDocument(rd)
 }
 
 // SetUpsert sets the value for the Upsert field.
-func (d *defaultClient) SetUpsert(b bool) driver.Session {
+func (d *defaultClient) SetUpsert(b bool) Session {
 	return d.NewSession().SetUpsert(b)
 }
 
 // SetCollation sets the value for the Collation field.
-func (d *defaultClient) SetCollation(collation *options.Collation) driver.Session {
+func (d *defaultClient) SetCollation(collation *options.Collation) Session {
 	return d.NewSession().SetCollation(collation)
 }
 
 // SetMaxTime sets the maximum amount of time for a command to run before an error is returned.
 // The time.Duration parameter represents the maximum time duration in which a command can run
 // without returning an error.
-func (d *defaultClient) SetMaxTime(t time.Duration) driver.Session {
+func (d *defaultClient) SetMaxTime(t time.Duration) Session {
 	return d.NewSession().SetMaxTime(t)
 }
 
 // SetProjection sets the value for the Projection field.
-func (d *defaultClient) SetProjection(projection interface{}) driver.Session {
+func (d *defaultClient) SetProjection(projection interface{}) Session {
 	return d.NewSession().SetProjection(projection)
 }
 
 // SetSort sets the value for the sort field of the session created by defaultClient.
 // It takes an argument "sort" of type interface{} which represents the sorting mechanism to be applied.
-// The method returns a driver.Session object which is created using the NewSession method.
+// The method returns a Session object which is created using the NewSession method.
 // The SetSort method is responsible for setting the sort value of the session and returning the modified session.
 // Example usage:
 //
@@ -105,7 +113,7 @@ func (d *defaultClient) SetProjection(projection interface{}) driver.Session {
 //	session.DoSomething()
 //	...
 //	session.DoSomethingElse()
-func (d *defaultClient) SetSort(sort interface{}) driver.Session {
+func (d *defaultClient) SetSort(sort interface{}) Session {
 	return d.NewSession().SetSort(sort)
 }
 
@@ -114,9 +122,8 @@ func (d *defaultClient) SetSort(sort interface{}) driver.Session {
 // The method creates a new session using the defaultClient's NewSession method.
 // It then sets the hint for the session using the SetHint method on the session.
 // Finally, it returns the session with the new hint set.
-func (d *defaultClient) SetHint(hint interface{}) driver.Session {
-	session := d.NewSession()
-	return session.SetHint(hint)
+func (d *defaultClient) SetHint(hint interface{}) Session {
+	return d.NewSession().SetHint(hint)
 }
 
 // SetURI sets the URI for the defaultClient instance.

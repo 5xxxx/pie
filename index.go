@@ -1,25 +1,39 @@
-package internal
+package pie
 
 import (
 	"context"
-	"time"
-
-	"github.com/5xxxx/pie/driver"
 	"github.com/5xxxx/pie/schemas"
 	"go.mongodb.org/mongo-driver/mongo"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// Indexes represents the interface for managing indexes in a database.
+type Indexes interface {
+	CreateIndexes(doc interface{}, ctx ...context.Context) ([]string, error)
+	DropAll(doc interface{}, ctx ...context.Context) error
+	DropOne(doc interface{}, name string, ctx ...context.Context) error
+	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
+	SetMaxTime(d time.Duration) Indexes
+	SetCommitQuorumInt(quorum int32) Indexes
+	SetCommitQuorumString(quorum string) Indexes
+	SetCommitQuorumMajority() Indexes
+	SetCommitQuorumVotingMembers() Indexes
+	SetDatabase(db string) Indexes
+	Collection(doc interface{}) Indexes
+}
 
 type index struct {
 	db                 string
 	doc                interface{}
-	engine             driver.Client
+	engine             Client
 	indexes            []mongo.IndexModel
 	createIndexOpts    []*options.CreateIndexesOptions
 	dropIndexesOptions []*options.DropIndexesOptions
 }
 
-func NewIndexes(driver driver.Client) driver.Indexes {
+func NewIndexes(driver Client) Indexes {
 	return &index{engine: driver}
 }
 
@@ -62,7 +76,7 @@ func (i *index) DropOne(doc interface{}, name string, ctx ...context.Context) er
 	return err
 }
 
-func (i *index) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.Indexes {
+func (i *index) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
 	m := mongo.IndexModel{
 		Keys: keys,
 	}
@@ -152,37 +166,37 @@ func (i *index) AddIndex(keys interface{}, opt ...*options.IndexOptions) driver.
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (i *index) SetMaxTime(d time.Duration) driver.Indexes {
+func (i *index) SetMaxTime(d time.Duration) Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetMaxTime(d))
 	i.dropIndexesOptions = append(i.dropIndexesOptions, options.DropIndexes().SetMaxTime(d))
 	return i
 }
 
 // SetCommitQuorumInt sets the value for the CommitQuorum field as an int32.
-func (i *index) SetCommitQuorumInt(quorum int32) driver.Indexes {
+func (i *index) SetCommitQuorumInt(quorum int32) Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumInt(quorum))
 	return i
 }
 
 // SetCommitQuorumString sets the value for the CommitQuorum field as a string.
-func (i *index) SetCommitQuorumString(quorum string) driver.Indexes {
+func (i *index) SetCommitQuorumString(quorum string) Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumString(quorum))
 	return i
 }
 
 // SetCommitQuorumMajority sets the value for the CommitQuorum to special "majority" value.
-func (i *index) SetCommitQuorumMajority() driver.Indexes {
+func (i *index) SetCommitQuorumMajority() Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumMajority())
 	return i
 }
 
 // SetCommitQuorumVotingMembers sets the value for the CommitQuorum to special "votingMembers" value.
-func (i *index) SetCommitQuorumVotingMembers() driver.Indexes {
+func (i *index) SetCommitQuorumVotingMembers() Indexes {
 	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetCommitQuorumVotingMembers())
 	return i
 }
 
-func (i *index) SetDatabase(db string) driver.Indexes {
+func (i *index) SetDatabase(db string) Indexes {
 	i.db = db
 	return i
 }
@@ -219,7 +233,7 @@ func (i *index) collectionByName(name string) *mongo.Collection {
 	return i.engine.Collection(name, nil, i.db)
 }
 
-func (i *index) Collection(doc interface{}) driver.Indexes {
+func (i *index) Collection(doc interface{}) Indexes {
 	i.doc = doc
 	return i
 }

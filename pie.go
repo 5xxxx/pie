@@ -38,16 +38,6 @@ func main() {
 
 package pie
 
-import (
-	"github.com/5xxxx/pie/driver"
-	"github.com/5xxxx/pie/internal"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-func NewClient(db string, options ...*options.ClientOptions) (driver.Client, error) {
-	return internal.NewClient(db, options...)
-}
-
-func NewCondition() driver.Condition {
-	return internal.DefaultCondition()
+func NewCondition() Condition {
+	return DefaultCondition()
 }

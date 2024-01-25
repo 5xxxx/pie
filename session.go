@@ -1,9 +1,10 @@
-package internal
+package pie
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/5xxxx/pie/utils"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -12,18 +13,194 @@ import (
 	"strings"
 	"time"
 
-	"github.com/5xxxx/pie/driver"
-	"github.com/5xxxx/pie/utils"
 	"go.mongodb.org/mongo-driver/bson"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type Session interface {
+	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
+
+	FilterBy(object interface{}) Session
+
+	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
+
+	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
+
+	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+
+	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+
+	FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error)
+
+	FindAndDelete(doc interface{}, ctx ...context.Context) error
+
+	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
+	FindOne(doc interface{}, ctx ...context.Context) error
+
+	// FindAll Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
+	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
+
+	// InsertOne executes an insert command to insert a single document into the collectionByName.
+	InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error)
+
+	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
+	InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
+
+	// DeleteOne executes a delete command to delete at most one document from the collectionByName.
+	DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	SoftDeleteOne(doc interface{}, ctx ...context.Context) error
+
+	// DeleteMany executes a delete command to delete documents from the collectionByName.
+	DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+
+	SoftDeleteMany(doc interface{}, ctx ...context.Context) error
+
+	Clone() Session
+	Limit(i int64) Session
+
+	Skip(i int64) Session
+
+	Count(i interface{}, ctx ...context.Context) (int64, error)
+
+	UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+
+	RegexFilter(key, pattern string) Session
+
+	ID(id interface{}) Session
+
+	Asc(colNames ...string) Session
+
+	Desc(colNames ...string) Session
+
+	Sort(colNames ...string) Session
+	Soft(f bool) Session
+	Filter(key string, value interface{}) Session
+	FilterBson(d bson.D) Session
+	// Eq Equals a Specified Value
+	//{ qty: 20 }
+	//Field in Embedded Document Equals a Value
+	//{"item.name": "ab" }
+	// Equals an Array Value
+	//{ tags: [ "A", "B" ] }
+	Eq(key string, value interface{}) Session
+
+	// Gt {field: {$gt: value} } >
+	Gt(key string, gt interface{}) Session
+
+	// Gte { qty: { $gte: 20 } } >=
+	Gte(key string, gte interface{}) Session
+
+	// In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
+	// tags: { $in: [ /^be/, /^st/ ] } }
+	// in []string []int ...
+	In(key string, in interface{}) Session
+
+	// Lt {field: {$lt: value} } <
+	Lt(key string, lt interface{}) Session
+
+	// Lte { field: { $lte: value} } <=
+	Lte(key string, lte interface{}) Session
+
+	// Ne {field: {$ne: value} } !=
+	Ne(key string, ne interface{}) Session
+
+	// Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
+	Nin(key string, nin interface{}) Session
+
+	// And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
+	//$and: [
+	//        { $or: [ { qty: { $lt : 10 } }, { qty : { $gt: 50 } } ] },
+	//        { $or: [ { sale: true }, { price : { $lt : 5 } } ] }
+	// ]
+	And(c Condition) Session
+
+	// Not { field: { $not: { <operator-expression> } } }
+	//not and Regular Expressions
+	//{ item: { $not: /^p.*/ } }
+	Not(key string, not interface{}) Session
+
+	// Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
+	// { sale: true }, { sale: { $exists: false } } ] }
+	// price != 1.99 || sale != true || sale exists || sale exists
+	Nor(c Condition) Session
+
+	// Or { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
+	Or(c Condition) Session
+
+	Exists(key string, exists bool, filter ...Condition) Session
+
+	// SetArrayFilters sets the value for the ArrayFilters field.
+	SetArrayFilters(filters options.ArrayFilters) Session
+
+	// SetOrdered sets the value for the Ordered field.
+	SetOrdered(ordered bool) Session
+
+	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
+	SetBypassDocumentValidation(b bool) Session
+
+	// SetReturnDocument sets the value for the ReturnDocument field.
+	SetReturnDocument(rd options.ReturnDocument) Session
+
+	// SetUpsert sets the value for the Upsert field.
+	SetUpsert(b bool) Session
+
+	// SetCollation sets the value for the Collation field.
+	SetCollation(collation *options.Collation) Session
+
+	// SetMaxTime sets the value for the MaxTime field.
+	SetMaxTime(d time.Duration) Session
+
+	// SetProjection sets the value for the Projection field.
+	SetProjection(projection interface{}) Session
+
+	// SetSort sets the value for the Sort field.
+	SetSort(sort interface{}) Session
+
+	// SetHint sets the value for the Hint field.
+	SetHint(hint interface{}) Session
+
+	// Type { field: { $type: <BSON type> } }
+	// { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
+	// { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
+	// db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
+	// return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
+	Type(key string, t interface{}) Session
+
+	// Expr Allows the use of aggregation expressions within the query language.
+	//{ $expr: { <expression> } }
+	//$expr can build query expressions that compare fields from the same document in a $match stage
+	//todo 没用过，不知道行不行。。https://docs.mongodb.com/manual/reference/operator/query/expr/#op._S_expr
+	Expr(c Condition) Session
+
+	// Regex todo 简单实现，后续增加支持
+	Regex(key string, value string) Session
+
+	SetDatabase(db string) Session
+
+	SetCollRegistry(r *bsoncodec.Registry) Session
+
+	SetCollReadPreference(rp *readpref.ReadPref) Session
+
+	SetCollWriteConcern(wc *writeconcern.WriteConcern) Session
+
+	SetReadConcern(rc *readconcern.ReadConcern) Session
+}
+
 type session struct {
 	db                    string
-	engine                driver.Client
-	filter                driver.Condition
+	engine                Client
+	filter                Condition
 	findOneOptions        []*options.FindOneOptions
 	findOptions           []*options.FindOptions
 	insertManyOpts        []*options.InsertManyOptions
@@ -45,7 +222,7 @@ type session struct {
 // When 'true' is passed, the "deleted_at" field exists condition is added to the filter, including deleted records.
 // When 'false' is passed, the "deleted_at" field does not exist condition is added to the filter, excluding deleted records.
 // The method then returns the session object itself for method chaining.
-func (s *session) Soft(f bool) driver.Session {
+func (s *session) Soft(f bool) Session {
 	s.filter.Exists("deleted_at", f)
 	return s
 }
@@ -53,14 +230,14 @@ func (s *session) Soft(f bool) driver.Session {
 // FilterBson applies a BSON filter to the session's filter object.
 // The provided BSON filter is added to the existing filter conditions.
 // The method then returns the session object itself for method chaining.
-func (s *session) FilterBson(d bson.D) driver.Session {
+func (s *session) FilterBson(d bson.D) Session {
 	s.filter.FilterBson(d)
 	return s
 }
 
 // NewSession creates a new session with the specified engine and default condition filter.
-// It returns a driver.Session interface which can be used to interact with the engine.
-func NewSession(engine driver.Client) driver.Session {
+// It returns a Session interface which can be used to interact with the engine.
+func NewSession(engine Client) Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
@@ -155,7 +332,7 @@ func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.Bu
 // FilterBy sets the filter for the session to be used in the subsequent database operations.
 // The filter is specified by the given object.
 // The function returns the session itself to allow method chaining.
-func (s *session) FilterBy(object interface{}) driver.Session {
+func (s *session) FilterBy(object interface{}) Session {
 	s.filter.FilterBy(object)
 	return s
 }
@@ -530,11 +707,11 @@ func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error 
 	return err
 }
 
-// Clone creates a new instance of the session and returns it as a driver.Session.
+// Clone creates a new instance of the session and returns it as a Session.
 // The new session has the same values for the db, engine, filter, and various options
 // as the original session.
 // The cloned session is independent from the original session and can be used separately.
-func (s *session) Clone() driver.Session {
+func (s *session) Clone() Session {
 	sess := session{
 		db:                    s.db,
 		engine:                s.engine,
@@ -559,13 +736,13 @@ func (s *session) Clone() driver.Session {
 
 // Limit sets the maximum number of documents to be returned by a find operation in the session.
 // The limit value must be a positive integer.
-func (s *session) Limit(i int64) driver.Session {
+func (s *session) Limit(i int64) Session {
 	s.findOptions = append(s.findOptions, options.Find().SetLimit(i))
 	return s
 }
 
 // SetReadConcern sets the value for the ReadConcern field.
-func (s *session) SetReadConcern(rc *readconcern.ReadConcern) driver.Session {
+func (s *session) SetReadConcern(rc *readconcern.ReadConcern) Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetReadConcern(rc))
 
 	return s
@@ -574,7 +751,7 @@ func (s *session) SetReadConcern(rc *readconcern.ReadConcern) driver.Session {
 // SetCollWriteConcern sets the write concern for the collection in the current session.
 // It appends the options.Collection().SetWriteConcern(wc) to the s.collOpts field.
 // The updated session is returned.
-func (s *session) SetCollWriteConcern(wc *writeconcern.WriteConcern) driver.Session {
+func (s *session) SetCollWriteConcern(wc *writeconcern.WriteConcern) Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetWriteConcern(wc))
 	return s
 }
@@ -589,7 +766,7 @@ func (s *session) SetCollWriteConcern(wc *writeconcern.WriteConcern) driver.Sess
 //	readPref := readpref.Primary()
 //	session.SetCollReadPreference(readPref)
 //	// Continue using the session with the updated collection options.
-func (s *session) SetCollReadPreference(rp *readpref.ReadPref) driver.Session {
+func (s *session) SetCollReadPreference(rp *readpref.ReadPref) Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetReadPreference(rp))
 	return s
 }
@@ -597,7 +774,7 @@ func (s *session) SetCollReadPreference(rp *readpref.ReadPref) driver.Session {
 // SetCollRegistry sets the bsoncodec.Registry for the session's collection.
 // It appends the options.Collection().SetRegistry() to the session's collOpts
 // and returns the updated session.
-func (s *session) SetCollRegistry(r *bsoncodec.Registry) driver.Session {
+func (s *session) SetCollRegistry(r *bsoncodec.Registry) Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetRegistry(r))
 	return s
 }
@@ -606,7 +783,7 @@ func (s *session) SetCollRegistry(r *bsoncodec.Registry) driver.Session {
 // It adds the skip option to the find and findOne options in the session.
 // The skip value is specified by the i parameter.
 // It returns the session.
-func (s *session) Skip(i int64) driver.Session {
+func (s *session) Skip(i int64) Session {
 	s.findOptions = append(s.findOptions, options.Find().SetSkip(i))
 	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetSkip(i))
 	return s
@@ -812,7 +989,7 @@ func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.U
 
 }
 
-func (s *session) RegexFilter(key, pattern string) driver.Session {
+func (s *session) RegexFilter(key, pattern string) Session {
 	s.filter.RegexFilter(key, pattern)
 	return s
 }
@@ -820,7 +997,7 @@ func (s *session) RegexFilter(key, pattern string) driver.Session {
 // ID sets the filter condition on the session's filter object to filter records by their ID.
 // The provided 'id' parameter specifies the ID value to filter by.
 // The method then returns the session object itself for method chaining.
-func (s *session) ID(id interface{}) driver.Session {
+func (s *session) ID(id interface{}) Session {
 	s.filter.ID(id)
 	return s
 }
@@ -833,7 +1010,7 @@ func (s *session) ID(id interface{}) driver.Session {
 // The method modifies the session's find and findOne options to include the sort criteria.
 // The modified options are used in subsequent find and findOne operations on the session.
 // The method returns the session object itself for method chaining.
-func (s *session) Asc(colNames ...string) driver.Session {
+func (s *session) Asc(colNames ...string) Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -853,7 +1030,7 @@ func (s *session) Asc(colNames ...string) driver.Session {
 // Otherwise, a descending sort order is applied to each column name in the find and findOne options.
 // The resulting sort order is added to the session's findOptions and findOneOptions respectively.
 // Finally, the method returns the session object for method chaining.
-func (s *session) Desc(colNames ...string) driver.Session {
+func (s *session) Desc(colNames ...string) Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -885,7 +1062,7 @@ func (s *session) Desc(colNames ...string) driver.Session {
 // The key of the bson.E represents the column name, and the value represents the sorting order (1 for ascending, -1 for descending).
 //
 // Finally, the method returns the session object itself for method chaining.
-func (s *session) Sort(colNames ...string) driver.Session {
+func (s *session) Sort(colNames ...string) Session {
 	if len(colNames) == 0 {
 		return s
 	}
@@ -905,7 +1082,7 @@ func (s *session) Sort(colNames ...string) driver.Session {
 	return s
 }
 
-func (s *session) Filter(key string, value interface{}) driver.Session {
+func (s *session) Filter(key string, value interface{}) Session {
 	return s.Eq(key, value)
 }
 
@@ -915,19 +1092,19 @@ func (s *session) Filter(key string, value interface{}) driver.Session {
 // {"item.name": "ab" }
 // Equals an Array Value
 // { tags: [ "A", "B" ] }
-func (s *session) Eq(key string, value interface{}) driver.Session {
+func (s *session) Eq(key string, value interface{}) Session {
 	s.filter.Eq(key, value)
 	return s
 }
 
 // Gt {field: {$gt: value} } >
-func (s *session) Gt(key string, gt interface{}) driver.Session {
+func (s *session) Gt(key string, gt interface{}) Session {
 	s.filter.Gt(key, gt)
 	return s
 }
 
 // Gte { qty: { $gte: 20 } } >=
-func (s *session) Gte(key string, gte interface{}) driver.Session {
+func (s *session) Gte(key string, gte interface{}) Session {
 	s.filter.Gte(key, gte)
 	return s
 }
@@ -935,31 +1112,31 @@ func (s *session) Gte(key string, gte interface{}) driver.Session {
 // In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
-func (s *session) In(key string, in interface{}) driver.Session {
+func (s *session) In(key string, in interface{}) Session {
 	s.filter.In(key, in)
 	return s
 }
 
 // Lt {field: {$lt: value} } <
-func (s *session) Lt(key string, lt interface{}) driver.Session {
+func (s *session) Lt(key string, lt interface{}) Session {
 	s.filter.Lt(key, lt)
 	return s
 }
 
 // Lte { field: { $lte: value} } <=
-func (s *session) Lte(key string, lte interface{}) driver.Session {
+func (s *session) Lte(key string, lte interface{}) Session {
 	s.filter.Lte(key, lte)
 	return s
 }
 
 // Ne {field: {$ne: value} } !=
-func (s *session) Ne(key string, ne interface{}) driver.Session {
+func (s *session) Ne(key string, ne interface{}) Session {
 	s.filter.Ne(key, ne)
 	return s
 }
 
 // Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
-func (s *session) Nin(key string, nin interface{}) driver.Session {
+func (s *session) Nin(key string, nin interface{}) Session {
 	s.filter.Nin(key, nin)
 	return s
 }
@@ -971,7 +1148,7 @@ func (s *session) Nin(key string, nin interface{}) driver.Session {
 //	{ $or: [ { sale: true }, { price : { $lt : 5 } } ] }
 //
 // ]
-func (s *session) And(c driver.Condition) driver.Session {
+func (s *session) And(c Condition) Session {
 	s.filter.And(c)
 	return s
 
@@ -980,7 +1157,7 @@ func (s *session) And(c driver.Condition) driver.Session {
 // Not { field: { $not: { <operator-expression> } } }
 // not and Regular Expressions
 // { item: { $not: /^p.*/ } }
-func (s *session) Not(key string, not interface{}) driver.Session {
+func (s *session) Not(key string, not interface{}) Session {
 	s.filter.Not(key, not)
 	return s
 }
@@ -988,24 +1165,24 @@ func (s *session) Not(key string, not interface{}) driver.Session {
 // Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 // { sale: true }, { sale: { $exists: false } } ] }
 // price != 1.99 || sale != true || sale exists || sale exists
-func (s *session) Nor(c driver.Condition) driver.Session {
+func (s *session) Nor(c Condition) Session {
 	s.filter.Nor(c)
 	return s
 }
 
 // Or { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-func (s *session) Or(c driver.Condition) driver.Session {
+func (s *session) Or(c Condition) Session {
 	s.filter.Or(c)
 	return s
 }
 
-func (s *session) Exists(key string, exists bool, filter ...driver.Condition) driver.Session {
+func (s *session) Exists(key string, exists bool, filter ...Condition) Session {
 	s.filter.Exists(key, exists, filter...)
 	return s
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (s *session) SetArrayFilters(filters options.ArrayFilters) driver.Session {
+func (s *session) SetArrayFilters(filters options.ArrayFilters) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetArrayFilters(filters))
 	s.updateOpts = append(s.updateOpts, options.Update().SetArrayFilters(filters))
@@ -1013,13 +1190,13 @@ func (s *session) SetArrayFilters(filters options.ArrayFilters) driver.Session {
 }
 
 // SetOrdered sets the value for the Ordered field.
-func (s *session) SetOrdered(ordered bool) driver.Session {
+func (s *session) SetOrdered(ordered bool) Session {
 	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetOrdered(ordered))
 	return s
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (s *session) SetBypassDocumentValidation(b bool) driver.Session {
+func (s *session) SetBypassDocumentValidation(b bool) Session {
 	s.bulkWriteOptions = append(s.bulkWriteOptions, options.BulkWrite().SetBypassDocumentValidation(b))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
@@ -1030,7 +1207,7 @@ func (s *session) SetBypassDocumentValidation(b bool) driver.Session {
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
-func (s *session) SetReturnDocument(rd options.ReturnDocument) driver.Session {
+func (s *session) SetReturnDocument(rd options.ReturnDocument) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetReturnDocument(rd))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1039,7 +1216,7 @@ func (s *session) SetReturnDocument(rd options.ReturnDocument) driver.Session {
 }
 
 // SetUpsert sets the value for the Upsert field.
-func (s *session) SetUpsert(b bool) driver.Session {
+func (s *session) SetUpsert(b bool) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetUpsert(b))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1049,7 +1226,7 @@ func (s *session) SetUpsert(b bool) driver.Session {
 }
 
 // SetCollation sets the value for the Collation field.
-func (s *session) SetCollation(collation *options.Collation) driver.Session {
+func (s *session) SetCollation(collation *options.Collation) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetCollation(collation))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1060,7 +1237,7 @@ func (s *session) SetCollation(collation *options.Collation) driver.Session {
 }
 
 // SetMaxTime sets the value for the MaxTime field.
-func (s *session) SetMaxTime(d time.Duration) driver.Session {
+func (s *session) SetMaxTime(d time.Duration) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetMaxTime(d))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1074,7 +1251,7 @@ func (s *session) SetMaxTime(d time.Duration) driver.Session {
 // The projection value should be a document with field names as keys and a value of 1 to include the field in the result,
 // or a value of 0 to exclude the field from the result.
 // This method returns the session itself to allow for method chaining.
-func (s *session) SetProjection(projection interface{}) driver.Session {
+func (s *session) SetProjection(projection interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1099,7 +1276,7 @@ func (s *session) SetProjection(projection interface{}) driver.Session {
 // on the collection.
 //
 // This method returns the session itself, allowing for method chaining.
-func (s *session) SetSort(sort interface{}) driver.Session {
+func (s *session) SetSort(sort interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1109,7 +1286,7 @@ func (s *session) SetSort(sort interface{}) driver.Session {
 }
 
 // SetHint appends the hint option to the `findOneAndUpdateOpts`, `findOneAndReplaceOpts`, `findOneAndDeleteOpts`, and `updateOpts` slices of the session and returns the modified session
-func (s *session) SetHint(hint interface{}) driver.Session {
+func (s *session) SetHint(hint interface{}) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1124,21 +1301,21 @@ func (s *session) SetHint(hint interface{}) driver.Session {
 // during a database query.
 // This method takes in two parameters: key, which is the key used to specify
 // the type filter, and t, which is the interface{} representing the type filter.
-// The function returns the driver.Session object.
-func (s *session) Type(key string, t interface{}) driver.Session {
+// The function returns the Session object.
+func (s *session) Type(key string, t interface{}) Session {
 	s.filter.Type(key, t)
 	return s
 }
 
 // Expr applies the given condition to the current filter of the session.
 // It returns the session itself to allow method chaining.
-func (s *session) Expr(c driver.Condition) driver.Session {
+func (s *session) Expr(c Condition) Session {
 	s.filter.Expr(c)
 	return s
 }
 
 // Regex todo 简单实现，后续增加支持
-func (s *session) Regex(key string, value string) driver.Session {
+func (s *session) Regex(key string, value string) Session {
 	s.filter.Regex(key, value)
 	return s
 }
@@ -1146,7 +1323,7 @@ func (s *session) Regex(key string, value string) driver.Session {
 // SetDatabase sets the database name for the session.
 // It takes a string argument representing the name of the database.
 // It updates the session's `db` field with the provided name and returns the updated session object.
-func (s *session) SetDatabase(db string) driver.Session {
+func (s *session) SetDatabase(db string) Session {
 	s.db = db
 	return s
 }
