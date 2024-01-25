@@ -40,6 +40,11 @@ type session struct {
 	collOpts              []*options.CollectionOptions
 }
 
+// Soft sets the "deleted_at" filter condition on the session's filter object.
+// The provided boolean value is used to determine if the filter should include or exclude deleted records.
+// When 'true' is passed, the "deleted_at" field exists condition is added to the filter, including deleted records.
+// When 'false' is passed, the "deleted_at" field does not exist condition is added to the filter, excluding deleted records.
+// The method then returns the session object itself for method chaining.
 func (s *session) Soft(f bool) driver.Session {
 	s.filter.Exists("deleted_at", f)
 	return s
@@ -59,45 +64,67 @@ func NewSession(engine driver.Client) driver.Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
-// FindPagination executes a find command with pagination and populates a slice with the result documents.
-// - `page` specifies the page number to retrieve (must be greater than 0).
-// - `count` specifies the number of documents per page. If `count` is 0, it defaults to 10.
-// - `rowsSlicePtr` is the pointer to the slice where the result documents will be stored.
-// - `ctx` (optional) is an optional context that can be passed to the find command.
-// The method returns an error if any operation fails, otherwise, it returns nil.
-func (s *session) FindPagination(page, count int64, rowsSlicePtr interface{}, ctx ...context.Context) error {
+func (s *session) prepareContext(ctx ...context.Context) context.Context {
+	if len(ctx) > 0 {
+		return ctx[0]
+	}
+	return context.Background()
+}
+
+// FindPagination returns a paginated result of documents from the MongoDB collection associated with the session.
+// It takes a boolean parameter 'needCount' to determine if the count of documents should be returned as well.
+// The 'rowsSlicePtr' parameter is a pointer to the slice where the documents will be stored.
+// Optionally, it accepts a 'ctx' parameter of type 'context.Context'.
+// It returns the count of documents returned and an error, if any.
+// First, it gets the collection object for the provided 'rowsSlicePtr' using the 'collectionForSlice' method.
+// If there is an error in getting the collection, it returns 0 and the error.
+// Then, it retrieves the filter conditions from the session's filter object using the 'Filters' method.
+// If there is an error in getting the filters, it returns 0 and the error.
+// It prepares the 'context.Context' using the 'prepareContext' method with the optional 'ctx' parameter.
+// The method queries the collection using the obtained filters and the session's 'findOptions' with the 'Find' method.
+// If there is an error in querying the collection, it returns 0 and the error.
+// The cursor is stored in the 'cursor' variable.
+// A defer statement is used to ensure that the cursor is closed when the method returns.
+// If there is an error in closing the cursor, it prints the error.
+// If the 'needCount' parameter is true, it calls the 'CountDocuments' method on the collection to get the total count of matching documents.
+// If there is an error in getting the count, it returns 0 and the error.
+// The count is stored in the 'rowCount' variable.
+// Then, it retrieves all the documents from the cursor using the 'All' method and stores them in the 'rowsSlicePtr' slice.
+// If there is an error in retrieving the documents, it returns 0 and the error.
+// Finally, it returns the count of documents and a nil error.
+func (s *session) FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error) {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	if page == 0 {
-		return errors.New("page must be greater that 0")
-	}
-
-	if count == 0 {
-		count = 10
-	}
-
-	s.Skip((page - 1) * count).Limit(count)
 	filters, err := s.filter.Filters()
 	if err != nil {
-		return err
+		return 0, err
 	}
-
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	cursor, err := coll.Find(c, filters, s.findOptions...)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	if err = cursor.All(c, rowsSlicePtr); err != nil {
-		return err
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		if err = cursor.Close(ctx); err != nil {
+			fmt.Println(err)
+		}
+	}(cursor, c)
+
+	var rowCount int64
+	if needCount {
+		rowCount, err = coll.CountDocuments(c, filters, s.countOpts...)
+		if err != nil {
+			return 0, err
+		}
 	}
-	return nil
+	if err = cursor.All(c, rowsSlicePtr); err != nil {
+		return 0, err
+	}
+	return rowCount, nil
 }
 
 // BulkWrite executes a bulk write operation on the collection for the given slice of documents.
@@ -120,10 +147,7 @@ func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.Bu
 	for i := 0; i < values.Len(); i++ {
 		mods = append(mods, mongo.NewInsertOneModel().SetDocument(values.Index(i).Interface()))
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	return coll.BulkWrite(c, mods, s.bulkWriteOptions...)
 }
@@ -136,6 +160,20 @@ func (s *session) FilterBy(object interface{}) driver.Session {
 	return s
 }
 
+// Distinct performs a distinct operation on the collection associated with the session object.
+// It takes the following parameters:
+//   - doc: The document or struct to be used for determining the collection to perform the distinct operation on.
+//   - columns: The name of the field(s) for which the distinct values should be returned.
+//   - ctx: Optional context.Context object(s) to use for the operation.
+//
+// The method first retrieves the collection associated with the provided document or struct using the collectionForSlice method.
+// If an error occurs during the collection retrieval, it is returned immediately.
+// It then retrieves the filters from the session's filter object using the Filters method.
+// If an error occurs during the filters retrieval, it is returned immediately.
+// The method creates a new context object using context.Background() and assigns it to the variable c.
+// If any optional context.Context objects were provided, the first one is used instead of context.Background().
+// Finally, the method invokes the Distinct method on the retrieved collection with the provided context c, columns, filters, and session's distinctOpts.
+// The result of the operation is returned as a slice of interface{} and any error encountered is also returned.
 func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
 	coll, err := s.collectionForSlice(doc)
 	if err != nil {
@@ -146,10 +184,7 @@ func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Conte
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	return coll.Distinct(c, columns, filters, s.distinctOpts...)
 }
@@ -173,10 +208,7 @@ func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.Up
 		return nil, err
 	}
 
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	return coll.ReplaceOne(c, filters, doc, s.replaceOpts...)
 }
@@ -198,10 +230,7 @@ func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) err
 		return err
 	}
 
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	return coll.FindOneAndReplace(c, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
 }
@@ -225,10 +254,7 @@ func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx .
 		return nil, err
 	}
 
-	cc := context.Background()
-	if len(ctx) > 0 {
-		cc = ctx[0]
-	}
+	cc := s.prepareContext(ctx...)
 	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
 }
 
@@ -247,10 +273,7 @@ func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mo
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
 }
 
@@ -275,10 +298,7 @@ func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
 }
 
@@ -324,10 +344,7 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	result := coll.FindOne(c, filters, s.findOneOptions...)
 	if err = result.Err(); err != nil {
 		return err
@@ -354,10 +371,7 @@ func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) erro
 	if err != nil {
 		return err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	cursor, err := coll.Find(c, filters, s.findOptions...)
 	if err != nil {
@@ -388,10 +402,7 @@ func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.
 	if err != nil {
 		return [12]byte{}, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	result, err := coll.InsertOne(c, doc, s.insertOneOpts...)
 	if err != nil {
 		return [12]byte{}, err
@@ -420,10 +431,7 @@ func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.I
 	for index := 0; index < value.Len(); index++ {
 		many = append(many, value.Index(index).Interface())
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.InsertMany(c, many, s.insertManyOpts...)
 }
 
@@ -448,10 +456,7 @@ func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.Del
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.DeleteOne(c, filters, s.deleteOpts...)
 }
 
@@ -475,10 +480,7 @@ func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	_, err = coll.UpdateOne(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
@@ -504,10 +506,7 @@ func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.De
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.DeleteMany(c, filters, s.deleteOpts...)
 }
 
@@ -525,10 +524,7 @@ func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error 
 	if err != nil {
 		return err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	_, err = coll.UpdateMany(c, filters, bson.D{{Key: "$set", Value: bson.M{"deleted_at": time.Now()}}})
 
 	return err
@@ -641,10 +637,7 @@ func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 		return 0, err
 	}
 
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 
 	return coll.CountDocuments(c, filters, s.countOpts...)
 }
@@ -678,10 +671,7 @@ func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.Up
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 }
 
@@ -713,10 +703,7 @@ func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...conte
 	if err != nil {
 		return nil, err
 	}
-	cc := context.Background()
-	if len(ctx) > 0 {
-		cc = ctx[0]
-	}
+	cc := s.prepareContext(ctx...)
 	return c.UpdateOne(cc, filters, bson, s.updateOpts...)
 }
 
@@ -742,10 +729,7 @@ func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...cont
 	if err != nil {
 		return nil, err
 	}
-	cc := context.Background()
-	if len(ctx) > 0 {
-		cc = ctx[0]
-	}
+	cc := s.prepareContext(ctx...)
 	return c.UpdateMany(cc, filters, bson, s.updateOpts...)
 }
 
@@ -823,10 +807,7 @@ func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.U
 	if err != nil {
 		return nil, err
 	}
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
+	c := s.prepareContext(ctx...)
 	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
@@ -836,11 +817,22 @@ func (s *session) RegexFilter(key, pattern string) driver.Session {
 	return s
 }
 
+// ID sets the filter condition on the session's filter object to filter records by their ID.
+// The provided 'id' parameter specifies the ID value to filter by.
+// The method then returns the session object itself for method chaining.
 func (s *session) ID(id interface{}) driver.Session {
 	s.filter.ID(id)
 	return s
 }
 
+// Asc sets the sorting order on the session's find options.
+// The provided column names are used to determine the order of sorting.
+// Multiple column names can be provided to define a multi-column sort.
+// The method uses the ascending (1) sorting order for the specified columns.
+// If no column names are provided, the method returns the session object itself.
+// The method modifies the session's find and findOne options to include the sort criteria.
+// The modified options are used in subsequent find and findOne operations on the session.
+// The method returns the session object itself for method chaining.
 func (s *session) Asc(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s
@@ -855,6 +847,12 @@ func (s *session) Asc(colNames ...string) driver.Session {
 	return s
 }
 
+// Desc sets the sort order of the session's find and findOne options based on the provided column names.
+// The column names are passed as variadic arguments to the method.
+// If no column names are provided, the method immediately returns the session object itself.
+// Otherwise, a descending sort order is applied to each column name in the find and findOne options.
+// The resulting sort order is added to the session's findOptions and findOneOptions respectively.
+// Finally, the method returns the session object for method chaining.
 func (s *session) Desc(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s
@@ -870,6 +868,23 @@ func (s *session) Desc(colNames ...string) driver.Session {
 	return s
 }
 
+// Sort sets the sorting options on the session's findOptions and findOneOptions objects.
+// The provided column names are used to determine the sorting order.
+//
+// If no column names are provided, the method returns the session object itself for method chaining.
+//
+// The column names are passed as variadic arguments, allowing multiple columns to be sorted.
+// Each column name should be a string.
+//
+// The sorting order for each column is based on the first character of the column name string:
+// - If the first character is '-', the column is sorted in descending order (e.g., "-name").
+// - If the first character is any other character, the column is sorted in ascending order (e.g., "name").
+//
+// The method appends the sorting options to the session's findOptions and findOneOptions objects.
+// The sorting options are set using the bson.E type from the "go.mongodb.org/mongo-driver/bson" package.
+// The key of the bson.E represents the column name, and the value represents the sorting order (1 for ascending, -1 for descending).
+//
+// Finally, the method returns the session object itself for method chaining.
 func (s *session) Sort(colNames ...string) driver.Session {
 	if len(colNames) == 0 {
 		return s

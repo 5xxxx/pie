@@ -33,6 +33,15 @@ func NewClient(db string, opts ...*options.ClientOptions) (driver.Client, error)
 	if err != nil {
 		return nil, err
 	}
+
+	if err = client.Connect(context.Background()); err != nil {
+		return nil, err
+	}
+
+	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
+		return nil, err
+	}
+
 	parser := driver.NewParser(mapper, mapper)
 	d := defaultClient{
 		clientOpts: opts,
@@ -70,8 +79,8 @@ func (d *defaultClient) Disconnect(ctx ...context.Context) error {
 // and an optional context as parameters. It then calls the FindPagination method
 // of the defaultClient's underlying session with the given parameters and returns
 // the result.
-func (d *defaultClient) FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error {
-	return d.NewSession().FindPagination(page, count, doc, ctx...)
+func (d *defaultClient) FindPagination(needCount bool, doc interface{}, ctx ...context.Context) (int64, error) {
+	return d.NewSession().FindPagination(needCount, doc, ctx...)
 }
 
 // BulkWrite executes multiple write operations in bulk and returns a BulkWriteResult.

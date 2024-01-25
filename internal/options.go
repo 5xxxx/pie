@@ -53,52 +53,44 @@ func (o *Options) SetUpdateEmpty(e bool) {
 
 // SetOrdered sets the value for the Ordered field.
 func (d *defaultClient) SetOrdered(ordered bool) driver.Session {
-	session := d.NewSession()
-	return session.SetOrdered(ordered)
+	return d.NewSession().SetOrdered(ordered)
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
 func (d *defaultClient) SetArrayFilters(filters options.ArrayFilters) driver.Session {
-	session := d.NewSession()
-	return session.SetArrayFilters(filters)
+	return d.NewSession().SetArrayFilters(filters)
 }
 
 // SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
 func (d *defaultClient) SetBypassDocumentValidation(b bool) driver.Session {
-	session := d.NewSession()
-	return session.SetBypassDocumentValidation(b)
+	return d.NewSession().SetBypassDocumentValidation(b)
 }
 
 // SetReturnDocument sets the value for the ReturnDocument field.
 func (d *defaultClient) SetReturnDocument(rd options.ReturnDocument) driver.Session {
-	session := d.NewSession()
-	return session.SetReturnDocument(rd)
+	return d.NewSession().SetReturnDocument(rd)
 }
 
 // SetUpsert sets the value for the Upsert field.
 func (d *defaultClient) SetUpsert(b bool) driver.Session {
-	session := d.NewSession()
-	return session.SetUpsert(b)
+	return d.NewSession().SetUpsert(b)
 }
 
 // SetCollation sets the value for the Collation field.
 func (d *defaultClient) SetCollation(collation *options.Collation) driver.Session {
-	session := d.NewSession()
-	return session.SetCollation(collation)
+	return d.NewSession().SetCollation(collation)
 }
 
 // SetMaxTime sets the maximum amount of time for a command to run before an error is returned.
 // The time.Duration parameter represents the maximum time duration in which a command can run
 // without returning an error.
 func (d *defaultClient) SetMaxTime(t time.Duration) driver.Session {
-	session := d.NewSession()
-	return session.SetMaxTime(t)
+	return d.NewSession().SetMaxTime(t)
 }
 
 // SetProjection sets the value for the Projection field.
 func (d *defaultClient) SetProjection(projection interface{}) driver.Session {
-	session := d.NewSession()
-	return session.SetProjection(projection)
+	return d.NewSession().SetProjection(projection)
 }
 
 // SetSort sets the value for the sort field of the session created by defaultClient.
@@ -114,8 +106,7 @@ func (d *defaultClient) SetProjection(projection interface{}) driver.Session {
 //	...
 //	session.DoSomethingElse()
 func (d *defaultClient) SetSort(sort interface{}) driver.Session {
-	session := d.NewSession()
-	return session.SetSort(sort)
+	return d.NewSession().SetSort(sort)
 }
 
 // SetHint sets the hint for the session.

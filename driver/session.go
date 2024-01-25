@@ -30,7 +30,7 @@ type Session interface {
 
 	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	FindPagination(page, count int64, doc interface{}, ctx ...context.Context) error
+	FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error)
 
 	FindAndDelete(doc interface{}, ctx ...context.Context) error
 
