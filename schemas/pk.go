@@ -17,9 +17,9 @@ import (
 	"github.com/5xxxx/pie/utils"
 )
 
-type PK []interface{}
+type PK []any
 
-func NewPK(pks ...interface{}) *PK {
+func NewPK(pks ...any) *PK {
 	p := PK(pks)
 	return &p
 }

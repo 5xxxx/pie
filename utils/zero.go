@@ -24,7 +24,7 @@ type Zeroable interface {
 var nilTime *time.Time
 
 // IsZero returns false if k is nil or has a zero value
-func IsZero(k interface{}) bool {
+func IsZero(k any) bool {
 	if k == nil {
 		return true
 	}

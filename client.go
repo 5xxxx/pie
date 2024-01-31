@@ -16,98 +16,199 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Client is an interface that provides various methods for interacting with a MongoDB database.
-//
-// FindPagination retrieves paginated documents from the specified collection based on the given page and count.
-// FindOneAndReplace replaces a single document that matches the filter with the provided document.
-// FindOneAndUpdate updates a single document that matches the filter with the provided update document.
-// FindAndDelete deletes a single document that matches the filter.
-// FindOne retrieves a single document that matches the filter.
-// FindAll retrieves all documents that match the filter.
-// RegexFilter applies a regular expression filter to the session.
-// Distinct returns an array of distinct values for a specified field across a collection.
-// FindOneAndUpdateBson updates a single document that matches the BSON filter with the provided update BSON document.
-// InsertOne inserts a single document into the collection.
-// InsertMany inserts multiple documents into the collection.
-// BulkWrite performs multiple write operations in bulk on the collection.
-// ReplaceOne replaces a single document that matches the filter with the provided replacement document.
-// Update updates a single document that matches the filter with the provided update document.
-// UpdateMany updates multiple documents that match the filter with the provided update document.
-// UpdateOneBson updates a single document that matches the BSON filter with the provided update BSON document.
-// UpdateManyBson updates multiple documents that match the BSON filter with the provided update BSON document.
-// SoftDeleteOne performs a soft delete on a single document that matches the filter.
-// SoftDeleteMany performs a soft delete on multiple documents that match the filter.
-// DeleteOne deletes a single document that matches the filter.
-// DeleteMany deletes multiple documents that match the filter.
-// DataBase returns the underlying mongo.Database associated with the client.
-// Collection returns the mongo.Collection with the specified name and options.
-// Ping checks if the client is connected to the database and returns an error if not.
-// Connect establishes a connection to the database.
-// Disconnect closes the connection to the database.
-// Soft sets the soft filter state of the session.
-// FilterBy applies the specified object as a filter to the session.
-// Filter adds a key-value filter to the session.
-// Asc adds the specified column names as sort order in ascending order to the session.
-// Eq adds an equal filter to the session.
-// Ne adds a not equal filter to the session.
-// Nin adds a not in filter to the session.
-// Nor adds a nor condition to the session.
-// Exists adds an exists condition to the session.
-// Type adds a type condition to the session.
-// Expr adds an expression filter to the session.
-// Regex adds a regex filter to the session.
-// ID adds an _id filter to the session.
-// Gt adds a greater than filter to the session.
-// Gte adds a greater than or equal to filter to the session.
-// Lt adds a less than filter to the session.
-// Lte adds a less than or equal to filter to the session.
-// In adds an in filter to the session.
-// And adds an and condition to the session.
-// Not adds a not condition to the session.
-// Or adds an or condition to the session.
-// Limit sets the maximum number of documents the session should return.
-// Skip sets the number of documents the session should skip.
-// Count returns the number of documents that match the filter.
-// Desc adds the specified column names as sort order in descending order to the session.
-// FilterBson adds a BSON filter to the session.
-// NewIndexes returns a new Indexes instance for managing collection indexes.
-// DropAll drops all indexes from the specified document's collection.
-// DropOne drops the specified index from the specified document's collection.
-// AddIndex adds an index to the specified document's collection.
-// NewSession returns a new session for performing multiple operations.
-// Aggregate returns an aggregate operation for the specified document's collection.
-// CollectionNameForStruct returns the collection name for the specified document struct.
-// CollectionNameForSlice returns the collection name for the specified document slice.
-// Transaction starts a transaction and executes the provided function within the transaction context.
-// TransactionWithOptions starts a transaction with the provided options and executes the provided function within the transaction context.
+// Client is an interface that represents a MongoDB client. It provides methods for querying, updating, deleting, and managing data in a MongoDB database.
+// FindPagination is a method that returns the number of documents that match a query and the documents themselves.
+// If needCount is set to true, it also returns the total count of matching documents. It takes a boolean flag (needCount),
+// the query document (doc), and optional context parameter (ctx).
+// FindOneAndReplace is a method that finds a single document that matches a query and replaces it with another document.
+// It takes the replacement document (doc) and optional context parameter (ctx).
+// FindOneAndUpdate is a method that finds a single document that matches a query and updates it with the provided document.
+// It returns a SingleResult object that contains the updated document. It takes the update document (doc) and optional context parameter (ctx).
+// FindAndDelete is a method that finds a single document that matches a query and deletes it.
+// It takes the query document (doc) and optional context parameter (ctx).
+// FindOne is a method that finds a single document that matches a query.
+// It takes the query document (doc) and optional context parameter (ctx).
+// FindAll is a method that finds all documents that match a query and stores them in the provided slice.
+// It takes a pointer to a slice (docs) and optional context parameter (ctx).
+// RegexFilter is a method that filters documents based on a regular expression pattern applied to a specific key.
+// It returns a Session object that allows chaining of filtering methods. It takes the key and pattern for the regular expression.
+// Distinct is a method that returns an array of distinct values for a specific column in the collection that match a query.
+// It takes the query document (doc), the column name (columns), and optional context parameter (ctx).
+// FindOneAndUpdateBson is a method that finds a single document in a specific collection that matches a query and updates it with the provided BSON document.
+// It returns a SingleResult object that contains the updated document. It takes the collection interface (coll), the BSON document (bson), and optional context parameter (ctx).
+// InsertOne is a method that inserts a single document into a collection.
+// It takes the document to insert (v) and optional context parameter (ctx). It returns the ObjectID of the inserted document.
+// InsertMany is a method that inserts multiple documents into a collection.
+// It takes the documents to insert (v) as a slice and optional context parameter (ctx).
+// It returns an InsertManyResult object that contains the ObjectIDs of the inserted documents.
+// BulkWrite is a method that performs multiple write operations on a collection.
+// It takes the write operations (docs) as a slice and optional context parameter (ctx).
+// It returns a BulkWriteResult object that contains the result of the write operations.
+// ReplaceOne is a method that replaces a single document in a collection.
+// It takes the replacement document (doc) and optional context parameter (ctx).
+// It returns an UpdateResult object that contains information about the replacement operation.
+// Update is a method that updates multiple documents in a collection.
+// It takes the update document (bean) and optional context parameter (ctx).
+// It returns an UpdateResult object that contains information about the update operation.
+// UpdateMany is a method that updates multiple documents in a collection matching a query.
+// It takes the update document (bean) and optional context parameter (ctx).
+// It returns an UpdateResult object that contains information about the update operation.
+// UpdateOneBson is a method that updates a single document in a specific collection based on a BSON document.
+// It takes the collection interface (coll), the BSON document (bson), and optional context parameter (ctx).
+// It returns an UpdateResult object that contains information about the update operation.
+// UpdateManyBson is a method that updates multiple documents in a specific collection based on a BSON document.
+// It takes the collection interface (coll), the BSON document (bson), and optional context parameter (ctx).
+// It returns an UpdateResult object that contains information about the update operation.
+// SoftDeleteOne is a method that soft deletes a single document in a collection based on a query.
+// It takes the query document (filter) and optional context parameter (ctx).
+// It returns an error if any.
+// SoftDeleteMany is a method that soft deletes multiple documents in a collection based on a query.
+// It takes the query document (filter) and optional context parameter (ctx).
+// It returns an error if any.
+// DeleteOne is a method that deletes a single document in a collection based on a query.
+// It takes the query document (filter) and optional context parameter (ctx).
+// It returns a DeleteResult object that contains information about the delete operation.
+// DeleteMany is a method that deletes multiple documents in a collection based on a query.
+// It takes the query document (filter) and optional context parameter (ctx).
+// It returns a DeleteResult object that contains information about the delete operation.
+// DataBase is a method that returns the MongoDB database associated with the client.
+// Collection is a method that returns a collection within the MongoDB database.
+// It takes the collection name (name), optional collection options (collOpts), and optional database name (db).
+// It returns a Collection object.
+// Ping is a method that pings the MongoDB server to check the connectivity.
+// It returns an error if the server is unreachable.
+// Connect is a method that establishes a connection to the MongoDB server.
+// It takes optional context parameter (ctx).
+// It returns an error if the connection cannot be established.
+// Disconnect is a method that closes the connection to the MongoDB server.
+// It takes optional context parameter (ctx).
+// It returns an error if the connection cannot be closed.
+// Soft is a method that enables or disables soft filtering of documents in queries.
+// It takes a boolean flag (s) and returns a Session object.
+// FilterBy is a method that filters documents based on a provided object.
+// It takes the object to filter by (object) and returns a Session object.
+// Filter is a method that filters documents based on a key-value pair.
+// It takes the key (key) and the value (value) to filter by.
+// It returns a Session object.
+// Asc is a method that sets the sort order of the documents in ascending order based on the specified column names.
+// It takes the column names (colNames) and returns a Session object.
+// Eq is a method that filters documents where the value of the specified key is equal to the provided value.
+// It takes the key (key) and the value (value) to match.
+// It returns a Session object.
+// Ne is a method that filters documents where the value of the specified key is not equal to the provided value.
+// It takes the key (key) and the value (ne) to compare.
+// It returns a Session object.
+// Nin is a method that filters documents where the value of the specified key is not in the provided set of values.
+// It takes the key (key) and the set of values (nin) to compare.
+// It returns a Session object.
+// Nor is a method that specifies a logical NOR operation for the provided Condition object.
+// It takes a Condition object (c).
+// It returns a Session object.
+// Exists is a method that filters documents based on the existence of a key-value pair.
+// It takes the key (key), the existence flag (exists), and optional additional filters (filter).
+// It returns a Session object.
+// Type is a method that filters documents based on the type of the value of a key.
+// It takes the key (key) and the type (t) to compare.
+// It returns a Session object.
+// Expr is a method that applies an additional filter using MongoDB's expression syntax.
+// It takes a Condition object (filter).
+// It returns a Session object.
+// Regex is a method that filters documents based on a regular expression pattern applied to a specific key.
+// It takes the key (key) and the pattern (value) to match.
+// It returns a Session object.
+// ID is a method that filters documents based on their ObjectID.
+// It takes the ObjectID (id) to match.
+// It returns a Session object.
+// Gt is a method that filters documents where the value of the specified key is greater than the provided value.
+// It takes the key (key) and the value (value) to compare.
+// It returns a Session object.
+// Gte is a method that filters documents where the value of the specified key is greater than or equal to the provided value.
+// It takes the key (key) and the value (value) to compare.
+// It returns a Session object.
+// Lt is a method that filters documents where the value of the specified key is less than the provided value.
+// It takes the key (key) and the value (value) to compare.
+// It returns a Session object.
+// Lte is a method that filters documents where the value of the specified key is less than or equal to the provided value.
+// It takes the key (key) and the value (value) to compare.
+// It returns a Session object.
+// In is a method that filters documents where the value of the specified key is in the provided set of values.
+// It takes the key (key) and the set of values (value) to compare.
+// It returns a Session object.
+// And is a method that specifies a logical AND operation for the provided Condition object.
+// It takes a Condition object (filter).
+// It returns a Session object.
+// Not is a method that filters documents where the value of the specified key is not equal to the provided value.
+// It takes the key (key) and the value (value) to compare.
+// It returns a Session object.
+// Or is a method that specifies a logical OR operation for the provided Condition object.
+// It takes a Condition object (filter).
+// It returns a Session object.
+// Limit is a method that limits the number of documents returned by the query.
+// It takes the maximum number of documents to return (limit).
+// It returns a Session object.
+// Skip is a method that skips the specified number of documents before returning the results.
+// It takes the number of documents to skip (skip).
+// It returns a Session object.
+// Count is a method that returns the number of documents that match the query.
+// It takes a pointer to store the count (i) and optional context parameter (ctx).
+// It returns the count as int64.
+// Desc is a method that sets the sort order of the documents in descending order based on the specified column names.
+// It takes the column names (s1) and returns a Session object.
+// FilterBson is a method that filters documents based on a BSON document.
+// It takes the BSON document (d) to filter by.
+// It returns a Session object.
+// NewIndexes is a method that creates an Indexes instance to manage indexes for a collection.
+// DropAll is a method that drops all indexes of a collection.
+// It takes the collection document (doc) and optional context parameter (ctx).
+// It returns an error if any.
+// DropOne is a method that drops a specific index of a collection.
+// It takes the collection document (doc), the index name (name), and optional context parameter (ctx).
+// It returns an error if any.
+// AddIndex is a method that creates a new index with specified keys and options for a collection.
+// It takes the keys for the index (keys) and optional index options (opt).
+// It returns an Indexes instance.
+// NewSession is a method that creates a new session to perform multiple operations within a transaction.
+// Aggregate is a method that creates an Aggregate instance to perform aggregation operations on a collection.
+// CollectionNameForStruct is a method that returns the collection name for a MongoDB document struct.
+// It takes the document struct (doc).
+// It returns a Collection instance or an error if the collection name cannot be determined.
+// CollectionNameForSlice is a method that returns the collection name for a MongoDB document slice.
+// It takes the document slice (doc).
+// It returns a Collection instance or an error if the collection name cannot be determined.
+// Transaction is a method that executes a transaction using the provided transaction function.
+// It takes the context (ctx) and the transaction function (f).
+// It returns an error if the transaction fails.
+// TransactionWithOptions is a method that executes a transaction using the provided transaction function and transaction options.
+// It takes the context (ctx), the transaction function (f), and optional transaction options (opt).
+// It returns an error if the transaction fails.
 type Client interface {
-	FindPagination(needCount bool, doc interface{}, ctx ...context.Context) (int64, error)
-	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
-	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
-	FindAndDelete(doc interface{}, ctx ...context.Context) error
-	FindOne(doc interface{}, ctx ...context.Context) error
-	FindAll(docs interface{}, ctx ...context.Context) error
+	FindPagination(needCount bool, doc any, ctx ...context.Context) (int64, error)
+	FindOneAndReplace(doc any, ctx ...context.Context) error
+	FindOneAndUpdate(doc any, ctx ...context.Context) (*mongo.SingleResult, error)
+	FindAndDelete(doc any, ctx ...context.Context) error
+	FindOne(doc any, ctx ...context.Context) error
+	FindAll(docs any, ctx ...context.Context) error
 	RegexFilter(key, pattern string) Session
-	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
-	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+	Distinct(doc any, columns string, ctx ...context.Context) ([]any, error)
+	FindOneAndUpdateBson(coll any, bson any, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error)
-	InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
-	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
-	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	InsertOne(v any, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertMany(v any, ctx ...context.Context) (*mongo.InsertManyResult, error)
+	BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteResult, error)
+	ReplaceOne(doc any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	Update(bean any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateOneBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateManyBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	SoftDeleteOne(filter interface{}, ctx ...context.Context) error
-	SoftDeleteMany(filter interface{}, ctx ...context.Context) error
-	DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
-	DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	SoftDeleteOne(filter any, ctx ...context.Context) error
+	SoftDeleteMany(filter any, ctx ...context.Context) error
+	DeleteOne(filter any, ctx ...context.Context) (*mongo.DeleteResult, error)
+	DeleteMany(filter any, ctx ...context.Context) (*mongo.DeleteResult, error)
 
 	DataBase() *mongo.Database
 	// Collection(name string, db ...string) *mongo.Collection
@@ -118,42 +219,42 @@ type Client interface {
 
 	// Soft filter
 	Soft(s bool) Session
-	FilterBy(object interface{}) Session
-	Filter(key string, value interface{}) Session
+	FilterBy(object any) Session
+	Filter(key string, value any) Session
 	Asc(colNames ...string) Session
-	Eq(key string, value interface{}) Session
-	Ne(key string, ne interface{}) Session
-	Nin(key string, nin interface{}) Session
+	Eq(key string, value any) Session
+	Ne(key string, ne any) Session
+	Nin(key string, nin any) Session
 	Nor(c Condition) Session
 	Exists(key string, exists bool, filter ...Condition) Session
-	Type(key string, t interface{}) Session
+	Type(key string, t any) Session
 	Expr(filter Condition) Session
 	Regex(key string, value string) Session
-	ID(id interface{}) Session
-	Gt(key string, value interface{}) Session
-	Gte(key string, value interface{}) Session
-	Lt(key string, value interface{}) Session
-	Lte(key string, value interface{}) Session
-	In(key string, value interface{}) Session
+	ID(id any) Session
+	Gt(key string, value any) Session
+	Gte(key string, value any) Session
+	Lt(key string, value any) Session
+	Lte(key string, value any) Session
+	In(key string, value any) Session
 	And(filter Condition) Session
-	Not(key string, value interface{}) Session
+	Not(key string, value any) Session
 	Or(filter Condition) Session
 	Limit(limit int64) Session
 	Skip(skip int64) Session
-	Count(i interface{}, ctx ...context.Context) (int64, error)
+	Count(i any, ctx ...context.Context) (int64, error)
 	Desc(s1 ...string) Session
 	FilterBson(d bson.D) Session
-
+	Project(d any) Session
 	NewIndexes() Indexes
-	DropAll(doc interface{}, ctx ...context.Context) error
-	DropOne(doc interface{}, name string, ctx ...context.Context) error
-	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
+	DropAll(doc any, ctx ...context.Context) error
+	DropOne(doc any, name string, ctx ...context.Context) error
+	AddIndex(keys any, opt ...*options.IndexOptions) Indexes
 
 	NewSession() Session
 	Aggregate() Aggregate
 
-	CollectionNameForStruct(doc interface{}) (*schemas.Collection, error)
-	CollectionNameForSlice(doc interface{}) (*schemas.Collection, error)
+	CollectionNameForStruct(doc any) (*schemas.Collection, error)
+	CollectionNameForSlice(doc any) (*schemas.Collection, error)
 	Transaction(ctx context.Context, f schemas.TransFunc) error
 	TransactionWithOptions(ctx context.Context, f schemas.TransFunc, opt ...*options.SessionOptions) error
 }
@@ -207,6 +308,10 @@ func (d *defaultClient) Connect(ctx ...context.Context) (err error) {
 	return err
 }
 
+func (d *defaultClient) Project(p any) Session {
+	return d.NewSession().Project(p)
+}
+
 func (d *defaultClient) Disconnect(ctx ...context.Context) error {
 	c := context.Background()
 	if len(ctx) > 0 {
@@ -220,7 +325,7 @@ func (d *defaultClient) Disconnect(ctx ...context.Context) error {
 // and an optional context as parameters. It then calls the FindPagination method
 // of the defaultClient's underlying session with the given parameters and returns
 // the result.
-func (d *defaultClient) FindPagination(needCount bool, doc interface{}, ctx ...context.Context) (int64, error) {
+func (d *defaultClient) FindPagination(needCount bool, doc any, ctx ...context.Context) (int64, error) {
 	return d.NewSession().FindPagination(needCount, doc, ctx...)
 }
 
@@ -228,14 +333,14 @@ func (d *defaultClient) FindPagination(needCount bool, doc interface{}, ctx ...c
 // It takes in a slice of documents (docs) and optional context(s) (ctx).
 // The function creates a new session and calls the BulkWrite method on the session passing the provided parameters.
 // It returns the BulkWriteResult and an error (if any).
-func (d *defaultClient) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
+func (d *defaultClient) BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	return d.NewSession().BulkWrite(docs, ctx...)
 }
 
 // Distinct executes the distinct command and returns an array of distinct values for the specified column(s) in the collection.
 // It takes the document as input, which specifies the query criteria, and the columns string, which specifies the column(s) to retrieve distinct values from.
 // It also takes an optional context.Context parameter for additional context options.
-// The method returns an array of distinct values as []interface{} and an error if any.
+// The method returns an array of distinct values as []any and an error if any.
 // Example usage:
 //
 //	collection := client.Database("mydb").Collection("mycollection")
@@ -247,7 +352,7 @@ func (d *defaultClient) BulkWrite(docs interface{}, ctx ...context.Context) (*mo
 //	// Output: [John, Jane, Lisa]
 //
 // Note: This method requires the MongoDB server version 3.2 or above.
-func (d *defaultClient) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
+func (d *defaultClient) Distinct(doc any, columns string, ctx ...context.Context) ([]any, error) {
 	return d.NewSession().Distinct(doc, columns, ctx...)
 }
 
@@ -256,7 +361,7 @@ func (d *defaultClient) Distinct(doc interface{}, columns string, ctx ...context
 // The method returns an UpdateResult and an error, indicating the success of the operation.
 // The UpdateResult contains information about the modification, such as the number of documents matched and modified.
 // The ReplaceOne method uses the NewSession method of the defaultClient to create a new session and call the ReplaceOne method on it.
-func (d *defaultClient) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) ReplaceOne(doc any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	return d.NewSession().ReplaceOne(doc, ctx...)
 }
 
@@ -265,7 +370,7 @@ func (d *defaultClient) ReplaceOne(doc interface{}, ctx ...context.Context) (*mo
 // 'bson' is the new values to update in the document.
 // 'ctx' is an optional list of context.Context for cancellation or timeout.
 // It returns the *mongo.UpdateResult containing the update information and any error that occurred during the operation.
-func (d *defaultClient) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) UpdateOneBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	return d.NewSession().UpdateOneBson(coll, bson, ctx...)
 }
 
@@ -287,7 +392,7 @@ func (d *defaultClient) UpdateOneBson(coll interface{}, bson interface{}, ctx ..
 //	}
 //	fmt.Println(doc)
 //	// Output: {"_id": ObjectId("60aaa5d3f91d0d23d2895e11"), "name": "John Doe", "age": 30}
-func (d *defaultClient) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+func (d *defaultClient) FindOneAndUpdateBson(coll any, bson any, ctx ...context.Context) (*mongo.SingleResult, error) {
 	return d.NewSession().FindOneAndUpdateBson(coll, bson, ctx...)
 }
 
@@ -296,14 +401,14 @@ func (d *defaultClient) FindOneAndUpdateBson(coll interface{}, bson interface{},
 // It updates multiple documents in the specified collection with the specified BSON.
 // The BSON must adhere to the MongoDB update format.
 // The method also accepts optional context.Context parameter(s) to allow cancellation or timeout of the operation.
-func (d *defaultClient) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) UpdateManyBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	return d.NewSession().UpdateManyBson(coll, bson, ctx...)
 }
 
 // FindOneAndReplace executes a findAndModify command that replaces one document in the collectionByName.
 // The method takes in the document to be used for replacement and an optional context.
 // It returns an error if the findAndModify command encounters any issues or if no document is found to replace.
-func (d *defaultClient) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
+func (d *defaultClient) FindOneAndReplace(doc any, ctx ...context.Context) error {
 	return d.NewSession().FindOneAndReplace(doc, ctx...)
 }
 
@@ -311,13 +416,13 @@ func (d *defaultClient) FindOneAndReplace(doc interface{}, ctx ...context.Contex
 // The 'doc' parameter specifies the filter for finding the document to update.
 // The 'ctx' parameter provides optional context for the operation.
 // It returns a pointer to SingleResult that represents the updated document and an error if any occurred.
-func (d *defaultClient) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+func (d *defaultClient) FindOneAndUpdate(doc any, ctx ...context.Context) (*mongo.SingleResult, error) {
 	return d.NewSession().FindOneAndUpdate(doc, ctx...)
 }
 
 // FindAndDelete executes a find command to delete one document in the collectionByName
 // and returns an error if any occurred during the operation.
-func (d *defaultClient) FindAndDelete(doc interface{}, ctx ...context.Context) error {
+func (d *defaultClient) FindAndDelete(doc any, ctx ...context.Context) error {
 	return d.NewSession().FindAndDelete(doc, ctx...)
 }
 
@@ -337,12 +442,12 @@ func (d *defaultClient) FindAndDelete(doc interface{}, ctx ...context.Context) e
 //	}
 //
 // Note: This method is a shorthand for `NewSession().FindOne(doc, ctx...)`.
-func (d *defaultClient) FindOne(doc interface{}, ctx ...context.Context) error {
+func (d *defaultClient) FindOne(doc any, ctx ...context.Context) error {
 	return d.NewSession().FindOne(doc, ctx...)
 }
 
 // FindAll executes a find command and populates the provided interface with multiple documents from the collectionByName.
-func (d *defaultClient) FindAll(docs interface{}, ctx ...context.Context) error {
+func (d *defaultClient) FindAll(docs any, ctx ...context.Context) error {
 	return d.NewSession().FindAll(docs, ctx...)
 }
 
@@ -387,7 +492,7 @@ func (d *defaultClient) Asc(colNames ...string) Session {
 
 // Eq generates a new session with an equality filter applied to the specified key and value.
 // The generated session can be further used to execute find commands with the equality filter.
-func (d *defaultClient) Eq(key string, value interface{}) Session {
+func (d *defaultClient) Eq(key string, value any) Session {
 	return d.NewSession().Eq(key, value)
 }
 
@@ -406,7 +511,7 @@ func (d *defaultClient) Eq(key string, value interface{}) Session {
 //
 // Returns:
 // - Session: a session that can be used to execute the query.
-func (d *defaultClient) Ne(key string, ne interface{}) Session {
+func (d *defaultClient) Ne(key string, ne any) Session {
 	return d.NewSession().Gt(key, ne)
 }
 
@@ -429,7 +534,7 @@ func (d *defaultClient) Ne(key string, ne interface{}) Session {
 //
 // Note: The value provided for the nin parameter can be of any type, as long as it matches the key's type in MongoDB.
 // If the value is of a different type, an error may occur during the execution of the session.
-func (d *defaultClient) Nin(key string, nin interface{}) Session {
+func (d *defaultClient) Nin(key string, nin any) Session {
 	return d.NewSession().Nin(key, nin)
 }
 
@@ -457,7 +562,7 @@ func (d *defaultClient) Exists(key string, exists bool, filter ...Condition) Ses
 
 // Type executes a GT command with the given key and value and returns a Session.
 // This method is used to filter the results of a find command based on a type field in the documents.
-func (d *defaultClient) Type(key string, t interface{}) Session {
+func (d *defaultClient) Type(key string, t any) Session {
 	return d.NewSession().Gt(key, t)
 }
 
@@ -510,7 +615,7 @@ func (d *defaultClient) Ping() error {
 //	client.Filter("age", 30)
 //
 // This will only return documents where the "age" field is equal to 30.
-func (d *defaultClient) Filter(key string, value interface{}) Session {
+func (d *defaultClient) Filter(key string, value any) Session {
 	return d.NewSession().Filter(key, value)
 }
 
@@ -523,7 +628,7 @@ func (d *defaultClient) Filter(key string, value interface{}) Session {
 //
 // Returns:
 // A Session object with the specified ID.
-func (d *defaultClient) ID(id interface{}) Session {
+func (d *defaultClient) ID(id any) Session {
 	return d.NewSession().ID(id)
 }
 
@@ -535,12 +640,12 @@ func (d *defaultClient) ID(id interface{}) Session {
 //	err := client.Gt("age", 18).FindOne(&result)
 //
 // This will find a document where the "age" key is greater than 18
-func (d *defaultClient) Gt(key string, value interface{}) Session {
+func (d *defaultClient) Gt(key string, value any) Session {
 	return d.NewSession().Gt(key, value)
 }
 
 // Gte creates a query filter for the "greater than or equal to" comparison operator.
-// It takes a key string and a value interface{} as parameters.
+// It takes a key string and a value any as parameters.
 // The key represents the field to compare with, and the value is the value to compare against.
 // The method returns a Session object with the query filter applied.
 // Example usage:
@@ -548,18 +653,18 @@ func (d *defaultClient) Gt(key string, value interface{}) Session {
 //	client.Gte("age", 30)
 //
 // This will create a query filter where the "age" field must be greater than or equal to 30.
-func (d *defaultClient) Gte(key string, value interface{}) Session {
+func (d *defaultClient) Gte(key string, value any) Session {
 	return d.NewSession().Gte(key, value)
 }
 
 // Lt returns a new session with a query filter that matches documents where the value of the specified key is less than the given value.
-func (d *defaultClient) Lt(key string, value interface{}) Session {
+func (d *defaultClient) Lt(key string, value any) Session {
 	return d.NewSession().Lt(key, value)
 }
 
 // Lte returns a new session with the query filter that matches documents where the value of the specified key is less than or equal to the given value.
 // The returned session can be used to execute further operations using the Lte operator in the query filter.
-func (d *defaultClient) Lte(key string, value interface{}) Session {
+func (d *defaultClient) Lte(key string, value any) Session {
 	return d.NewSession().Lte(key, value)
 }
 
@@ -576,7 +681,7 @@ func (d *defaultClient) Lte(key string, value interface{}) Session {
 // "isAdmin" is another key and the value is a boolean true.
 // The In method is called twice to set two different key-value pairs.
 // The updated session is then stored in the session variable for further method chaining.
-func (d *defaultClient) In(key string, value interface{}) Session {
+func (d *defaultClient) In(key string, value any) Session {
 	return d.NewSession().In(key, value)
 }
 
@@ -605,7 +710,7 @@ func (d *defaultClient) And(filter Condition) Session {
 // Not excludes documents from a find command that have the specified key-value pair.
 // This method returns a new Session with the exclusion applied.
 // The new Session will return results excluding documents with the given key-value pair.
-func (d *defaultClient) Not(key string, value interface{}) Session {
+func (d *defaultClient) Not(key string, value any) Session {
 	return d.NewSession().Not(key, value)
 }
 
@@ -623,7 +728,7 @@ func (d *defaultClient) Or(filter Condition) Session {
 //
 //	doc := bson.M{"name": "John Doe", "age": 30}
 //	objID, err := client.InsertOne(doc)
-func (d *defaultClient) InsertOne(v interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
+func (d *defaultClient) InsertOne(v any, ctx ...context.Context) (primitive.ObjectID, error) {
 	return d.NewSession().InsertOne(v, ctx...)
 }
 
@@ -648,7 +753,7 @@ func (d *defaultClient) InsertOne(v interface{}, ctx ...context.Context) (primit
 //   - v: A slice of documents to be inserted into the collection.
 //   - ctx: A variadic parameter of type context.Context that allows passing
 //     additional context options to the operation.
-func (d *defaultClient) InsertMany(v interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
+func (d *defaultClient) InsertMany(v any, ctx ...context.Context) (*mongo.InsertManyResult, error) {
 	return d.NewSession().InsertMany(v, ctx...)
 }
 
@@ -674,12 +779,12 @@ func (d *defaultClient) Skip(skip int64) Session {
 }
 
 // Count executes a count command and returns the number of documents that match the provided filter in the collection.
-// It takes an interface{} variable `i` which represents the filter for counting documents.
+// It takes an any variable `i` which represents the filter for counting documents.
 // The function optionally accepts a variable number of context.Context `ctx` arguments for customizing the count operation.
 // It returns the count of matched documents as an int64 and an error, if any.
 // The count operation is performed using a NewSession method of the defaultClient struct.
 // If there is an error executing the count command, the error is returned.
-func (d *defaultClient) Count(i interface{}, ctx ...context.Context) (int64, error) {
+func (d *defaultClient) Count(i any, ctx ...context.Context) (int64, error) {
 	return d.NewSession().Count(i, ctx...)
 }
 
@@ -696,7 +801,7 @@ func (d *defaultClient) Desc(s2 ...string) Session {
 // The 'bean' argument represents the document to be updated.
 // The optional 'ctx' argument allows specifying additional context.
 // It returns the UpdateResult and any error encountered during the update.
-func (d *defaultClient) Update(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) Update(bean any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	return d.NewSession().UpdateOne(bean, ctx...)
 }
 
@@ -704,12 +809,12 @@ func (d *defaultClient) Update(bean interface{}, ctx ...context.Context) (*mongo
 // It takes a bean as the first parameter, which represents the document(s) to be updated.
 // The optional ctx parameter can be used to pass a context.Context for cancellation or timeouts.
 // It returns an UpdateResult which provides information about the performed update operation.
-func (d *defaultClient) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (d *defaultClient) UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	return d.NewSession().UpdateMany(bean, ctx...)
 }
 
 // DeleteOne executes a delete command and returns a DeleteResult for one document in the collection.
-func (d *defaultClient) DeleteOne(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
+func (d *defaultClient) DeleteOne(filter any, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	return d.NewSession().DeleteOne(filter, ctx...)
 }
 
@@ -717,7 +822,7 @@ func (d *defaultClient) DeleteOne(filter interface{}, ctx ...context.Context) (*
 // It takes a filter parameter to specify the documents to be deleted.
 // The method returns a DeleteResult, which provides information about the deletion operation,
 // and an error if any error occurred during the deletion process.
-func (d *defaultClient) DeleteMany(filter interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
+func (d *defaultClient) DeleteMany(filter any, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	return d.NewSession().DeleteMany(filter, ctx...)
 }
 
@@ -725,7 +830,7 @@ func (d *defaultClient) DeleteMany(filter interface{}, ctx ...context.Context) (
 // The document to be deleted is specified by the provided filter.
 // The method returns an error if the delete command fails.
 // An optional context can be passed to modify the behavior of the delete command.
-func (d *defaultClient) SoftDeleteOne(filter interface{}, ctx ...context.Context) error {
+func (d *defaultClient) SoftDeleteOne(filter any, ctx ...context.Context) error {
 	return d.NewSession().SoftDeleteOne(filter, ctx...)
 }
 
@@ -734,7 +839,7 @@ func (d *defaultClient) SoftDeleteOne(filter interface{}, ctx ...context.Context
 // The documents are marked as deleted, but not physically removed from the collection.
 // The operation can be customized by passing optional context parameters.
 // The method returns an error if the soft delete operation encounters any issues.
-func (d *defaultClient) SoftDeleteMany(filter interface{}, ctx ...context.Context) error {
+func (d *defaultClient) SoftDeleteMany(filter any, ctx ...context.Context) error {
 	return d.NewSession().SoftDeleteMany(filter, ctx...)
 }
 
@@ -750,19 +855,19 @@ func (d *defaultClient) SoftDeleteMany(filter interface{}, ctx ...context.Contex
 //	// ...
 //
 // Note: The provided object must be compatible with the FilterBy method of session.
-func (d *defaultClient) FilterBy(object interface{}) Session {
+func (d *defaultClient) FilterBy(object any) Session {
 	return d.NewSession().FilterBy(object)
 }
 
 // DropAll drops all indexes in the collection.
 // It returns an error if there was a problem dropping the indexes.
-func (d *defaultClient) DropAll(doc interface{}, ctx ...context.Context) error {
+func (d *defaultClient) DropAll(doc any, ctx ...context.Context) error {
 	//d.
 	return d.NewIndexes().DropAll(doc, ctx...)
 }
 
 // DropOne drops one index from the collectionByName using the specified name as identifier.
-func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Context) error {
+func (d *defaultClient) DropOne(doc any, name string, ctx ...context.Context) error {
 	return d.NewIndexes().DropOne(doc, name, ctx...)
 }
 
@@ -770,7 +875,7 @@ func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Con
 // It delegates the operation to the AddIndex method of the NewIndexes interface
 // returned by the NewIndexes method of the defaultClient instance.
 // It returns the Indexes interface that allows chaining additional index operations.
-func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
+func (d *defaultClient) AddIndex(keys any, opt ...*options.IndexOptions) Indexes {
 	return d.NewIndexes().AddIndex(keys, opt...)
 }
 
@@ -779,13 +884,13 @@ func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions)
 // The index struct is used to perform index-related operations on the collection.
 // Example usage:
 //
-//	func (d *defaultClient) DropAll(doc interface{}, ctx ...context.Context) error {
+//	func (d *defaultClient) DropAll(doc any, ctx ...context.Context) error {
 //	    return d.NewIndexes().DropAll(doc, ctx...)
 //	}
-//	func (d *defaultClient) DropOne(doc interface{}, name string, ctx ...context.Context) error {
+//	func (d *defaultClient) DropOne(doc any, name string, ctx ...context.Context) error {
 //	    return d.NewIndexes().DropOne(doc, name, ctx...)
 //	}
-//	func (d *defaultClient) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
+//	func (d *defaultClient) AddIndex(keys any, opt ...*options.IndexOptions) Indexes {
 //	    return d.NewIndexes().AddIndex(keys, opt...)
 //	}
 //
@@ -850,7 +955,7 @@ func (d *defaultClient) Aggregate() Aggregate {
 // Returns:
 // - The Collection object that represents the name and type of the given struct
 // - An error if the input is invalid or if an error occurs during parsing
-func (d *defaultClient) CollectionNameForStruct(doc interface{}) (*schemas.Collection, error) {
+func (d *defaultClient) CollectionNameForStruct(doc any) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")
@@ -884,7 +989,7 @@ func (d *defaultClient) CollectionNameForStruct(doc interface{}) (*schemas.Colle
 // If it is a struct, it parses the element type using the parser.Parse method.
 // If it is not a pointer to a slice or if the element type is not a struct, it parses the document using the parser.Parse method.
 // It returns the parsed *schemas.Collection and any error encountered during parsing.
-func (d *defaultClient) CollectionNameForSlice(doc interface{}) (*schemas.Collection, error) {
+func (d *defaultClient) CollectionNameForSlice(doc any) (*schemas.Collection, error) {
 	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
 
 	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
@@ -917,7 +1022,7 @@ func (d *defaultClient) CollectionNameForSlice(doc interface{}) (*schemas.Collec
 // It then retrieves the type of `doc` from `t`, and iterates through its fields.
 // If a field has a tag that contains "_id" as a value, it breaks the loop.
 // Finally, it returns `t` and `nil`.
-func (d *defaultClient) getStructCollAndSetKey(doc interface{}) (*schemas.Collection, error) {
+func (d *defaultClient) getStructCollAndSetKey(doc any) (*schemas.Collection, error) {
 	beanValue := reflect.ValueOf(doc)
 	if beanValue.Kind() != reflect.Ptr {
 		return nil, errors.New("needs a pointer to a value")

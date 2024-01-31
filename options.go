@@ -41,13 +41,13 @@ type ClientOptions interface {
 	// SetMaxTime sets the value for the MaxTime field.
 	SetMaxTime(d time.Duration) Session
 	// SetProjection sets the value for the Projection field.
-	SetProjection(projection interface{}) Session
+	SetProjection(projection any) Session
 
 	// SetSort sets the value for the Sort field.
-	SetSort(sort interface{}) Session
+	SetSort(sort any) Session
 
 	// SetHint sets the value for the Hint field.
-	SetHint(hint interface{}) Session
+	SetHint(hint any) Session
 }
 
 type Options struct {
@@ -97,12 +97,12 @@ func (d *defaultClient) SetMaxTime(t time.Duration) Session {
 }
 
 // SetProjection sets the value for the Projection field.
-func (d *defaultClient) SetProjection(projection interface{}) Session {
+func (d *defaultClient) SetProjection(projection any) Session {
 	return d.NewSession().SetProjection(projection)
 }
 
 // SetSort sets the value for the sort field of the session created by defaultClient.
-// It takes an argument "sort" of type interface{} which represents the sorting mechanism to be applied.
+// It takes an argument "sort" of type any which represents the sorting mechanism to be applied.
 // The method returns a Session object which is created using the NewSession method.
 // The SetSort method is responsible for setting the sort value of the session and returning the modified session.
 // Example usage:
@@ -113,16 +113,16 @@ func (d *defaultClient) SetProjection(projection interface{}) Session {
 //	session.DoSomething()
 //	...
 //	session.DoSomethingElse()
-func (d *defaultClient) SetSort(sort interface{}) Session {
+func (d *defaultClient) SetSort(sort any) Session {
 	return d.NewSession().SetSort(sort)
 }
 
 // SetHint sets the hint for the session.
-// It takes an interface{} argument representing the hint.
+// It takes an any argument representing the hint.
 // The method creates a new session using the defaultClient's NewSession method.
 // It then sets the hint for the session using the SetHint method on the session.
 // Finally, it returns the session with the new hint set.
-func (d *defaultClient) SetHint(hint interface{}) Session {
+func (d *defaultClient) SetHint(hint any) Session {
 	return d.NewSession().SetHint(hint)
 }
 

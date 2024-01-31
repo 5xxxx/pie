@@ -12,37 +12,37 @@ import (
 
 type Condition interface {
 	RegexFilter(key, pattern string) Condition
-	ID(id interface{}) Condition
+	ID(id any) Condition
 	// Eq Equals a Specified Value
 	//{ qty: 20 }
 	//Field in Embedded Document Equals a Value
 	//{"item.name": "ab" }
 	// Equals an Array Value
 	//{ tags: [ "A", "B" ] }
-	Eq(key string, value interface{}) Condition
+	Eq(key string, value any) Condition
 
 	// Gt {field: {$gt: value} } >
-	Gt(key string, gt interface{}) Condition
+	Gt(key string, gt any) Condition
 
 	// Gte { qty: { $gte: 20 } } >=
-	Gte(key string, gte interface{}) Condition
+	Gte(key string, gte any) Condition
 
 	// In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 	// tags: { $in: [ /^be/, /^st/ ] } }
 	// in []string []int ...
-	In(key string, in interface{}) Condition
+	In(key string, in any) Condition
 
 	// Lt {field: {$lt: value} } <
-	Lt(key string, lt interface{}) Condition
+	Lt(key string, lt any) Condition
 
 	// Lte { field: { $lte: value} } <=
-	Lte(key string, lte interface{}) Condition
+	Lte(key string, lte any) Condition
 
 	// Ne {field: {$ne: value} } !=
-	Ne(key string, ne interface{}) Condition
+	Ne(key string, ne any) Condition
 
 	// Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
-	Nin(key string, nin interface{}) Condition
+	Nin(key string, nin any) Condition
 
 	// And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
 	//$and: [
@@ -54,7 +54,7 @@ type Condition interface {
 	// Not { field: { $not: { <operator-expression> } } }
 	//not and Regular Expressions
 	//{ item: { $not: /^p.*/ } }
-	Not(key string, not interface{}) Condition
+	Not(key string, not any) Condition
 
 	// Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 	// { sale: true }, { sale: { $exists: false } } ] }
@@ -70,7 +70,7 @@ type Condition interface {
 	// { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
 	// db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 	// return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
-	Type(key string, t interface{}) Condition
+	Type(key string, t any) Condition
 
 	// Expr Allows the use of aggregation expressions within the query language.
 	//{ $expr: { <expression> } }
@@ -84,8 +84,8 @@ type Condition interface {
 	Filters() (bson.D, error)
 	A() bson.A
 	Err() error
-	FilterBson(d interface{}) Condition
-	FilterBy(object interface{}) Condition
+	FilterBson(d any) Condition
+	FilterBy(object any) Condition
 
 	Clone() Condition
 }
@@ -136,7 +136,7 @@ func (f *filter) Clone() Condition {
 //	// filter.d is now []bson.E{bson.E{Key: "key1", Value: "value1"}, bson.E{Key: "key2", Value: 123}, bson.E{Key: "key3", Value: "value3"}, bson.E{Key: "key4", Value: true}}
 //
 // Note: The filter is maintained internally by the `filter` object to build a MongoDB query condition.
-func (f *filter) FilterBson(object interface{}) Condition {
+func (f *filter) FilterBson(object any) Condition {
 	if m, ok := object.(bson.M); ok {
 		for key, value := range m {
 			f.d = append(f.d, bson.E{Key: key, Value: value})
@@ -148,7 +148,7 @@ func (f *filter) FilterBson(object interface{}) Condition {
 }
 
 // FilterBy applies filtering based on the fields of the provided object
-func (f *filter) FilterBy(object interface{}) Condition {
+func (f *filter) FilterBy(object any) Condition {
 	beanValue := reflect.ValueOf(object)
 	if beanValue.Kind() != reflect.Struct {
 		f.err = errors.New("needs a struct")
@@ -213,7 +213,7 @@ func (f *filter) RegexFilter(key, pattern string) Condition {
 	return f
 }
 
-func (f *filter) ID(id interface{}) Condition {
+func (f *filter) ID(id any) Condition {
 	if id == nil {
 		return f
 	}
@@ -245,11 +245,11 @@ func (f *filter) processObjectID(id primitive.ObjectID) {
 	f.addFilter("_id", id)
 }
 
-func (f *filter) generateError(format string, a ...interface{}) error {
+func (f *filter) generateError(format string, a ...any) error {
 	return fmt.Errorf(format+" %v", append(a, f.err)...)
 }
 
-func (f *filter) addFilter(key string, value interface{}) {
+func (f *filter) addFilter(key string, value any) {
 	f.d = append(f.d, bson.E{Key: key, Value: value})
 }
 
@@ -257,7 +257,7 @@ func (f *filter) addFilter(key string, value interface{}) {
 // It appends a bson.E{Key: key, Value: value} to the filter's d field.
 // The returned Condition is the filter itself.
 // Example usage: f.Eq("field", value) adds an equality expression "field: value" to the filter.
-func (f *filter) Eq(key string, value interface{}) Condition {
+func (f *filter) Eq(key string, value any) Condition {
 	f.d = append(f.d, bson.E{Key: key, Value: value})
 	return f
 }
@@ -272,7 +272,7 @@ func (f *filter) Eq(key string, value interface{}) Condition {
 //
 // { tags: { $gt: [ "A", "B" ] } }
 // Field value is greater than the array ["A", "B"].
-func (f *filter) Gt(key string, gt interface{}) Condition {
+func (f *filter) Gt(key string, gt any) Condition {
 	v := bson.M{
 		"$gt": gt,
 	}
@@ -291,7 +291,7 @@ func (f *filter) Gt(key string, gt interface{}) Condition {
 // This will append a condition to the filter that matches documents where the value of the specified field is greater than or equal to the given value.
 // If the field is nested in an embedded document, you can specify the path using dot notation (e.g., "item.name").
 // If the field contains an array, you can specify an array of values and the condition will match if any of the values in the array are greater than or equal to the specified value
-func (f *filter) Gte(key string, gte interface{}) Condition {
+func (f *filter) Gte(key string, gte any) Condition {
 	v := bson.M{
 		"$gte": gte,
 	}
@@ -303,7 +303,7 @@ func (f *filter) Gte(key string, gte interface{}) Condition {
 // { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 // Matches any value in the specified array.
 // { field: { $in: [ <value1>, <value2> ... <valueN> ], $nin: [ <value1>, <value2> ... <valueN> ] } }
-func (f *filter) In(key string, in interface{}) Condition {
+func (f *filter) In(key string, in any) Condition {
 	v := bson.M{
 		"$in": in,
 	}
@@ -317,7 +317,7 @@ func (f *filter) In(key string, in interface{}) Condition {
 // {"item.price": { $lt: 9.99 } }
 // Less Than an Array Value
 // { tags: { $lt: [ "C", "D" ] } }
-func (f *filter) Lt(key string, lt interface{}) Condition {
+func (f *filter) Lt(key string, lt any) Condition {
 	v := bson.M{
 		"$lt": lt,
 	}
@@ -331,7 +331,7 @@ func (f *filter) Lt(key string, lt interface{}) Condition {
 // {"item.name": {$lte: "ab"}}
 // Less than or Equal to an Array Value
 // {tags: {$lte: ["A", "B"]}}
-func (f *filter) Lte(key string, lte interface{}) Condition {
+func (f *filter) Lte(key string, lte any) Condition {
 	v := bson.M{
 		"$lte": lte,
 	}
@@ -345,7 +345,7 @@ func (f *filter) Lte(key string, lte interface{}) Condition {
 // { "item.name": { $ne: "ab" } }
 // Not Equals an Array Value
 // { tags: { $ne: [ "A", "B" ] } }
-func (f *filter) Ne(key string, ne interface{}) Condition {
+func (f *filter) Ne(key string, ne any) Condition {
 	v := bson.M{
 		"$ne": ne,
 	}
@@ -362,7 +362,7 @@ func (f *filter) Ne(key string, ne interface{}) Condition {
 //	Field item.name does not match any value in the array ["ab", "cd"]
 //	`{"tags": bson.M{"$nin": ["A", "B", "C"]}}`
 //	Field tags does not match any value in the array ["A", "B", "C"]
-func (f *filter) Nin(key string, nin interface{}) Condition {
+func (f *filter) Nin(key string, nin any) Condition {
 	v := bson.M{
 		"$nin": nin,
 	}
@@ -380,9 +380,9 @@ func (f *filter) And(filter Condition) Condition {
 
 // Not adds a condition to the filter where the specified key's value is not equal to the given value.
 // The key is used as the field to apply the not condition to.
-// The not interface{} parameter represents the value that the key's value is not equal to.
+// The not any parameter represents the value that the key's value is not equal to.
 // It creates a bson.M map with the "$not" operator and the given value, and appends it as a bson.E element in the filter.
-func (f *filter) Not(key string, not interface{}) Condition {
+func (f *filter) Not(key string, not any) Condition {
 	v := bson.M{
 		"$not": not,
 	}
@@ -488,7 +488,7 @@ func (f *filter) Exists(key string, exists bool, filter ...Condition) Condition 
 //
 //	f.Type("age", bson.TypeInt32) // field "age" must be of type int32
 //	f.Type("name", bson.TypeString) // field "name" must be of type string
-func (f *filter) Type(key string, t interface{}) Condition {
+func (f *filter) Type(key string, t any) Condition {
 	v := bson.M{
 		"$type": t,
 	}
@@ -543,7 +543,7 @@ func (f *filter) A() bson.A {
 // If the value is an array, it returns without doing anything.
 // Otherwise, it calls the Eq function to add the field-value pair to the filter.
 // Extract function refactoring applied
-func (f *filter) makeFilterValue(field string, value interface{}) {
+func (f *filter) makeFilterValue(field string, value any) {
 	if utils.IsZero(value) {
 		return
 	}
@@ -552,7 +552,7 @@ func (f *filter) makeFilterValue(field string, value interface{}) {
 }
 
 // New extracted function
-func (f *filter) processFilterValueKind(field string, v reflect.Value, value interface{}) {
+func (f *filter) processFilterValueKind(field string, v reflect.Value, value any) {
 	switch v.Kind() {
 	case reflect.Struct:
 		f.makeStructValue(field, v)

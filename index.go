@@ -11,22 +11,22 @@ import (
 
 // Indexes represents the interface for managing indexes in a database.
 type Indexes interface {
-	CreateIndexes(doc interface{}, ctx ...context.Context) ([]string, error)
-	DropAll(doc interface{}, ctx ...context.Context) error
-	DropOne(doc interface{}, name string, ctx ...context.Context) error
-	AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes
+	CreateIndexes(doc any, ctx ...context.Context) ([]string, error)
+	DropAll(doc any, ctx ...context.Context) error
+	DropOne(doc any, name string, ctx ...context.Context) error
+	AddIndex(keys any, opt ...*options.IndexOptions) Indexes
 	SetMaxTime(d time.Duration) Indexes
 	SetCommitQuorumInt(quorum int32) Indexes
 	SetCommitQuorumString(quorum string) Indexes
 	SetCommitQuorumMajority() Indexes
 	SetCommitQuorumVotingMembers() Indexes
 	SetDatabase(db string) Indexes
-	Collection(doc interface{}) Indexes
+	Collection(doc any) Indexes
 }
 
 type index struct {
 	db                 string
-	doc                interface{}
+	doc                any
 	engine             Client
 	indexes            []mongo.IndexModel
 	createIndexOpts    []*options.CreateIndexesOptions
@@ -37,7 +37,7 @@ func NewIndexes(driver Client) Indexes {
 	return &index{engine: driver}
 }
 
-func (i *index) CreateIndexes(doc interface{}, ctx ...context.Context) ([]string, error) {
+func (i *index) CreateIndexes(doc any, ctx ...context.Context) ([]string, error) {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (i *index) CreateIndexes(doc interface{}, ctx ...context.Context) ([]string
 	return coll.Indexes().CreateMany(c, i.indexes, i.createIndexOpts...)
 }
 
-func (i *index) DropAll(doc interface{}, ctx ...context.Context) error {
+func (i *index) DropAll(doc any, ctx ...context.Context) error {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (i *index) DropAll(doc interface{}, ctx ...context.Context) error {
 	return err
 }
 
-func (i *index) DropOne(doc interface{}, name string, ctx ...context.Context) error {
+func (i *index) DropOne(doc any, name string, ctx ...context.Context) error {
 	coll, err := i.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (i *index) DropOne(doc interface{}, name string, ctx ...context.Context) er
 	return err
 }
 
-func (i *index) AddIndex(keys interface{}, opt ...*options.IndexOptions) Indexes {
+func (i *index) AddIndex(keys any, opt ...*options.IndexOptions) Indexes {
 	m := mongo.IndexModel{
 		Keys: keys,
 	}
@@ -201,7 +201,7 @@ func (i *index) SetDatabase(db string) Indexes {
 	return i
 }
 
-func (i *index) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+func (i *index) collectionForStruct(doc any) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
 	if i.doc != nil {
@@ -215,7 +215,7 @@ func (i *index) collectionForStruct(doc interface{}) (*mongo.Collection, error) 
 	return i.collectionByName(coll.Name), nil
 }
 
-func (i *index) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+func (i *index) collectionForSlice(doc any) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
 	if i.doc != nil {
@@ -233,7 +233,7 @@ func (i *index) collectionByName(name string) *mongo.Collection {
 	return i.engine.Collection(name, nil, i.db)
 }
 
-func (i *index) Collection(doc interface{}) Indexes {
+func (i *index) Collection(doc any) Indexes {
 	i.doc = doc
 	return i
 }

@@ -15,8 +15,8 @@ import (
 )
 
 type Aggregate interface {
-	One(result interface{}, ctx ...context.Context) error
-	All(result interface{}, ctx ...context.Context) error
+	One(result any, ctx ...context.Context) error
+	All(result any, ctx ...context.Context) error
 	// SetAllowDiskUse sets the value for the AllowDiskUse field.
 	SetAllowDiskUse(b bool) Aggregate
 
@@ -39,7 +39,7 @@ type Aggregate interface {
 	SetComment(s string) Aggregate
 
 	// SetHint sets the value for the Hint field.
-	SetHint(h interface{}) Aggregate
+	SetHint(h any) Aggregate
 
 	Pipeline(pipeline bson.A) Aggregate
 
@@ -47,7 +47,7 @@ type Aggregate interface {
 
 	SetDatabase(db string) Aggregate
 
-	Collection(doc interface{}) Aggregate
+	Collection(doc any) Aggregate
 
 	SetCollReadPreference(rp *readpref.ReadPref) Aggregate
 
@@ -87,13 +87,13 @@ type Aggregate interface {
 	//UnionWith() Aggregate
 	//Unset() Aggregate
 	//Unwind() Aggregate
-	//All(result interface{}) error
+	//All(result any) error
 }
 
 // aggregate represents an aggregation operation.
 type aggregate struct {
 	db       string
-	doc      interface{}
+	doc      any
 	engine   Client
 	pipeline bson.A
 	opts     []*options.AggregateOptions
@@ -108,7 +108,7 @@ func NewAggregate(engine Client) Aggregate {
 // One retrieves a single document from the MongoDB collection that matches the aggregation pipeline and decodes it into the provided result variable.
 // If a context is provided, it will be used for the operation, otherwise a background context will be used.
 // The method determines the appropriate collection based on the type of the result variable. If 'result' is a struct, it uses the `collectionForStruct` method to obtain the collection
-func (a *aggregate) One(result interface{}, ctx ...context.Context) error {
+func (a *aggregate) One(result any, ctx ...context.Context) error {
 
 	var c context.Context
 	if len(ctx) > 0 {
@@ -146,7 +146,7 @@ func (a *aggregate) One(result interface{}, ctx ...context.Context) error {
 // All retrieves all the documents from the MongoDB collection that match the aggregation pipeline and stores the result in the provided result variable.
 // If a context is provided, it will be used for the operation, otherwise a background context will be used.
 // The method determines the appropriate collection based on the type of the result variable. If 'result' is a struct, it uses the `collectionForStruct` method to obtain the collection
-func (a *aggregate) All(result interface{}, ctx ...context.Context) error {
+func (a *aggregate) All(result any, ctx ...context.Context) error {
 	var c context.Context
 	if len(ctx) > 0 {
 		c = ctx[0]
@@ -216,7 +216,7 @@ func (a *aggregate) SetComment(s string) Aggregate {
 }
 
 // SetHint sets the value for the Hint field.
-func (a *aggregate) SetHint(h interface{}) Aggregate {
+func (a *aggregate) SetHint(h any) Aggregate {
 	a.opts = append(a.opts, options.Aggregate().SetHint(h))
 	return a
 }
@@ -258,7 +258,7 @@ func (a *aggregate) SetDatabase(db string) Aggregate {
 // otherwise it assigns the value returned by a.engine.CollectionNameForStruct(doc) to 'coll' and assigns the error to 'err'.
 // If 'err' is not nil, it returns nil and the error.
 // Otherwise, it returns a.collectionByName(coll.Name) and nil.
-func (a *aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+func (a *aggregate) collectionForStruct(doc any) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
 	if a.doc != nil {
@@ -273,7 +273,7 @@ func (a *aggregate) collectionForStruct(doc interface{}) (*mongo.Collection, err
 }
 
 // collectionForSlice retrieves the collection by name for a given slice of documents.
-func (a *aggregate) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+func (a *aggregate) collectionForSlice(doc any) (*mongo.Collection, error) {
 	var coll *schemas.Collection
 	var err error
 	if a.doc != nil {
@@ -321,7 +321,7 @@ func (a *aggregate) SetCollRegistry(r *bsoncodec.Registry) Aggregate {
 
 // Collection sets the document to be used for the aggregate operation.
 // It returns the updated aggregate object.
-func (a *aggregate) Collection(doc interface{}) Aggregate {
+func (a *aggregate) Collection(doc any) Aggregate {
 	a.doc = doc
 	return a
 }

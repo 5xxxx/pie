@@ -23,7 +23,7 @@ type MyInt int
 type ZeroStruct struct{}
 
 func TestZero(t *testing.T) {
-	var zeroValues = []interface{}{
+	var zeroValues = []any{
 		int8(0),
 		int16(0),
 		int(0),

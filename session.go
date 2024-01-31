@@ -21,63 +21,63 @@ import (
 )
 
 type Session interface {
-	BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error)
+	BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteResult, error)
 
-	FilterBy(object interface{}) Session
+	FilterBy(object any) Session
 
-	Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error)
+	Distinct(doc any, columns string, ctx ...context.Context) ([]any, error)
 
-	ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	ReplaceOne(doc any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	FindOneAndReplace(doc interface{}, ctx ...context.Context) error
+	FindOneAndReplace(doc any, ctx ...context.Context) error
 
-	FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+	FindOneAndUpdate(doc any, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error)
+	FindOneAndUpdateBson(coll any, bson any, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error)
+	FindPagination(needCount bool, rowsSlicePtr any, ctx ...context.Context) (int64, error)
 
-	FindAndDelete(doc interface{}, ctx ...context.Context) error
+	FindAndDelete(doc any, ctx ...context.Context) error
 
 	// FindOne executes a find command and returns a SingleResult for one document in the collectionByName.
-	FindOne(doc interface{}, ctx ...context.Context) error
+	FindOne(doc any, ctx ...context.Context) error
 
 	// FindAll Find executes a find command and returns a Cursor over the matching documents in the collectionByName.
-	FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error
+	FindAll(rowsSlicePtr any, ctx ...context.Context) error
 
 	// InsertOne executes an insert command to insert a single document into the collectionByName.
-	InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertOne(doc any, ctx ...context.Context) (primitive.ObjectID, error)
 
 	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
-	InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error)
+	InsertMany(docs any, ctx ...context.Context) (*mongo.InsertManyResult, error)
 
 	// DeleteOne executes a delete command to delete at most one document from the collectionByName.
-	DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
-	SoftDeleteOne(doc interface{}, ctx ...context.Context) error
+	DeleteOne(doc any, ctx ...context.Context) (*mongo.DeleteResult, error)
+	SoftDeleteOne(doc any, ctx ...context.Context) error
 
 	// DeleteMany executes a delete command to delete documents from the collectionByName.
-	DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error)
+	DeleteMany(doc any, ctx ...context.Context) (*mongo.DeleteResult, error)
 
-	SoftDeleteMany(doc interface{}, ctx ...context.Context) error
+	SoftDeleteMany(doc any, ctx ...context.Context) error
 
 	Clone() Session
 	Limit(i int64) Session
 
 	Skip(i int64) Session
+	Project(i any) Session
+	Count(i any, ctx ...context.Context) (int64, error)
 
-	Count(i interface{}, ctx ...context.Context) (int64, error)
+	UpdateOne(bean any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateOneBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateManyBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
-	UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
-
-	UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error)
+	UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateResult, error)
 
 	RegexFilter(key, pattern string) Session
 
-	ID(id interface{}) Session
+	ID(id any) Session
 
 	Asc(colNames ...string) Session
 
@@ -85,7 +85,7 @@ type Session interface {
 
 	Sort(colNames ...string) Session
 	Soft(f bool) Session
-	Filter(key string, value interface{}) Session
+	Filter(key string, value any) Session
 	FilterBson(d bson.D) Session
 	// Eq Equals a Specified Value
 	//{ qty: 20 }
@@ -93,30 +93,30 @@ type Session interface {
 	//{"item.name": "ab" }
 	// Equals an Array Value
 	//{ tags: [ "A", "B" ] }
-	Eq(key string, value interface{}) Session
+	Eq(key string, value any) Session
 
 	// Gt {field: {$gt: value} } >
-	Gt(key string, gt interface{}) Session
+	Gt(key string, gt any) Session
 
 	// Gte { qty: { $gte: 20 } } >=
-	Gte(key string, gte interface{}) Session
+	Gte(key string, gte any) Session
 
 	// In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 	// tags: { $in: [ /^be/, /^st/ ] } }
 	// in []string []int ...
-	In(key string, in interface{}) Session
+	In(key string, in any) Session
 
 	// Lt {field: {$lt: value} } <
-	Lt(key string, lt interface{}) Session
+	Lt(key string, lt any) Session
 
 	// Lte { field: { $lte: value} } <=
-	Lte(key string, lte interface{}) Session
+	Lte(key string, lte any) Session
 
 	// Ne {field: {$ne: value} } !=
-	Ne(key string, ne interface{}) Session
+	Ne(key string, ne any) Session
 
 	// Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
-	Nin(key string, nin interface{}) Session
+	Nin(key string, nin any) Session
 
 	// And { $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
 	//$and: [
@@ -128,7 +128,7 @@ type Session interface {
 	// Not { field: { $not: { <operator-expression> } } }
 	//not and Regular Expressions
 	//{ item: { $not: /^p.*/ } }
-	Not(key string, not interface{}) Session
+	Not(key string, not any) Session
 
 	// Nor { $nor: [ { price: 1.99 }, { price: { $exists: false } },
 	// { sale: true }, { sale: { $exists: false } } ] }
@@ -162,20 +162,20 @@ type Session interface {
 	SetMaxTime(d time.Duration) Session
 
 	// SetProjection sets the value for the Projection field.
-	SetProjection(projection interface{}) Session
+	SetProjection(projection any) Session
 
 	// SetSort sets the value for the Sort field.
-	SetSort(sort interface{}) Session
+	SetSort(sort any) Session
 
 	// SetHint sets the value for the Hint field.
-	SetHint(hint interface{}) Session
+	SetHint(hint any) Session
 
 	// Type { field: { $type: <BSON type> } }
 	// { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
 	// { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
 	// db.find( { "zipCode" : { $type : 2 } } ); or db.find( { "zipCode" : { $type : "string" } }
 	// return { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" }
-	Type(key string, t interface{}) Session
+	Type(key string, t any) Session
 
 	// Expr Allows the use of aggregation expressions within the query language.
 	//{ $expr: { <expression> } }
@@ -206,15 +206,22 @@ type session struct {
 	insertManyOpts        []*options.InsertManyOptions
 	insertOneOpts         []*options.InsertOneOptions
 	deleteOpts            []*options.DeleteOptions
-	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptions
 	updateOpts            []*options.UpdateOptions
 	countOpts             []*options.CountOptions
 	distinctOpts          []*options.DistinctOptions
+	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptions
 	findOneAndReplaceOpts []*options.FindOneAndReplaceOptions
 	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
 	replaceOpts           []*options.ReplaceOptions
 	bulkWriteOptions      []*options.BulkWriteOptions
 	collOpts              []*options.CollectionOptions
+}
+
+func (s *session) Project(i any) Session {
+	s.findOptions = append(s.findOptions, options.Find().SetProjection(i))
+	s.findOneOptions = append(s.findOneOptions, options.FindOne().SetProjection(i))
+	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetProjection(i))
+	return s
 }
 
 // Soft sets the `deleted_at` field of the session's filter object to the given value.
@@ -263,7 +270,7 @@ func (s *session) prepareContext(ctx ...context.Context) context.Context {
 //
 // The "coll.Find" method is then called with the obtained filter conditions and any additional find options specified.
 // If there is an
-func (s *session) FindPagination(needCount bool, rowsSlicePtr interface{}, ctx ...context.Context) (int64, error) {
+func (s *session) FindPagination(needCount bool, rowsSlicePtr any, ctx ...context.Context) (int64, error) {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
 		return 0, err
@@ -310,7 +317,7 @@ func (s *session) FindPagination(needCount bool, rowsSlicePtr interface{}, ctx .
 // Each value in the 'docs' slice is converted into a BSON document and added as an insert one model to the 'mods' array.
 //
 // After that, the method prepares the context using the 'prepareContext
-func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
+func (s *session) BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
@@ -328,14 +335,14 @@ func (s *session) BulkWrite(docs interface{}, ctx ...context.Context) (*mongo.Bu
 // FilterBy sets the filter for the session to be used in the subsequent database operations.
 // The filter is specified by the given object.
 // The function returns the session itself to allow method chaining.
-func (s *session) FilterBy(object interface{}) Session {
+func (s *session) FilterBy(object any) Session {
 	s.filter.FilterBy(object)
 	return s
 }
 
 // Distinct retrieves distinct values for the specified columns from the collection associated with the session.
 // The provided 'doc' object is used to determine the collection to perform the distinct operation on.
-// It returns a slice of distinct interface{} values for the specified columns.
+// It returns a slice of distinct any values for the specified columns.
 // The 'columns' parameter specifies the columns from which to retrieve distinct values.
 // The optional 'ctx' parameter allows you to provide a context.Context object to control the execution of the operation.
 // It returns an error if any error occurs during the operation.
@@ -343,7 +350,7 @@ func (s *session) FilterBy(object interface{}) Session {
 // It then retrieves the filters associated with the session's filter object.
 // Finally, it performs the distinct operation on the collection using the retrieved context, columns, filters, and distinct options.
 // It returns the result of the distinct operation and any error that occurred.
-func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Context) ([]interface{}, error) {
+func (s *session) Distinct(doc any, columns string, ctx ...context.Context) ([]any, error) {
 	coll, err := s.collectionForSlice(doc)
 	if err != nil {
 		return nil, err
@@ -366,7 +373,7 @@ func (s *session) Distinct(doc interface{}, columns string, ctx ...context.Conte
 // If an error occurs during this retrieval, it is returned along with nil as the *mongo.UpdateResult.
 // It prepares the context by creating a new context if ctx is not provided or using the provided context otherwise.
 // Finally, it calls the coll.ReplaceOne method to perform the replacement and returns the result or any error encountered.
-func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (s *session) ReplaceOne(doc any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -388,7 +395,7 @@ func (s *session) ReplaceOne(doc interface{}, ctx ...context.Context) (*mongo.Up
 // The function returns an error if there was an issue finding the collection or if there was an error
 // decoding the replaced document into the original document variable.
 // If a context is provided, it is used for the operation. Otherwise, a default background context is used.
-func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) error {
+func (s *session) FindOneAndReplace(doc any, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -413,7 +420,7 @@ func (s *session) FindOneAndReplace(doc interface{}, ctx ...context.Context) err
 // It returns a *mongo.SingleResult and an error. The SingleResult contains
 // the result of the operation, and the error indicates any encountered errors
 // during the execution of the command.
-func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+func (s *session) FindOneAndUpdateBson(coll any, bson any, ctx ...context.Context) (*mongo.SingleResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -437,7 +444,7 @@ func (s *session) FindOneAndUpdateBson(coll interface{}, bson interface{}, ctx .
 // It calls the 'FindOneAndUpdate' method on the collection with the prepared context, filters, and the update document, which is formatted as a '$set' operator.
 // The method also includes the session's 'findOneAndUpdateOpts' as additional options.
 // Finally, it returns the single result and any error that occurred during the update process.
-func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mongo.SingleResult, error) {
+func (s *session) FindOneAndUpdate(doc any, ctx ...context.Context) (*mongo.SingleResult, error) {
 
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
@@ -464,7 +471,7 @@ func (s *session) FindOneAndUpdate(doc interface{}, ctx ...context.Context) (*mo
 // The deleted document is then decoded into the "doc" parameter.
 // If decoding fails, an error is returned.
 // The method
-func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
+func (s *session) FindAndDelete(doc any, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -484,7 +491,7 @@ func (s *session) FindAndDelete(doc interface{}, ctx ...context.Context) error {
 // The document struct must be provided as a pointer, and it will be populated with the found document's data.
 // The method first determines the appropriate collection for the provided document using the collectionForStruct method.
 // If an error occurs during this process, it is
-func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
+func (s *session) FindOne(doc any, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -511,7 +518,7 @@ func (s *session) FindOne(doc interface{}, ctx ...context.Context) error {
 // The slice pointer should be of type []<document-type>.
 // Optionally, a context can be passed to customize the operation.
 // If no context
-func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) error {
+func (s *session) FindAll(rowsSlicePtr any, ctx ...context.Context) error {
 	coll, err := s.collectionForSlice(rowsSlicePtr)
 	if err != nil {
 		return err
@@ -546,7 +553,7 @@ func (s *session) FindAll(rowsSlicePtr interface{}, ctx ...context.Context) erro
 //	} else {
 //	  // handle success
 //	}
-func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.ObjectID, error) {
+func (s *session) InsertOne(doc any, ctx ...context.Context) (primitive.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return [12]byte{}, err
@@ -569,14 +576,14 @@ func (s *session) InsertOne(doc interface{}, ctx ...context.Context) (primitive.
 // The function then retrieves the collection associated with the documents,
 // and inserts the documents into the collection using the InsertMany method.
 // The function returns the InsertManyResult and an error, if any.
-func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.InsertManyResult, error) {
+func (s *session) InsertMany(docs any, ctx ...context.Context) (*mongo.InsertManyResult, error) {
 	coll, err := s.collectionForSlice(docs)
 	if err != nil {
 		return nil, err
 	}
 
 	value := reflect.ValueOf(docs)
-	var many []interface{}
+	var many []any
 	for index := 0; index < value.Len(); index++ {
 		many = append(many, value.Index(index).Interface())
 	}
@@ -595,7 +602,7 @@ func (s *session) InsertMany(docs interface{}, ctx ...context.Context) (*mongo.I
 //	}
 //	fmt.Printf("Deleted %d documents\n", result.DeletedCount)
 //	// Output: Deleted 1 documents
-func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
+func (s *session) DeleteOne(doc any, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -619,7 +626,7 @@ func (s *session) DeleteOne(doc interface{}, ctx ...context.Context) (*mongo.Del
 // Finally, it performs the update operation by calling UpdateOne on the collection.
 // The "deleted_at" field is updated with the current time using the $set operator.
 // If any error occurs during the update operation, it is returned.
-func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
+func (s *session) SoftDeleteOne(doc any, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -639,7 +646,7 @@ func (s *session) SoftDeleteOne(doc interface{}, ctx ...context.Context) error {
 // The method takes the document interface as the first argument, which represents the filter conditions for deleting documents.
 // It also accepts a variadic argument ctx of type context.Context, which allows passing additional context options.
 // The method returns a *mongo.DeleteResult, which contains information about the deletion operation, and an
-func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.DeleteResult, error) {
+func (s *session) DeleteMany(doc any, ctx ...context.Context) (*mongo.DeleteResult, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -654,9 +661,9 @@ func (s *session) DeleteMany(doc interface{}, ctx ...context.Context) (*mongo.De
 
 // SoftDeleteMany executes an update command to "soft delete" multiple documents in the collection.
 // It adds a "deleted_at" field with the current timestamp to the matching documents.
-// The method takes an interface{} type parameter (doc) representing the document(s) to be soft deleted.
+// The method takes an any type parameter (doc) representing the document(s) to be soft deleted.
 // It returns an error if any error occurs during the update operation.
-func (s *session) SoftDeleteMany(doc interface{}, ctx ...context.Context) error {
+func (s *session) SoftDeleteMany(doc any, ctx ...context.Context) error {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return err
@@ -754,7 +761,7 @@ func (s *session) Skip(i int64) Session {
 	return s
 }
 
-func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
+func (s *session) Count(i any, ctx ...context.Context) (int64, error) {
 	kind := reflect.TypeOf(i).Kind()
 	if kind == reflect.Ptr {
 		kind = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(i)).Interface()).Kind()
@@ -798,7 +805,7 @@ func (s *session) Count(i interface{}, ctx ...context.Context) (int64, error) {
 //	  // Handle error
 //	}
 //	fmt.Printf("Updated documents: %v\n", result.ModifiedCount)
-func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (s *session) UpdateOne(bean any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForStruct(bean)
 
 	if err != nil {
@@ -835,7 +842,7 @@ func (s *session) UpdateOne(bean interface{}, ctx ...context.Context) (*mongo.Up
 //
 // fmt.Println("Matched Count:", result.MatchedCount)
 // fmt.Println("Modified Count:", result.ModifiedCount)
-func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (s *session) UpdateOneBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -862,7 +869,7 @@ func (s *session) UpdateOneBson(coll interface{}, bson interface{}, ctx ...conte
 // Returns:
 // - *mongo.UpdateResult: The result of the update operation.
 // - error: Any error encountered during the operation.
-func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (s *session) UpdateManyBson(coll any, bson any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	c, err := s.collectionForStruct(coll)
 	if err != nil {
 		return nil, err
@@ -875,7 +882,7 @@ func (s *session) UpdateManyBson(coll interface{}, bson interface{}, ctx ...cont
 	return c.UpdateMany(cc, filters, bson, s.updateOpts...)
 }
 
-func (s *session) toBson(obj interface{}) bson.M {
+func (s *session) toBson(obj any) bson.M {
 	beanValue := reflect.ValueOf(obj).Elem()
 	if beanValue.Kind() != reflect.Struct ||
 		//Todo how to fix array?
@@ -894,7 +901,7 @@ func (s *session) toBson(obj interface{}) bson.M {
 	return ret
 }
 
-func (s *session) makeValue(field string, value interface{}, ret bson.M) {
+func (s *session) makeValue(field string, value any, ret bson.M) {
 	split := strings.Split(field, ",")
 	if len(split) <= 0 {
 		return
@@ -939,7 +946,7 @@ func (s *session) makeStruct(field string, value reflect.Value, ret bson.M) {
 	}
 }
 
-func (s *session) UpdateMany(bean interface{}, ctx ...context.Context) (*mongo.UpdateResult, error) {
+func (s *session) UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateResult, error) {
 	coll, err := s.collectionForSlice(bean)
 	if err != nil {
 		return nil, err
@@ -963,7 +970,7 @@ func (s *session) RegexFilter(key, pattern string) Session {
 // to search for records with the specified ID value.
 // The provided 'id' parameter is used as the value to filter by.
 // The method then returns the session object itself for method chaining.
-func (s *session) ID(id interface{}) Session {
+func (s *session) ID(id any) Session {
 	s.filter.ID(id)
 	return s
 }
@@ -1048,7 +1055,7 @@ func (s *session) Sort(colNames ...string) Session {
 	return s
 }
 
-func (s *session) Filter(key string, value interface{}) Session {
+func (s *session) Filter(key string, value any) Session {
 	return s.Eq(key, value)
 }
 
@@ -1058,7 +1065,7 @@ func (s *session) Filter(key string, value interface{}) Session {
 // {"item.name": "ab" }
 // Equals an Array Value
 // { tags: [ "A", "B" ] }
-func (s *session) Eq(key string, value interface{}) Session {
+func (s *session) Eq(key string, value any) Session {
 	s.filter.Eq(key, value)
 	return s
 }
@@ -1067,13 +1074,13 @@ func (s *session) Eq(key string, value interface{}) Session {
 // The provided key parameter indicates the field name on which the condition is applied.
 // The gt parameter specifies the value that the field should be greater than.
 // The method then returns the session object itself for method chaining.
-func (s *session) Gt(key string, gt interface{}) Session {
+func (s *session) Gt(key string, gt any) Session {
 	s.filter.Gt(key, gt)
 	return s
 }
 
 // Gte { qty: { $gte: 20 } } >=
-func (s *session) Gte(key string, gte interface{}) Session {
+func (s *session) Gte(key string, gte any) Session {
 	s.filter.Gte(key, gte)
 	return s
 }
@@ -1081,31 +1088,31 @@ func (s *session) Gte(key string, gte interface{}) Session {
 // In { field: { $in: [<value1>, <value2>, ... <valueN> ] } }
 // tags: { $in: [ /^be/, /^st/ ] } }
 // in []string []int ...
-func (s *session) In(key string, in interface{}) Session {
+func (s *session) In(key string, in any) Session {
 	s.filter.In(key, in)
 	return s
 }
 
 // Lt {field: {$lt: value} } <
-func (s *session) Lt(key string, lt interface{}) Session {
+func (s *session) Lt(key string, lt any) Session {
 	s.filter.Lt(key, lt)
 	return s
 }
 
 // Lte { field: { $lte: value} } <=
-func (s *session) Lte(key string, lte interface{}) Session {
+func (s *session) Lte(key string, lte any) Session {
 	s.filter.Lte(key, lte)
 	return s
 }
 
 // Ne {field: {$ne: value} } !=
-func (s *session) Ne(key string, ne interface{}) Session {
+func (s *session) Ne(key string, ne any) Session {
 	s.filter.Ne(key, ne)
 	return s
 }
 
 // Nin { field: { $nin: [ <value1>, <value2> ... <valueN> ]} } the field does not exist.
-func (s *session) Nin(key string, nin interface{}) Session {
+func (s *session) Nin(key string, nin any) Session {
 	s.filter.Nin(key, nin)
 	return s
 }
@@ -1126,7 +1133,7 @@ func (s *session) And(c Condition) Session {
 // Not { field: { $not: { <operator-expression> } } }
 // not and Regular Expressions
 // { item: { $not: /^p.*/ } }
-func (s *session) Not(key string, not interface{}) Session {
+func (s *session) Not(key string, not any) Session {
 	s.filter.Not(key, not)
 	return s
 }
@@ -1220,7 +1227,7 @@ func (s *session) SetMaxTime(d time.Duration) Session {
 // The provided projection value is used to specify the fields that should be included or excluded
 // in the query result.
 // The method then returns the session object itself for method chaining.
-func (s *session) SetProjection(projection interface{}) Session {
+func (s *session) SetProjection(projection any) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetProjection(projection))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1233,7 +1240,7 @@ func (s *session) SetProjection(projection interface{}) Session {
 // The provided sort parameter specifies the sorting order for the query.
 // The method adds the sort option to the respective findOneAndUpdateOpts, findOneAndReplaceOpts, and findOneAndDeleteOpts options arrays.
 // It then returns the session object itself for method chaining.
-func (s *session) SetSort(sort interface{}) Session {
+func (s *session) SetSort(sort any) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetSort(sort))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1243,8 +1250,7 @@ func (s *session) SetSort(sort interface{}) Session {
 }
 
 // SetHint sets the hint for the session's operations.
-//
-func (s *session) SetHint(hint interface{}) Session {
+func (s *session) SetHint(hint any) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetHint(hint))
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
@@ -1255,11 +1261,11 @@ func (s *session) SetHint(hint interface{}) Session {
 }
 
 // Type sets the type condition on the session's filter object for the specified key.
-// The type condition checks if the value of the specified key has the same type as the provided interface{} value.
-// The method accepts a string key and an interface{} value as parameters.
+// The type condition checks if the value of the specified key has the same type as the provided any value.
+// The method accepts a string key and an any value as parameters.
 // It then adds the type condition to the filter object using the specified key and value.
 // The method returns the session object itself for method chaining.
-func (s *session) Type(key string, t interface{}) Session {
+func (s *session) Type(key string, t any) Session {
 	s.filter.Type(key, t)
 	return s
 }
@@ -1286,7 +1292,7 @@ func (s *session) SetDatabase(db string) Session {
 	return s
 }
 
-func (s *session) collectionForStruct(doc interface{}) (*mongo.Collection, error) {
+func (s *session) collectionForStruct(doc any) (*mongo.Collection, error) {
 	coll, err := s.engine.CollectionNameForStruct(doc)
 	if err != nil {
 		return nil, err
@@ -1295,7 +1301,7 @@ func (s *session) collectionForStruct(doc interface{}) (*mongo.Collection, error
 	return s.collectionByName(coll.Name), nil
 }
 
-func (s *session) collectionForSlice(doc interface{}) (*mongo.Collection, error) {
+func (s *session) collectionForSlice(doc any) (*mongo.Collection, error) {
 	coll, err := s.engine.CollectionNameForSlice(doc)
 	if err != nil {
 		return nil, err
@@ -1311,7 +1317,7 @@ func (s *session) collectionByName(name string) *mongo.Collection {
 	return s.engine.Collection(name, s.collOpts, s.db)
 }
 
-//func (s *session) makeFilterValue(field string, value interface{}) {
+//func (s *session) makeFilterValue(field string, value any) {
 //	if utils.IsZero(value) {
 //		return
 //	}

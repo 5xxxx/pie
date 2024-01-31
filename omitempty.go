@@ -166,7 +166,7 @@ func compareStructTypes(source, result reflect.Type) {
 //	return newPtrVal.Interface()
 //}
 
-func insertOmitemptyTag(u interface{}) interface{} {
+func insertOmitemptyTag(u any) any {
 	strPtrVal := reflect.ValueOf(u)
 	res := getType(strPtrVal.Type().Elem(), maker{}, true)
 	newPtrVal := reflect.NewAt(res.t, unsafe.Pointer(strPtrVal.Pointer()))

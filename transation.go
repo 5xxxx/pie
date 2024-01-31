@@ -40,7 +40,7 @@ func (d *defaultClient) TransactionWithOptions(ctx context.Context, f schemas.Tr
 
 	txnOpts := options.Transaction().
 		SetReadPreference(readpref.PrimaryPreferred())
-	_, err = transaction.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	_, err = transaction.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (any, error) {
 		return nil, f(sessCtx)
 	}, txnOpts)
 
@@ -57,17 +57,18 @@ func (d *defaultClient) TransactionWithOptions(ctx context.Context, f schemas.Tr
 // - f: The TransFunc that will be executed within the transaction.
 //
 // Returns:
-// - error: If an error occurs during the transaction, it will be returned.
+//   - error: If an error occurs during the transaction, it will be returned.
 //     Otherwise, it will return nil.
 //
 // Example usage:
-//     err := client.Transaction(ctx, func(ctx context.Context) error {
-//         // Perform the transaction logic here
-//         return nil
-//     })
-//     if err != nil {
-//         // Handle the error
-//     }
+//
+//	err := client.Transaction(ctx, func(ctx context.Context) error {
+//	    // Perform the transaction logic here
+//	    return nil
+//	})
+//	if err != nil {
+//	    // Handle the error
+//	}
 //
 // See the schemas.TransFunc documentation for more details on how to define the
 // transaction function.
