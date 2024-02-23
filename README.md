@@ -12,6 +12,13 @@ go get github.com/5xxxx/pie
 ### Connect to database
 
 ```go
+package main
+
+import (
+    "github.com/5xxxx/pie"
+    "go.mongodb.org/mongo-driver/mongo/options"
+)
+
 client, err := pie.NewClient(cfg.DataBase, options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 if err != nil {
     panic(err)
