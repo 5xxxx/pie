@@ -983,68 +983,121 @@ func (d *defaultClient) CollectionNameForStruct(doc any) (*schemas.Collection, e
 //	return d
 //}
 
-// CollectionNameForSlice returns a *schemas.Collection and an error based on the provided document.
-// It takes a document as input and checks if it is a pointer to a slice or a map.
-// If it is a pointer to a slice, it gets the element type of the slice and checks if it is a struct.
-// If it is a struct, it parses the element type using the parser.Parse method.
-// If it is not a pointer to a slice or if the element type is not a struct, it parses the document using the parser.Parse method.
-// It returns the parsed *schemas.Collection and any error encountered during parsing.
+// CollectionNameForSlice returns the Collection information for a given slice or map document.
+// If the provided document is not a pointer to a slice or a map, it returns an error with the message "needs a pointer to a slice or a map".
+// If the document is a slice, it calls the helper function parseCollectionFromSlice to parse and return the Collection information.
+// If the document is a map, it calls the helper function parseCollectionFromMap to parse and return the Collection information.
+// It returns the Collection information and any error that occurs during parsing.
 func (d *defaultClient) CollectionNameForSlice(doc any) (*schemas.Collection, error) {
-	sliceValue := reflect.Indirect(reflect.ValueOf(doc))
-
-	if sliceValue.Kind() != reflect.Slice && reflect.Map != sliceValue.Kind() {
+	savedValue := reflect.Indirect(reflect.ValueOf(doc))
+	if savedValue.Kind() != reflect.Slice && reflect.Map != savedValue.Kind() {
 		return nil, errors.New("needs a pointer to a slice or a map")
 	}
 
-	var t *schemas.Collection
-	var err error
-	if sliceValue.Kind() == reflect.Slice {
-		sliceElementType := sliceValue.Type().Elem()
-		if sliceElementType.Kind() == reflect.Struct {
-			pv := reflect.New(sliceElementType)
-			t, err = d.parser.Parse(pv)
-		}
-	} else {
-		t, err = d.parser.Parse(sliceValue)
+	if savedValue.Kind() == reflect.Slice {
+		return d.parseCollectionFromSlice(savedValue)
 	}
+	return d.parseCollectionFromMap(savedValue)
+}
 
+// parseCollectionFromSlice parses a collection from a slice value.
+// It takes a reflection of the slice value as input.
+// If the slice element type is a struct, it creates a new pointer to the slice element type,
+// and calls the `Parse` method of the `d.parser` field with the new pointer value.
+// It returns the parsed collection and any error that occurred during parsing.
+// If the slice element type is not a struct, it returns `nil` and the `ErrUnsupportedType` error.
+//
+// Example usage:
+//
+//	collection, err := d.parseCollectionFromSlice(savedValue)
+//	if err != nil {
+//	    // handle error
+//	}
+//	// use parsed collection
+//
+// Notice: This function should not be called directly. It is used internally by the `CollectionNameForSlice` method.
+//
+// Parameters:
+//   - sliceValue: A reflection of the slice value to parse the collection from.
+//
+// Returns:
+//   - *schemas.Collection: The parsed collection.
+//   - error: Any error that occurred during parsing.
+func (d *defaultClient) parseCollectionFromSlice(sliceValue reflect.Value) (*schemas.Collection, error) {
+	sliceElementType := sliceValue.Type().Elem()
+	if sliceElementType.Kind() == reflect.Struct {
+		pv := reflect.New(sliceElementType)
+		return d.parser.Parse(pv)
+	}
+	return nil, ErrUnsupportedType
+}
+
+// parseCollectionFromMap parses a reflect.Value that represents a map
+// and uses d.parser.Parse to convert it into a *schemas.Collection.
+// It returns the parsed collection or any error that occurs during parsing.
+func (d *defaultClient) parseCollectionFromMap(mapValue reflect.Value) (*schemas.Collection, error) {
+	return d.parser.Parse(mapValue)
+}
+
+// getStructCollAndSetKey takes a document of any type and performs the following steps:
+//  1. Calls the validateInput function to validate the input document. If an error occurs, it returns the error.
+//  2. Calls the d.parser.Parse function to parse the input document and retrieve the reflect.Type of the document struct.
+//     If an error occurs, it returns the error.
+//  3. Calls the setKeyInFields function to set the _id key in the document struct. If an error occurs, it returns the error.
+//  4. Returns the parsed collection (*schemas.Collection) and nil error if all steps were successful.
+func (d *defaultClient) getStructCollAndSetKey(doc any) (*schemas.Collection, error) {
+	beanValue, err := validateInput(doc)
 	if err != nil {
 		return nil, err
 	}
-	return t, nil
-}
 
-// getStructCollAndSetKey receives a struct pointer `doc` and returns a pointer to a `schemas.Collection`
-// and an error. It first checks if `doc` is a pointer. If not, it returns an error.
-// Then it checks if the indirect value of `doc` is also a pointer. If it is, it returns an error.
-// Next, it checks if the indirect value of `doc` is a struct. If it is not, it returns an error.
-// After that, it calls `d.parser.Parse` passing `beanValue` to obtain the `schemas.Collection` pointer `t`.
-// It then retrieves the type of `doc` from `t`, and iterates through its fields.
-// If a field has a tag that contains "_id" as a value, it breaks the loop.
-// Finally, it returns `t` and `nil`.
-func (d *defaultClient) getStructCollAndSetKey(doc any) (*schemas.Collection, error) {
-	beanValue := reflect.ValueOf(doc)
-	if beanValue.Kind() != reflect.Ptr {
-		return nil, errors.New("needs a pointer to a value")
-	} else if beanValue.Elem().Kind() == reflect.Ptr {
-		return nil, errors.New("a pointer to a pointer is not allowed")
-	}
-
-	if beanValue.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("needs a struct pointer")
-	}
 	t, err := d.parser.Parse(beanValue)
 	if err != nil {
 		return nil, err
 	}
-	docTyp := t.Type
-	for i := 0; i < docTyp.NumField(); i++ {
-		field := docTyp.Field(i)
-		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
-			//d.e = append(d.e, session("_id", beanValue.Field(i).Interface()))
-			break
-		}
+
+	if err := setKeyInFields(t.Type); err != nil {
+		return nil, err
 	}
 
 	return t, nil
+}
+
+// validateInput validates the input value and checks if it meets the required criteria.
+// It takes an input of any type and returns a reflect.Value and an error.
+// The input value should be a pointer to a struct, otherwise an error will be returned.
+// If the input value is a pointer to a pointer, it is not allowed and an error will be returned.
+// If the input value is not a pointer to a struct, an error will be returned.
+// It uses reflection to determine the kind of the input value and perform the necessary checks.
+// If the input value meets the criteria, the input value itself will be returned as a reflect.Value.
+// Otherwise, an empty reflect.Value and an error will be returned.
+func validateInput(input any) (reflect.Value, error) {
+	value := reflect.ValueOf(input)
+
+	if value.Kind() != reflect.Ptr {
+		return reflect.Value{}, errors.New("needs a pointer to a value")
+	}
+
+	if value.Elem().Kind() == reflect.Ptr {
+		return reflect.Value{}, errors.New("a pointer to a pointer is not allowed")
+	}
+
+	if value.Elem().Kind() != reflect.Struct {
+		return reflect.Value{}, errors.New("needs a struct pointer")
+	}
+
+	return value, nil
+}
+
+// setKeyInFields iterates over the fields of a struct, checks if the field's bson tag contains "_id",
+// and if so, returns nil. Otherwise, it returns an error "unable to set key in field".
+func setKeyInFields(docType reflect.Type) error {
+	for i := 0; i < docType.NumField(); i++ {
+		field := docType.Field(i)
+		if strings.Index(field.Tag.Get("bson"), "_id") > 0 {
+			//d.e = append(d.e, session("_id", beanValue.Field(i).Interface()))
+			return nil
+		}
+	}
+	return errors.New("unable to set key in field")
 }

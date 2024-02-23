@@ -14,6 +14,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Aggregate represents an interface for performing aggregation operations on a MongoDB collection.
+// One executes the aggregation operation and stores the result in the provided result variable.
+// It returns an error if the operation fails.
 type Aggregate interface {
 	One(result any, ctx ...context.Context) error
 	All(result any, ctx ...context.Context) error

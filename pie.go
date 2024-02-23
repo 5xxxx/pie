@@ -14,8 +14,7 @@ import (
 )
 
 func main() {
-	t, err := pie.NewClient("demo")
-	t.SetURI("mongodb://127.0.0.1:27017")
+	t, err := pie.NewClient(cfg.DataBase, options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +25,7 @@ func main() {
 	}
 
 	var user User
-	err = t.filter("nickName", "淳朴的润土").FindOne(&user)
+	err = t.filter("nickName", "frank").FindOne(&user)
 	if err != nil {
 		panic(err)
 	}
