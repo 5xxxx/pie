@@ -171,15 +171,15 @@ func (f *filter) constructFilterFromFields(beanValue reflect.Value) {
 	for idx := 0; idx < fieldCount; idx++ {
 		field := docType.Field(idx)
 		if f.shouldMakeFilterValue(field) {
-			split := strings.Split(field.Tag.Get("bson"), ",")
-			f.makeFilterValue(split[0], beanValue.Field(idx).Interface())
+			tag := strings.Split(field.Tag.Get("bson"), ",")[0]
+			f.makeFilterValue(tag, beanValue.Field(idx).Interface())
 		}
 	}
 }
 
 func (f *filter) shouldMakeFilterValue(field reflect.StructField) bool {
-	fieldTag := field.Tag.Get("bson")
-	return fieldTag != "" && fieldTag != "-"
+	tag := strings.Split(field.Tag.Get("bson"), ",")[0]
+	return tag != "" && tag != "-"
 }
 
 // Rest of the code...
@@ -580,14 +580,23 @@ func (f *filter) processFilterValueKind(field string, v reflect.Value, value any
 // If the field value is non-zero, a new field tag is created by appending the current field tag to the parent field, separated by a dot.
 // The function then calls `f.makeFilterValue` with the new field tag and the field value.
 func (f *filter) makeStructValue(field string, value reflect.Value) {
+	docType := reflect.TypeOf(value.Interface())
 	for index := 0; index < value.NumField(); index++ {
-		docType := reflect.TypeOf(value.Interface())
 		tag := docType.Field(index).Tag.Get("bson")
-		if tag != "" {
-			if !utils.IsZero(value.Field(index)) {
-				fieldTags := fmt.Sprintf("%s.%s", field, tag)
-				f.makeFilterValue(fieldTags, value.Field(index).Interface())
-			}
+		if tag == "" || tag == "-" {
+			continue
 		}
+
+		tag = strings.Split(tag, ",")[0]
+		if tag == "" || tag == "-" {
+			continue
+		}
+
+		if utils.IsZero(value.Field(index)) {
+			continue
+		}
+
+		fieldTags := fmt.Sprintf("%s.%s", field, tag)
+		f.makeFilterValue(fieldTags, value.Field(index).Interface())
 	}
 }

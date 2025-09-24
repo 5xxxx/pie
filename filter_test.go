@@ -12,6 +12,11 @@ type person struct {
 	Name string `bson:"name,omitempty"`
 }
 
+type tagged struct {
+	Name    string `bson:"name"`
+	Ignored string `bson:"-,omitempty"`
+}
+
 func TestFilterByPointer(t *testing.T) {
 	Convey("FilterBy should accept struct pointer", t, func() {
 		f := DefaultCondition()
@@ -21,5 +26,17 @@ func TestFilterByPointer(t *testing.T) {
 		d, err := f.Filters()
 		So(err, ShouldBeNil)
 		So(d, ShouldResemble, bson.D{{Key: "_id", Value: "123"}})
+	})
+}
+
+func TestFilterBySkipsIgnoredFields(t *testing.T) {
+	Convey("FilterBy should ignore fields tagged with '-' including options", t, func() {
+		f := DefaultCondition()
+		sample := tagged{Name: "Alice", Ignored: "value"}
+		f.FilterBy(sample)
+		So(f.Err(), ShouldBeNil)
+		d, err := f.Filters()
+		So(err, ShouldBeNil)
+		So(d, ShouldResemble, bson.D{{Key: "name", Value: "Alice"}})
 	})
 }
