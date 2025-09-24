@@ -150,6 +150,13 @@ func (f *filter) FilterBson(object any) Condition {
 // FilterBy applies filtering based on the fields of the provided object
 func (f *filter) FilterBy(object any) Condition {
 	beanValue := reflect.ValueOf(object)
+	for beanValue.Kind() == reflect.Ptr {
+		if beanValue.IsNil() {
+			f.err = errors.New("needs a struct")
+			return f
+		}
+		beanValue = beanValue.Elem()
+	}
 	if beanValue.Kind() != reflect.Struct {
 		f.err = errors.New("needs a struct")
 		return f
