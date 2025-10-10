@@ -142,7 +142,7 @@ type Session interface {
 	Exists(key string, exists bool, filter ...Condition) Session
 
 	// SetArrayFilters sets the value for the ArrayFilters field.
-	SetArrayFilters(filters options.ArrayFilters) Session
+	SetArrayFilters(filters []any) Session
 
 	// SetOrdered sets the value for the Ordered field.
 	SetOrdered(ordered bool) Session
@@ -201,18 +201,18 @@ type session struct {
 	filter                Condition
 	findOneOptions        []*options.FindOneOptionsBuilder
 	findOptions           []*options.FindOptionsBuilder
-	insertManyOpts        []*options.InsertManyOptions
-	insertOneOpts         []*options.InsertOneOptions
+	insertManyOpts        []options.Lister[options.InsertManyOptions]
+	insertOneOpts         []options.Lister[options.InsertOneOptions]
 	deleteOpts            []*options.DeleteOneOptionsBuilder
 	updateOpts            []*options.UpdateOneOptionsBuilder
-	countOpts             []*options.CountOptions
-	distinctOpts          []*options.DistinctOptions
+	countOpts             []options.Lister[options.CountOptions]
+	distinctOpts          []options.Lister[options.DistinctOptions]
 	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptionsBuilder
 	findOneAndReplaceOpts []*options.FindOneAndReplaceOptionsBuilder
 	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptionsBuilder
-	replaceOpts           []*options.ReplaceOptions
+	replaceOpts           []options.Lister[options.ReplaceOptions]
 	bulkWriteOptions      []*options.BulkWriteOptionsBuilder
-	collOpts              []*options.CollectionOptions
+	collOpts              []options.Lister[options.CollectionOptions]
 }
 
 func (s *session) Project(i any) Session {
@@ -957,7 +957,7 @@ func (s *session) UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateRes
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
-	
+
 	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
@@ -1032,7 +1032,7 @@ func (s *session) Desc(colNames ...string) Session {
 // - If the first character is any other character, the column is sorted in ascending order (e.g., "name").
 //
 // The method appends the sorting options to the session's findOptions and findOneOptions objects.
-// The sorting options are set using the bson.E type from the "go.mongodb.org/mongo-driver/bson" package.
+// The sorting options are set using the bson.E type from the "go.mongodb.org/mongo-driver/v2/bson" package.
 // The key of the bson.E represents the column name, and the value represents the sorting order (1 for ascending, -1 for descending).
 //
 // Finally, the method returns the session object itself for method chaining.
@@ -1305,7 +1305,7 @@ func (s *session) collectionForSlice(doc any) (*mongo.Collection, error) {
 
 func (s *session) collectionByName(name string) *mongo.Collection {
 	if s.collOpts == nil {
-		s.collOpts = make([]*options.CollectionOptions, 0)
+		s.collOpts = make([]options.Lister[options.CollectionOptions], 0)
 	}
 
 	return s.engine.Collection(name, s.collOpts, s.db)

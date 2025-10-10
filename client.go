@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/5xxxx/pie/schemas"
-	
+
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -213,7 +213,7 @@ type Client interface {
 
 	DataBase() *mongo.Database
 	// Collection(name string, db ...string) *mongo.Collection
-	Collection(name string, collOpts []*options.CollectionOptions, db ...string) *mongo.Collection
+	Collection(name string, collOpts []options.Lister[options.CollectionOptions], db ...string) *mongo.Collection
 	Ping() error
 	Connect(ctx ...context.Context) (err error)
 	Disconnect(ctx ...context.Context) error
@@ -587,7 +587,7 @@ func (d *defaultClient) DataBase() *mongo.Database {
 // If a database name is provided, it will use that database; otherwise, it will use the default database of the defaultClient.
 // The collOpts parameter is optional and allows for specifying additional collection options.
 // It returns a *mongo.Collection.
-func (d *defaultClient) Collection(name string, collOpts []*options.CollectionOptions, db ...string) *mongo.Collection {
+func (d *defaultClient) Collection(name string, collOpts []options.Lister[options.CollectionOptions], db ...string) *mongo.Collection {
 	var database = d.db
 	if len(db) > 0 && len(db[0]) > 0 {
 		database = db[0]
