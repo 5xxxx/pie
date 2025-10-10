@@ -11,17 +11,22 @@ import (
 
 var defaultEngine *Engine
 
-// SetDefaultEngine 设置默认引擎
+// SetDefaultEngine stores the engine instance that should be used when helper
+// constructors are called without an explicit engine. It can be safely invoked
+// at application startup to configure package-level defaults.
 func SetDefaultEngine(engine *Engine) {
 	defaultEngine = engine
 }
 
-// GetDefaultEngine 获取默认引擎
+// GetDefaultEngine returns the engine that has been registered through
+// SetDefaultEngine. It may be nil when no default was configured.
 func GetDefaultEngine() *Engine {
 	return defaultEngine
 }
 
-// MustNewEngine 创建新引擎，失败时panic
+// MustNewEngine constructs a new Engine and panics when initialization fails.
+// It is useful in scenarios where startup failures should abort the
+// application immediately.
 func MustNewEngine(ctx context.Context, database string, opts ...EngineOption) *Engine {
 	engine, err := NewEngine(ctx, database, opts...)
 	if err != nil {
@@ -30,7 +35,9 @@ func MustNewEngine(ctx context.Context, database string, opts ...EngineOption) *
 	return engine
 }
 
-// MustTable 创建类型安全的会话，失败时panic
+// MustTable creates a strongly typed session bound to the provided engine and
+// panics if the engine is nil. The helper simplifies setup code in examples
+// where failing fast is preferred over manual error handling.
 func MustTable[T any](engine *Engine) *Session[T] {
 	if engine == nil {
 		panic("engine is nil")
@@ -38,7 +45,9 @@ func MustTable[T any](engine *Engine) *Session[T] {
 	return Table[T](engine)
 }
 
-// MustTableWithDefault 使用默认引擎创建类型安全的会话，失败时panic
+// MustTableWithDefault creates a strongly typed session using the default
+// engine registered via SetDefaultEngine. A panic is triggered when no default
+// engine has been configured, highlighting misconfiguration early.
 func MustTableWithDefault[T any]() *Session[T] {
 	if defaultEngine == nil {
 		panic("default engine is not set")
@@ -46,7 +55,9 @@ func MustTableWithDefault[T any]() *Session[T] {
 	return Table[T](defaultEngine)
 }
 
-// TableWithDefault 使用默认引擎创建类型安全的会话
+// TableWithDefault returns a strongly typed session backed by the default
+// engine. An error is returned instead of panicking so callers can decide how
+// to recover when the default engine is missing.
 func TableWithDefault[T any]() (*Session[T], error) {
 	if defaultEngine == nil {
 		return nil, fmt.Errorf("default engine is not set")
@@ -54,7 +65,9 @@ func TableWithDefault[T any]() (*Session[T], error) {
 	return Table[T](defaultEngine), nil
 }
 
-// MustAggregate 创建聚合操作，失败时panic
+// MustAggregate constructs a new aggregation builder for the supplied engine
+// and panics when the engine is nil. It mirrors MustTable to keep helpers
+// consistent across different entry points.
 func MustAggregate[T any](engine *Engine) *Aggregate[T] {
 	if engine == nil {
 		panic("engine is nil")
@@ -62,7 +75,9 @@ func MustAggregate[T any](engine *Engine) *Aggregate[T] {
 	return NewAggregate[T](engine)
 }
 
-// MustAggregateWithDefault 使用默认引擎创建聚合操作，失败时panic
+// MustAggregateWithDefault creates an aggregation builder using the default
+// engine. A missing default engine is treated as a programmer error and causes
+// a panic to surface the issue immediately.
 func MustAggregateWithDefault[T any]() *Aggregate[T] {
 	if defaultEngine == nil {
 		panic("default engine is not set")
@@ -70,7 +85,8 @@ func MustAggregateWithDefault[T any]() *Aggregate[T] {
 	return NewAggregate[T](defaultEngine)
 }
 
-// AggregateWithDefault 使用默认引擎创建聚合操作
+// AggregateWithDefault creates an aggregation builder with the default engine
+// and reports an error when no default engine is available.
 func AggregateWithDefault[T any]() (*Aggregate[T], error) {
 	if defaultEngine == nil {
 		return nil, fmt.Errorf("default engine is not set")
@@ -78,7 +94,9 @@ func AggregateWithDefault[T any]() (*Aggregate[T], error) {
 	return NewAggregate[T](defaultEngine), nil
 }
 
-// MustIndexes 创建索引管理器，失败时panic
+// MustIndexes creates an index manager for the given engine and panics if the
+// engine is nil. The helper removes repetitive nil checks in applications that
+// treat misconfiguration as fatal.
 func MustIndexes(engine *Engine) *Indexes {
 	if engine == nil {
 		panic("engine is nil")
@@ -86,7 +104,8 @@ func MustIndexes(engine *Engine) *Indexes {
 	return NewIndexes(engine)
 }
 
-// MustIndexesWithDefault 使用默认引擎创建索引管理器，失败时panic
+// MustIndexesWithDefault returns an index manager backed by the default engine
+// or panics when the default engine has not been set.
 func MustIndexesWithDefault() *Indexes {
 	if defaultEngine == nil {
 		panic("default engine is not set")
@@ -94,7 +113,9 @@ func MustIndexesWithDefault() *Indexes {
 	return NewIndexes(defaultEngine)
 }
 
-// IndexesWithDefault 使用默认引擎创建索引管理器
+// IndexesWithDefault is the error-returning counterpart of
+// MustIndexesWithDefault. It enables graceful fallback when a default engine
+// has not yet been registered.
 func IndexesWithDefault() (*Indexes, error) {
 	if defaultEngine == nil {
 		return nil, fmt.Errorf("default engine is not set")
@@ -102,7 +123,9 @@ func IndexesWithDefault() (*Indexes, error) {
 	return NewIndexes(defaultEngine), nil
 }
 
-// MustTransaction 创建事务管理器，失败时panic
+// MustTransaction creates a transaction manager and panics when the provided
+// engine is nil. Use it when your initialization logic should not proceed with
+// an invalid engine reference.
 func MustTransaction(engine *Engine) *Transaction {
 	if engine == nil {
 		panic("engine is nil")
@@ -110,7 +133,9 @@ func MustTransaction(engine *Engine) *Transaction {
 	return NewTransaction(engine)
 }
 
-// MustTransactionWithDefault 使用默认引擎创建事务管理器，失败时panic
+// MustTransactionWithDefault constructs a transaction manager that uses the
+// default engine. If the default engine has not been set, the function panics
+// to surface the configuration error.
 func MustTransactionWithDefault() *Transaction {
 	if defaultEngine == nil {
 		panic("default engine is not set")
@@ -118,7 +143,8 @@ func MustTransactionWithDefault() *Transaction {
 	return NewTransaction(defaultEngine)
 }
 
-// TransactionWithDefault 使用默认引擎创建事务管理器
+// TransactionWithDefault creates a transaction manager from the default engine
+// and returns an error when no default engine has been configured.
 func TransactionWithDefault() (*Transaction, error) {
 	if defaultEngine == nil {
 		return nil, fmt.Errorf("default engine is not set")
@@ -126,15 +152,18 @@ func TransactionWithDefault() (*Transaction, error) {
 	return NewTransaction(defaultEngine), nil
 }
 
-// 便捷的全局方法
+// Convenience global helpers
 
-// Connect 连接到MongoDB
+// Connect instantiates a new Engine using the provided MongoDB connection URI
+// and target database. Additional engine options can be supplied through opts.
 func Connect(ctx context.Context, uri, database string, opts ...EngineOption) (*Engine, error) {
 	engineOpts := append([]EngineOption{WithURI(uri)}, opts...)
 	return NewEngine(ctx, database, engineOpts...)
 }
 
-// MustConnect 连接到MongoDB，失败时panic
+// MustConnect wraps Connect and panics when establishing the connection fails.
+// It is intended for simple programs where a failed connection should halt the
+// process immediately.
 func MustConnect(ctx context.Context, uri, database string, opts ...EngineOption) *Engine {
 	engine, err := Connect(ctx, uri, database, opts...)
 	if err != nil {
@@ -143,7 +172,9 @@ func MustConnect(ctx context.Context, uri, database string, opts ...EngineOption
 	return engine
 }
 
-// ConnectWithTimeout 带超时的连接
+// ConnectWithTimeout opens a connection using a new context with the specified
+// timeout. The helper ensures that connection attempts do not block
+// indefinitely.
 func ConnectWithTimeout(uri, database string, timeout time.Duration, opts ...EngineOption) (*Engine, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -152,7 +183,9 @@ func ConnectWithTimeout(uri, database string, timeout time.Duration, opts ...Eng
 	return NewEngine(ctx, database, engineOpts...)
 }
 
-// MustConnectWithTimeout 带超时的连接，失败时panic
+// MustConnectWithTimeout wraps ConnectWithTimeout and panics if the connection
+// could not be established within the allotted time or when other errors
+// occur.
 func MustConnectWithTimeout(uri, database string, timeout time.Duration, opts ...EngineOption) *Engine {
 	engine, err := ConnectWithTimeout(uri, database, timeout, opts...)
 	if err != nil {
@@ -161,29 +194,33 @@ func MustConnectWithTimeout(uri, database string, timeout time.Duration, opts ..
 	return engine
 }
 
-// 初始化函数
+// init configures package-level defaults. Additional global initialization can
+// be added here by applications embedding the library.
 func init() {
-	// 设置默认配置
-	// 这里可以添加一些全局初始化逻辑
+	// Initialize default configuration. The block is intentionally left
+	// minimal so downstream applications can modify package variables in
+	// their own init functions if necessary.
 }
 
-// 版本信息
+// Version metadata constants
 const (
 	Version = "2.0.0"
 	Author  = "pie-mongodb"
 )
 
-// GetVersion 获取版本信息
+// GetVersion returns the semantic version identifier for the library.
 func GetVersion() string {
 	return Version
 }
 
-// GetAuthor 获取作者信息
+// GetAuthor returns the canonical author string associated with the project.
 func GetAuthor() string {
 	return Author
 }
 
-// NewWatcher 创建变更流监听器
+// NewWatcher constructs a collection-level change stream watcher. Callers can
+// further configure the watcher before invoking Watch to start consuming
+// change events.
 func NewWatcher[T any](engine *Engine) *ChangeStreamWatcher[T] {
 	return &ChangeStreamWatcher[T]{
 		engine:    engine,
@@ -193,7 +230,8 @@ func NewWatcher[T any](engine *Engine) *ChangeStreamWatcher[T] {
 	}
 }
 
-// NewDatabaseWatcher 创建数据库级别监听器
+// NewDatabaseWatcher constructs a change stream watcher scoped to an entire
+// database, enabling monitoring of multiple collections.
 func NewDatabaseWatcher[T any](engine *Engine) *ChangeStreamWatcher[T] {
 	return &ChangeStreamWatcher[T]{
 		engine:    engine,
