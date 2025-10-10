@@ -272,7 +272,7 @@ type defaultClient struct {
 // It returns a Client interface and an error.
 func NewClient(ctx context.Context, db string, opts ...*options.ClientOptions) (Client, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
-	client, err := mongo.Connect(ctx, opts...)
+	client, err := mongo.Connect(opts...)
 
 	if err != nil {
 		return nil, err
@@ -297,12 +297,7 @@ func NewClient(ctx context.Context, db string, opts ...*options.ClientOptions) (
 // It sets the client field of the defaultClient instance to the connected client.
 // It returns any error that occurs during the connection process.
 func (d *defaultClient) Connect(ctx ...context.Context) (err error) {
-	c := context.Background()
-	if len(ctx) > 0 {
-		c = ctx[0]
-	}
-
-	d.client, err = mongo.Connect(c, d.clientOpts...)
+	d.client, err = mongo.Connect(d.clientOpts...)
 	return err
 }
 

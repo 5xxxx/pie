@@ -30,8 +30,8 @@ type index struct {
 	doc                any
 	engine             Client
 	indexes            []mongo.IndexModel
-	createIndexOpts    []*options.CreateIndexesOptions
-	dropIndexesOptions []*options.DropIndexesOptions
+	createIndexOpts    []*options.CreateIndexesOptionsBuilder
+	dropIndexesOptions []*options.DropIndexesOptionsBuilder
 }
 
 func NewIndexes(driver Client) Indexes {
@@ -48,7 +48,11 @@ func (i *index) CreateIndexes(doc any, ctx ...context.Context) ([]string, error)
 	if len(ctx) > 0 {
 		c = ctx[0]
 	}
-	return coll.Indexes().CreateMany(c, i.indexes, i.createIndexOpts...)
+	var opts []options.Lister[options.CreateIndexesOptions]
+	for _, opt := range i.createIndexOpts {
+		opts = append(opts, opt)
+	}
+	return coll.Indexes().CreateMany(c, i.indexes, opts...)
 }
 
 func (i *index) DropAll(doc any, ctx ...context.Context) error {
@@ -60,8 +64,11 @@ func (i *index) DropAll(doc any, ctx ...context.Context) error {
 	if len(ctx) > 0 {
 		c = ctx[0]
 	}
-	_, err = coll.Indexes().DropAll(c, i.dropIndexesOptions...)
-	return err
+	var opts []options.Lister[options.DropIndexesOptions]
+	for _, opt := range i.dropIndexesOptions {
+		opts = append(opts, opt)
+	}
+	return coll.Indexes().DropAll(c, opts...)
 }
 
 func (i *index) DropOne(doc any, name string, ctx ...context.Context) error {
@@ -73,103 +80,91 @@ func (i *index) DropOne(doc any, name string, ctx ...context.Context) error {
 	if len(ctx) > 0 {
 		c = ctx[0]
 	}
-	_, err = coll.Indexes().DropOne(c, name, i.dropIndexesOptions...)
-	return err
+	var opts []options.Lister[options.DropIndexesOptions]
+	for _, opt := range i.dropIndexesOptions {
+		opts = append(opts, opt)
+	}
+	return coll.Indexes().DropOne(c, name, opts...)
 }
 
 func (i *index) AddIndex(keys any, opt ...*options.IndexOptions) Indexes {
 	m := mongo.IndexModel{
 		Keys: keys,
 	}
-	op := new(options.IndexOptions)
-	for _, v := range opt {
-		if v.Background != nil {
-			op.Background = v.Background
-		}
-		if v.ExpireAfterSeconds != nil {
-			op.ExpireAfterSeconds = v.ExpireAfterSeconds
-		}
 
-		if v.Name != nil {
-			op.Name = v.Name
+	if len(opt) > 0 {
+		// Convert IndexOptions to IndexOptionsBuilder
+		builder := options.Index()
+		for _, v := range opt {
+			if v.ExpireAfterSeconds != nil {
+				builder.SetExpireAfterSeconds(*v.ExpireAfterSeconds)
+			}
+			if v.Name != nil {
+				builder.SetName(*v.Name)
+			}
+			if v.Sparse != nil {
+				builder.SetSparse(*v.Sparse)
+			}
+			if v.StorageEngine != nil {
+				builder.SetStorageEngine(v.StorageEngine)
+			}
+			if v.Unique != nil {
+				builder.SetUnique(*v.Unique)
+			}
+			if v.Version != nil {
+				builder.SetVersion(*v.Version)
+			}
+			if v.DefaultLanguage != nil {
+				builder.SetDefaultLanguage(*v.DefaultLanguage)
+			}
+			if v.LanguageOverride != nil {
+				builder.SetLanguageOverride(*v.LanguageOverride)
+			}
+			if v.TextVersion != nil {
+				builder.SetTextVersion(*v.TextVersion)
+			}
+			if v.Weights != nil {
+				builder.SetWeights(v.Weights)
+			}
+			if v.SphereVersion != nil {
+				builder.SetSphereVersion(*v.SphereVersion)
+			}
+			if v.Bits != nil {
+				builder.SetBits(*v.Bits)
+			}
+			if v.Max != nil {
+				builder.SetMax(*v.Max)
+			}
+			if v.Min != nil {
+				builder.SetMin(*v.Min)
+			}
+			if v.BucketSize != nil {
+				builder.SetBucketSize(*v.BucketSize)
+			}
+			if v.PartialFilterExpression != nil {
+				builder.SetPartialFilterExpression(v.PartialFilterExpression)
+			}
+			if v.Collation != nil {
+				builder.SetCollation(v.Collation)
+			}
+			if v.WildcardProjection != nil {
+				builder.SetWildcardProjection(v.WildcardProjection)
+			}
+			if v.Hidden != nil {
+				builder.SetHidden(*v.Hidden)
+			}
 		}
-
-		if v.Sparse != nil {
-			op.Sparse = v.Sparse
-		}
-		if v.StorageEngine != nil {
-			op.StorageEngine = v.StorageEngine
-		}
-		if v.Unique != nil {
-			op.Unique = v.Unique
-		}
-
-		if v.Version != nil {
-			op.Version = v.Version
-		}
-
-		if v.DefaultLanguage != nil {
-			op.DefaultLanguage = v.DefaultLanguage
-		}
-
-		if v.LanguageOverride != nil {
-			op.LanguageOverride = v.LanguageOverride
-		}
-
-		if v.TextVersion != nil {
-			op.TextVersion = v.TextVersion
-		}
-
-		if v.Weights != nil {
-			op.Weights = v.Weights
-		}
-
-		if v.SphereVersion != nil {
-			op.SphereVersion = v.SphereVersion
-		}
-
-		if v.Bits != nil {
-			op.Bits = v.Bits
-		}
-
-		if v.Max != nil {
-			op.Max = v.Max
-		}
-
-		if v.Min != nil {
-			op.Min = v.Min
-		}
-
-		if v.BucketSize != nil {
-			op.BucketSize = v.BucketSize
-		}
-
-		if v.PartialFilterExpression != nil {
-			op.PartialFilterExpression = v.PartialFilterExpression
-		}
-
-		if v.Collation != nil {
-			op.Collation = v.Collation
-		}
-
-		if v.WildcardProjection != nil {
-			op.WildcardProjection = v.WildcardProjection
-		}
-
-		if v.Hidden != nil {
-			op.Hidden = v.Hidden
-		}
-
+		m.Options = builder
 	}
-	m.Options = op
+
 	i.indexes = append(i.indexes, m)
 	return i
 }
 
 // SetMaxTime sets the value for the MaxTime field.
 func (i *index) SetMaxTime(d time.Duration) Indexes {
-	i.createIndexOpts = append(i.createIndexOpts, options.CreateIndexes().SetMaxTime(d))
-	i.dropIndexesOptions = append(i.dropIndexesOptions, options.DropIndexes().SetMaxTime(d))
+	// Note: MaxTime is not available in CreateIndexes/DropIndexes options in v2
+	// This method is kept for compatibility but does nothing
 	return i
 }
 

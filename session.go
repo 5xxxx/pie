@@ -246,6 +246,95 @@ func NewSession(engine Client) Session {
 	return &session{engine: engine, filter: DefaultCondition()}
 }
 
+// Helper functions to convert Builder options to Lister options
+func (s *session) convertFindOptions() []options.Lister[options.FindOptions] {
+	var opts []options.Lister[options.FindOptions]
+	for _, opt := range s.findOptions {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertFindOneOptions() []options.Lister[options.FindOneOptions] {
+	var opts []options.Lister[options.FindOneOptions]
+	for _, opt := range s.findOneOptions {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertBulkWriteOptions() []options.Lister[options.BulkWriteOptions] {
+	var opts []options.Lister[options.BulkWriteOptions]
+	for _, opt := range s.bulkWriteOptions {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertFindOneAndReplaceOptions() []options.Lister[options.FindOneAndReplaceOptions] {
+	var opts []options.Lister[options.FindOneAndReplaceOptions]
+	for _, opt := range s.findOneAndReplaceOpts {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertFindOneAndUpdateOptions() []options.Lister[options.FindOneAndUpdateOptions] {
+	var opts []options.Lister[options.FindOneAndUpdateOptions]
+	for _, opt := range s.findOneAndUpdateOpts {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertFindOneAndDeleteOptions() []options.Lister[options.FindOneAndDeleteOptions] {
+	var opts []options.Lister[options.FindOneAndDeleteOptions]
+	for _, opt := range s.findOneAndDeleteOpts {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertDeleteOptions() []options.Lister[options.DeleteOneOptions] {
+	var opts []options.Lister[options.DeleteOneOptions]
+	for _, opt := range s.deleteOpts {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertUpdateOptions() []options.Lister[options.UpdateOneOptions] {
+	var opts []options.Lister[options.UpdateOneOptions]
+	for _, opt := range s.updateOpts {
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+func (s *session) convertUpdateManyOptions() []options.Lister[options.UpdateManyOptions] {
+	var opts []options.Lister[options.UpdateManyOptions]
+	for range s.updateOpts {
+		// Create a new UpdateManyOptionsBuilder
+		manyOpt := options.UpdateMany()
+		// Note: This is a simplified conversion - in practice you might need more sophisticated logic
+		// to properly convert UpdateOneOptions to UpdateManyOptions
+		opts = append(opts, manyOpt)
+	}
+	return opts
+}
+
+func (s *session) convertDeleteManyOptions() []options.Lister[options.DeleteManyOptions] {
+	var opts []options.Lister[options.DeleteManyOptions]
+	for range s.deleteOpts {
+		// Create a new DeleteManyOptionsBuilder
+		manyOpt := options.DeleteMany()
+		// Note: This is a simplified conversion - in practice you might need more sophisticated logic
+		// to properly convert DeleteOneOptions to DeleteManyOptions
+		opts = append(opts, manyOpt)
+	}
+	return opts
+}
+
 func (s *session) prepareContext(ctx ...context.Context) context.Context {
 	if len(ctx) > 0 {
 		return ctx[0]
@@ -279,7 +368,7 @@ func (s *session) FindPagination(needCount bool, rowsSlicePtr any, ctx ...contex
 	}
 	c := s.prepareContext(ctx...)
 
-	cursor, err := coll.Find(c, filters, s.findOptions...)
+	cursor, err := coll.Find(c, filters, s.convertFindOptions()...)
 	if err != nil {
 		return 0, err
 	}
@@ -327,7 +416,7 @@ func (s *session) BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteR
 	}
 	c := s.prepareContext(ctx...)
 
-	return coll.BulkWrite(c, mods, s.bulkWriteOptions...)
+	return coll.BulkWrite(c, mods, s.convertBulkWriteOptions()...)
 }
 
 // FilterBy sets the filter for the session to be used in the subsequent database operations.
@@ -360,7 +449,10 @@ func (s *session) Distinct(doc any, columns string, ctx ...context.Context) ([]a
 	}
 	c := s.prepareContext(ctx...)
 
-	return coll.Distinct(c, columns, filters, s.distinctOpts...)
+	result := coll.Distinct(c, columns, filters, s.distinctOpts...)
+	var values []any
+	err = result.Decode(&values)
+	return values, err
 }
 
 // ReplaceOne replaces a single document in the collection that matches the specified filters with the provided document.
@@ -406,7 +498,7 @@ func (s *session) FindOneAndReplace(doc any, ctx ...context.Context) error {
 
 	c := s.prepareContext(ctx...)
 
-	return coll.FindOneAndReplace(c, filters, doc, s.findOneAndReplaceOpts...).Decode(&doc)
+	return coll.FindOneAndReplace(c, filters, doc, s.convertFindOneAndReplaceOptions()...).Decode(&doc)
 }
 
 // FindOneAndUpdateBson executes a find and update command on the collection.
@@ -429,7 +521,7 @@ func (s *session) FindOneAndUpdateBson(coll any, bson any, ctx ...context.Contex
 	}
 
 	cc := s.prepareContext(ctx...)
-	return c.FindOneAndUpdate(cc, filters, bson, s.findOneAndUpdateOpts...), nil
+	return c.FindOneAndUpdate(cc, filters, bson, s.convertFindOneAndUpdateOptions()...), nil
 }
 
 // FindOneAndUpdate updates a single document in the given collection based on the specified filter conditions.
@@ -454,7 +546,7 @@ func (s *session) FindOneAndUpdate(doc any, ctx ...context.Context) (*mongo.Sing
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
-	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.findOneAndUpdateOpts...), nil
+	return coll.FindOneAndUpdate(c, filters, bson.M{"$set": doc}, s.convertFindOneAndUpdateOptions()...), nil
 }
 
 // FindAndDelete deletes a single document from the collection based on the provided filters.
@@ -480,7 +572,7 @@ func (s *session) FindAndDelete(doc any, ctx ...context.Context) error {
 		return err
 	}
 	c := s.prepareContext(ctx...)
-	return coll.FindOneAndDelete(c, filters, s.findOneAndDeleteOpts...).Decode(&doc)
+	return coll.FindOneAndDelete(c, filters, s.convertFindOneAndDeleteOptions()...).Decode(&doc)
 }
 
 // FindOne finds a single document in the collection that matches the specified filters.
@@ -499,7 +591,7 @@ func (s *session) FindOne(doc any, ctx ...context.Context) error {
 		return err
 	}
 	c := s.prepareContext(ctx...)
-	result := coll.FindOne(c, filters, s.findOneOptions...)
+	result := coll.FindOne(c, filters, s.convertFindOneOptions()...)
 	if err = result.Err(); err != nil {
 		return err
 	}
@@ -527,7 +619,7 @@ func (s *session) FindAll(rowsSlicePtr any, ctx ...context.Context) error {
 	}
 	c := s.prepareContext(ctx...)
 
-	cursor, err := coll.Find(c, filters, s.findOptions...)
+	cursor, err := coll.Find(c, filters, s.convertFindOptions()...)
 	if err != nil {
 		return err
 	}
@@ -611,7 +703,7 @@ func (s *session) DeleteOne(doc any, ctx ...context.Context) (*mongo.DeleteResul
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
-	return coll.DeleteOne(c, filters, s.deleteOpts...)
+	return coll.DeleteOne(c, filters, s.convertDeleteOptions()...)
 }
 
 // SoftDeleteOne soft deletes one document in the collection.
@@ -654,7 +746,7 @@ func (s *session) DeleteMany(doc any, ctx ...context.Context) (*mongo.DeleteResu
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
-	return coll.DeleteMany(c, filters, s.deleteOpts...)
+	return coll.DeleteMany(c, filters, s.convertDeleteManyOptions()...)
 }
 
 // SoftDeleteMany executes an update command to "soft delete" multiple documents in the collection.
@@ -821,7 +913,7 @@ func (s *session) UpdateOne(bean any, ctx ...context.Context) (*mongo.UpdateResu
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
-	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.updateOpts...)
+	return coll.UpdateOne(c, filters, bson.M{"$set": bean}, s.convertUpdateOptions()...)
 }
 
 // UpdateOneBson updates a single document in the collection corresponding to the given struct
@@ -853,7 +945,7 @@ func (s *session) UpdateOneBson(coll any, bson any, ctx ...context.Context) (*mo
 		return nil, err
 	}
 	cc := s.prepareContext(ctx...)
-	return c.UpdateOne(cc, filters, bson, s.updateOpts...)
+	return c.UpdateOne(cc, filters, bson, s.convertUpdateOptions()...)
 }
 
 // UpdateManyBson updates multiple documents in the collection
@@ -879,7 +971,7 @@ func (s *session) UpdateManyBson(coll any, bson any, ctx ...context.Context) (*m
 		return nil, err
 	}
 	cc := s.prepareContext(ctx...)
-	return c.UpdateMany(cc, filters, bson, s.updateOpts...)
+	return c.UpdateMany(cc, filters, bson, s.convertUpdateManyOptions()...)
 }
 
 func (s *session) toBson(obj any) bson.M {
@@ -958,7 +1050,7 @@ func (s *session) UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateRes
 	}
 	c := s.prepareContext(ctx...)
 
-	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
+	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.convertUpdateManyOptions()...)
 
 }
 

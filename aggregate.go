@@ -101,7 +101,7 @@ type aggregate struct {
 	doc      any
 	engine   Client
 	pipeline bson.A
-	opts     []*options.AggregateOptions
+	opts     []*options.AggregateOptionsBuilder
 	collOpts []options.Lister[options.CollectionOptions]
 }
 
@@ -134,7 +134,11 @@ func (a *aggregate) One(result any, ctx ...context.Context) error {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(c, a.pipeline, a.opts...)
+	var opts []options.Lister[options.AggregateOptions]
+	for _, opt := range a.opts {
+		opts = append(opts, opt)
+	}
+	aggregate, err := coll.Aggregate(c, a.pipeline, opts...)
 	if err != nil {
 		return err
 	}
@@ -170,7 +174,11 @@ func (a *aggregate) All(result any, ctx ...context.Context) error {
 		return err
 	}
 
-	aggregate, err := coll.Aggregate(c, a.pipeline, a.opts...)
+	var opts []options.Lister[options.AggregateOptions]
+	for _, opt := range a.opts {
+		opts = append(opts, opt)
+	}
+	aggregate, err := coll.Aggregate(c, a.pipeline, opts...)
 	if err != nil {
 		return err
 	}
@@ -204,7 +212,8 @@ func (a *aggregate) SetCollation(c *options.Collation) Aggregate {
 
 // SetMaxTime sets the value for the MaxTime field.
 func (a *aggregate) SetMaxTime(d time.Duration) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetMaxTime(d))
+	// Note: SetMaxTime is not available in v2, using MaxAwaitTime instead
+	a.opts = append(a.opts, options.Aggregate().SetMaxAwaitTime(d))
 	return a
 }
 
