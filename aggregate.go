@@ -102,7 +102,7 @@ type aggregate struct {
 	engine   Client
 	pipeline bson.A
 	opts     []*options.AggregateOptions
-	collOpts []*options.CollectionOptions
+	collOpts []options.Lister[options.CollectionOptions]
 }
 
 // NewAggregate creates a new instance of the Aggregate struct with the provided client as the engine.
@@ -295,7 +295,7 @@ func (a *aggregate) collectionForSlice(doc any) (*mongo.Collection, error) {
 // collectionByName returns a *mongo.Collection for the given name. If the collection options (a.collOpts) is nil, it initializes it as an empty slice. It then calls a.engine.Collection
 func (a *aggregate) collectionByName(name string) *mongo.Collection {
 	if a.collOpts == nil {
-		a.collOpts = make([]*options.CollectionOptions, 0)
+		a.collOpts = make([]options.Lister[options.CollectionOptions], 0)
 	}
 	return a.engine.Collection(name, a.collOpts, a.db)
 }

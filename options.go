@@ -25,7 +25,7 @@ import (
 // ClientOptions represents the options for configuring a client session.
 type ClientOptions interface {
 	// SetArrayFilters sets the value for the ArrayFilters field.
-	SetArrayFilters(filters any) Session
+	SetArrayFilters(filters []any) Session
 	// SetOrdered sets the value for the Ordered field.
 	SetOrdered(ordered bool) Session
 	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
