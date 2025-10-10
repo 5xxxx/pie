@@ -3,15 +3,15 @@ package pie
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/5xxxx/pie/schemas"
 
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // TransactionWithOptions executes a transaction.
@@ -73,6 +73,7 @@ func (d *defaultClient) TransactionWithOptions(ctx context.Context, f schemas.Tr
 // See the schemas.TransFunc documentation for more details on how to define the
 // transaction function.
 func (d *defaultClient) Transaction(ctx context.Context, f schemas.TransFunc) error {
+	
 	opts := options.Session().
 		SetDefaultReadConcern(readconcern.Majority())
 	return d.TransactionWithOptions(ctx, f, []*options.SessionOptions{opts}...)

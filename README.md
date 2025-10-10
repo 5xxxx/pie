@@ -16,7 +16,7 @@ package main
 
 import (
     "github.com/5xxxx/pie"
-    "go.mongodb.org/mongo-driver/mongo/options"
+    "go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 client, err := pie.NewClient(cfg.DataBase, options.Client().ApplyURI("mongodb://127.0.0.1:27017"))

@@ -2,11 +2,12 @@ package pie
 
 import (
 	"context"
-	"github.com/5xxxx/pie/schemas"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/5xxxx/pie/schemas"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Indexes represents the interface for managing indexes in a database.

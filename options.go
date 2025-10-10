@@ -12,19 +12,20 @@ package pie
 
 import (
 	"crypto/tls"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/event"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/event"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 	"time"
 )
 
 // ClientOptions represents the options for configuring a client session.
 type ClientOptions interface {
 	// SetArrayFilters sets the value for the ArrayFilters field.
-	SetArrayFilters(filters options.ArrayFilters) Session
+	SetArrayFilters(filters any) Session
 	// SetOrdered sets the value for the Ordered field.
 	SetOrdered(ordered bool) Session
 	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
@@ -38,8 +39,6 @@ type ClientOptions interface {
 	// SetCollation sets the value for the Collation field.
 	SetCollation(collation *options.Collation) Session
 
-	// SetMaxTime sets the value for the MaxTime field.
-	SetMaxTime(d time.Duration) Session
 	// SetProjection sets the value for the Projection field.
 	SetProjection(projection any) Session
 
@@ -65,7 +64,7 @@ func (d *defaultClient) SetOrdered(ordered bool) Session {
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (d *defaultClient) SetArrayFilters(filters options.ArrayFilters) Session {
+func (d *defaultClient) SetArrayFilters(filters []any) Session {
 	return d.NewSession().SetArrayFilters(filters)
 }
 
@@ -87,13 +86,6 @@ func (d *defaultClient) SetUpsert(b bool) Session {
 // SetCollation sets the value for the Collation field.
 func (d *defaultClient) SetCollation(collation *options.Collation) Session {
 	return d.NewSession().SetCollation(collation)
-}
-
-// SetMaxTime sets the maximum amount of time for a command to run before an error is returned.
-// The time.Duration parameter represents the maximum time duration in which a command can run
-// without returning an error.
-func (d *defaultClient) SetMaxTime(t time.Duration) Session {
-	return d.NewSession().SetMaxTime(t)
 }
 
 // SetProjection sets the value for the Projection field.
@@ -230,7 +222,7 @@ func (d *defaultClient) SetReadPreference(rp *readpref.ReadPref) {
 }
 
 // SetRegistry sets the value for the Registry field of the defaultClient struct.
-func (d *defaultClient) SetRegistry(registry *bsoncodec.Registry) {
+func (d *defaultClient) SetRegistry(registry *bson.Registry) {
 	d.clientOpts = append(d.clientOpts, options.Client().SetRegistry(registry))
 }
 
@@ -252,11 +244,6 @@ func (d *defaultClient) SetRetryReads(b bool) {
 // SetServerSelectionTimeout sets the value for the ServerSelectionTimeout field.
 func (d *defaultClient) SetServerSelectionTimeout(t time.Duration) {
 	d.clientOpts = append(d.clientOpts, options.Client().SetServerSelectionTimeout(t))
-}
-
-// SetSocketTimeout sets the value for the SocketTimeout field.
-func (d *defaultClient) SetSocketTimeout(t time.Duration) {
-	d.clientOpts = append(d.clientOpts, options.Client().SetSocketTimeout(t))
 }
 
 // SetTLSConfig specifies a tls.Config instance to use use to configure TLS on all connections created to the cluster.

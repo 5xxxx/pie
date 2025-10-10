@@ -13,8 +13,8 @@ package utils
 import (
 	"reflect"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Zeroable interface {
@@ -62,8 +62,8 @@ func IsZero(k any) bool {
 		return k.(*time.Time) == nilTime || IsTimeZero(*k.(*time.Time))
 	case time.Time:
 		return IsTimeZero(k.(time.Time))
-	case primitive.ObjectID:
-		return k.(primitive.ObjectID) == primitive.NilObjectID
+	case bson.ObjectID:
+		return k.(bson.ObjectID) == bson.NilObjectID
 	case Zeroable:
 		return k.(Zeroable) == nil || k.(Zeroable).IsZero()
 	case reflect.Value: // for go version less than 1.13 because reflect.Value has no method IsZero

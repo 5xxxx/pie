@@ -2,16 +2,18 @@ package pie
 
 import (
 	"context"
+
 	"github.com/5xxxx/pie/schemas"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
+
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Aggregate represents an interface for performing aggregation operations on a MongoDB collection.
@@ -54,7 +56,7 @@ type Aggregate interface {
 
 	SetCollReadPreference(rp *readpref.ReadPref) Aggregate
 
-	SetCollRegistry(r *bsoncodec.Registry) Aggregate
+	SetCollRegistry(r *bson.Registry) Aggregate
 
 	SetCollWriteConcern(wc *writeconcern.WriteConcern) Aggregate
 
@@ -317,7 +319,7 @@ func (a *aggregate) SetCollReadPreference(rp *readpref.ReadPref) Aggregate {
 }
 
 // SetCollRegistry sets the value for the Registry field in the CollectionOptions.
-func (a *aggregate) SetCollRegistry(r *bsoncodec.Registry) Aggregate {
+func (a *aggregate) SetCollRegistry(r *bson.Registry) Aggregate {
 	a.collOpts = append(a.collOpts, options.Collection().SetRegistry(r))
 	return a
 }

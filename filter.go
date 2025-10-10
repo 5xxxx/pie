@@ -3,11 +3,11 @@ package pie
 import (
 	"errors"
 	"fmt"
-	"github.com/5xxxx/pie/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
+
+	"github.com/5xxxx/pie/utils"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Condition interface {
@@ -212,7 +212,7 @@ func (f *filter) Filters() (bson.D, error) {
 // { 'contact.email': /^a-zA-Z\d+@[a-zA-Z\d]+\.[a-zA-Z]{2,}$/ }
 // Address Field Exists and is a String that Contains only ASCII Characters.
 func (f *filter) RegexFilter(key, pattern string) Condition {
-	v := primitive.Regex{
+	v := bson.Regex{
 		Pattern: pattern,
 		Options: "i",
 	}
@@ -227,16 +227,16 @@ func (f *filter) ID(id any) Condition {
 	switch id.(type) {
 	case string:
 		f.processStringID(id.(string))
-	case primitive.ObjectID:
-		f.processObjectID(id.(primitive.ObjectID))
+	case bson.ObjectID:
+		f.processObjectID(id.(bson.ObjectID))
 	default:
-		f.err = f.generateError("id type must be string or primitive.ObjectID", id)
+		f.err = f.generateError("id type must be string or bson.ObjectID", id)
 	}
 	return f
 }
 
 func (f *filter) processStringID(id string) {
-	objectId, err := primitive.ObjectIDFromHex(id)
+	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		f.err = f.generateError("id can't parse", id, err)
 		return
@@ -244,8 +244,8 @@ func (f *filter) processStringID(id string) {
 	f.processObjectID(objectId)
 }
 
-func (f *filter) processObjectID(id primitive.ObjectID) {
-	if id == primitive.NilObjectID {
+func (f *filter) processObjectID(id bson.ObjectID) {
+	if id == bson.NilObjectID {
 		f.err = f.generateError("id can't be nil", id)
 		return
 	}
@@ -529,9 +529,9 @@ func (f *filter) Expr(filter Condition) Condition {
 //
 //	filter := &filter{}
 //	filter.Regex("name", "^J") // Matches names that start with "J"
-//	// filter.d is now []bson.E{bson.E{Key: "name", Value: primitive.Regex{Pattern: "^J", Options: ""}}}
+//	// filter.d is now []bson.E{bson.E{Key: "name", Value: bson.Regex{Pattern: "^J", Options: ""}}}
 func (f *filter) Regex(key string, value string) Condition {
-	v := primitive.Regex{Pattern: value, Options: ""}
+	v := bson.Regex{Pattern: value, Options: ""}
 	f.d = append(f.d, bson.E{Key: key, Value: v})
 	return f
 }

@@ -4,20 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/5xxxx/pie/utils"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
 	"reflect"
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type Session interface {
@@ -46,7 +47,7 @@ type Session interface {
 	FindAll(rowsSlicePtr any, ctx ...context.Context) error
 
 	// InsertOne executes an insert command to insert a single document into the collectionByName.
-	InsertOne(doc any, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertOne(doc any, ctx ...context.Context) (bson.ObjectID, error)
 
 	// InsertMany executes an insert command to insert multiple documents into the collectionByName.
 	InsertMany(docs any, ctx ...context.Context) (*mongo.InsertManyResult, error)
@@ -158,9 +159,6 @@ type Session interface {
 	// SetCollation sets the value for the Collation field.
 	SetCollation(collation *options.Collation) Session
 
-	// SetMaxTime sets the value for the MaxTime field.
-	SetMaxTime(d time.Duration) Session
-
 	// SetProjection sets the value for the Projection field.
 	SetProjection(projection any) Session
 
@@ -188,7 +186,7 @@ type Session interface {
 
 	SetDatabase(db string) Session
 
-	SetCollRegistry(r *bsoncodec.Registry) Session
+	SetCollRegistry(r *bson.Registry) Session
 
 	SetCollReadPreference(rp *readpref.ReadPref) Session
 
@@ -201,19 +199,19 @@ type session struct {
 	db                    string
 	engine                Client
 	filter                Condition
-	findOneOptions        []*options.FindOneOptions
-	findOptions           []*options.FindOptions
+	findOneOptions        []*options.FindOneOptionsBuilder
+	findOptions           []*options.FindOptionsBuilder
 	insertManyOpts        []*options.InsertManyOptions
 	insertOneOpts         []*options.InsertOneOptions
-	deleteOpts            []*options.DeleteOptions
-	updateOpts            []*options.UpdateOptions
+	deleteOpts            []*options.DeleteOneOptionsBuilder
+	updateOpts            []*options.UpdateOneOptionsBuilder
 	countOpts             []*options.CountOptions
 	distinctOpts          []*options.DistinctOptions
-	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptions
-	findOneAndReplaceOpts []*options.FindOneAndReplaceOptions
-	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptions
+	findOneAndDeleteOpts  []*options.FindOneAndDeleteOptionsBuilder
+	findOneAndReplaceOpts []*options.FindOneAndReplaceOptionsBuilder
+	findOneAndUpdateOpts  []*options.FindOneAndUpdateOptionsBuilder
 	replaceOpts           []*options.ReplaceOptions
-	bulkWriteOptions      []*options.BulkWriteOptions
+	bulkWriteOptions      []*options.BulkWriteOptionsBuilder
 	collOpts              []*options.CollectionOptions
 }
 
@@ -553,7 +551,7 @@ func (s *session) FindAll(rowsSlicePtr any, ctx ...context.Context) error {
 //	} else {
 //	  // handle success
 //	}
-func (s *session) InsertOne(doc any, ctx ...context.Context) (primitive.ObjectID, error) {
+func (s *session) InsertOne(doc any, ctx ...context.Context) (bson.ObjectID, error) {
 	coll, err := s.collectionForStruct(doc)
 	if err != nil {
 		return [12]byte{}, err
@@ -563,7 +561,7 @@ func (s *session) InsertOne(doc any, ctx ...context.Context) (primitive.ObjectID
 	if err != nil {
 		return [12]byte{}, err
 	}
-	if id, ok := result.InsertedID.(primitive.ObjectID); ok {
+	if id, ok := result.InsertedID.(bson.ObjectID); ok {
 		return id, err
 	}
 	return [12]byte{}, err
@@ -746,8 +744,10 @@ func (s *session) SetCollReadPreference(rp *readpref.ReadPref) Session {
 // SetCollRegistry sets the bsoncodec.Registry for the session's collection.
 // It appends the options.Collection().SetRegistry() to the session's collOpts
 // and returns the updated session.
-func (s *session) SetCollRegistry(r *bsoncodec.Registry) Session {
+
+func (s *session) SetCollRegistry(r *bson.Registry) Session {
 	s.collOpts = append(s.collOpts, options.Collection().SetRegistry(r))
+
 	return s
 }
 
@@ -957,6 +957,7 @@ func (s *session) UpdateMany(bean any, ctx ...context.Context) (*mongo.UpdateRes
 		return nil, err
 	}
 	c := s.prepareContext(ctx...)
+	
 	return coll.UpdateMany(c, filters, bson.M{"$set": bean}, s.updateOpts...)
 
 }
@@ -1158,10 +1159,10 @@ func (s *session) Exists(key string, exists bool, filter ...Condition) Session {
 }
 
 // SetArrayFilters sets the value for the ArrayFilters field.
-func (s *session) SetArrayFilters(filters options.ArrayFilters) Session {
+func (s *session) SetArrayFilters(filters []any) Session {
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
 		options.FindOneAndUpdate().SetArrayFilters(filters))
-	s.updateOpts = append(s.updateOpts, options.Update().SetArrayFilters(filters))
+	s.updateOpts = append(s.updateOpts, options.UpdateOne().SetArrayFilters(filters))
 	return s
 }
 
@@ -1177,7 +1178,7 @@ func (s *session) SetBypassDocumentValidation(b bool) Session {
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetBypassDocumentValidation(b))
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts, options.FindOneAndUpdate().SetBypassDocumentValidation(b))
-	s.updateOpts = append(s.updateOpts, options.Update().SetBypassDocumentValidation(b))
+	s.updateOpts = append(s.updateOpts, options.UpdateOne().SetBypassDocumentValidation(b))
 
 	return s
 }
@@ -1193,11 +1194,14 @@ func (s *session) SetReturnDocument(rd options.ReturnDocument) Session {
 
 // SetUpsert sets the value for the Upsert field.
 func (s *session) SetUpsert(b bool) Session {
+
 	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
-		options.FindOneAndUpdate().SetUpsert(b))
+		options.FindOneAndUpdate().SetUpsert(b),
+	)
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetUpsert(b))
-	s.updateOpts = append(s.updateOpts, options.Update().SetUpsert(b))
+
+	s.updateOpts = append(s.updateOpts, options.UpdateOne().SetUpsert(b))
 	return s
 }
 
@@ -1208,17 +1212,7 @@ func (s *session) SetCollation(collation *options.Collation) Session {
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetCollation(collation))
 	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetCollation(collation))
-	s.updateOpts = append(s.updateOpts, options.Update().SetCollation(collation))
-	return s
-}
-
-// SetMaxTime sets the value for the MaxTime field.
-func (s *session) SetMaxTime(d time.Duration) Session {
-	s.findOneAndUpdateOpts = append(s.findOneAndUpdateOpts,
-		options.FindOneAndUpdate().SetMaxTime(d))
-	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
-		options.FindOneAndReplace().SetMaxTime(d))
-	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetMaxTime(d))
+	s.updateOpts = append(s.updateOpts, options.UpdateOne().SetCollation(collation))
 	return s
 }
 
@@ -1256,7 +1250,7 @@ func (s *session) SetHint(hint any) Session {
 	s.findOneAndReplaceOpts = append(s.findOneAndReplaceOpts,
 		options.FindOneAndReplace().SetHint(hint))
 	s.findOneAndDeleteOpts = append(s.findOneAndDeleteOpts, options.FindOneAndDelete().SetHint(hint))
-	s.updateOpts = append(s.updateOpts, options.Update().SetHint(hint))
+	s.updateOpts = append(s.updateOpts, options.UpdateOne().SetHint(hint))
 	return s
 }
 

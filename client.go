@@ -3,17 +3,18 @@ package pie
 import (
 	"context"
 	"errors"
-	"github.com/5xxxx/pie/names"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"reflect"
 	"strings"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/5xxxx/pie/names"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/5xxxx/pie/schemas"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Client is an interface that represents a MongoDB client. It provides methods for querying, updating, deleting, and managing data in a MongoDB database.
@@ -192,7 +193,7 @@ type Client interface {
 	Distinct(doc any, columns string, ctx ...context.Context) ([]any, error)
 	FindOneAndUpdateBson(coll any, bson any, ctx ...context.Context) (*mongo.SingleResult, error)
 
-	InsertOne(v any, ctx ...context.Context) (primitive.ObjectID, error)
+	InsertOne(v any, ctx ...context.Context) (bson.ObjectID, error)
 	InsertMany(v any, ctx ...context.Context) (*mongo.InsertManyResult, error)
 	BulkWrite(docs any, ctx ...context.Context) (*mongo.BulkWriteResult, error)
 	ReplaceOne(doc any, ctx ...context.Context) (*mongo.UpdateResult, error)
@@ -269,18 +270,15 @@ type defaultClient struct {
 
 // NewClient creates a new client with the specified database name and options.
 // It returns a Client interface and an error.
-func NewClient(db string, opts ...*options.ClientOptions) (Client, error) {
+func NewClient(ctx context.Context, db string, opts ...*options.ClientOptions) (Client, error) {
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))
-	client, err := mongo.NewClient(opts...)
+	client, err := mongo.Connect(ctx, opts...)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if err = client.Connect(context.Background()); err != nil {
-		return nil, err
-	}
-
-	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
+	if err = client.Ping(ctx, readpref.Primary()); err != nil {
 		return nil, err
 	}
 
@@ -728,7 +726,7 @@ func (d *defaultClient) Or(filter Condition) Session {
 //
 //	doc := bson.M{"name": "John Doe", "age": 30}
 //	objID, err := client.InsertOne(doc)
-func (d *defaultClient) InsertOne(v any, ctx ...context.Context) (primitive.ObjectID, error) {
+func (d *defaultClient) InsertOne(v any, ctx ...context.Context) (bson.ObjectID, error) {
 	return d.NewSession().InsertOne(v, ctx...)
 }
 
