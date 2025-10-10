@@ -203,13 +203,8 @@ func (e *Engine) WithTransaction(ctx context.Context, fn func(context.Context) e
 }
 
 // WithTransactionOptions execute transaction with options
-func (e *Engine) WithTransactionOptions(ctx context.Context, fn func(context.Context) error, opts ...*options.SessionOptions) error {
-	var sessionOpts []options.Lister[options.SessionOptions]
-	for range opts {
-		sessionOpts = append(sessionOpts, options.Session())
-	}
-
-	session, err := e.client.StartSession(sessionOpts...)
+func (e *Engine) WithTransactionOptions(ctx context.Context, fn func(context.Context) error, opts ...options.Lister[options.SessionOptions]) error {
+	session, err := e.client.StartSession(opts...)
 	if err != nil {
 		return fmt.Errorf("failed to start session: %w", err)
 	}

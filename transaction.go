@@ -24,13 +24,8 @@ func NewTransaction(engine *Engine) *Transaction {
 type TransactionFunc func(context.Context) error
 
 // TransactionWithOptions execute transaction with options
-func (t *Transaction) TransactionWithOptions(ctx context.Context, fn TransactionFunc, opts ...*options.SessionOptions) error {
-	var sessionOpts []options.Lister[options.SessionOptions]
-	for range opts {
-		sessionOpts = append(sessionOpts, options.Session())
-	}
-
-	session, err := t.engine.Client().StartSession(sessionOpts...)
+func (t *Transaction) TransactionWithOptions(ctx context.Context, fn TransactionFunc, opts ...options.Lister[options.SessionOptions]) error {
+	session, err := t.engine.Client().StartSession(opts...)
 	if err != nil {
 		return fmt.Errorf("failed to start session: %w", err)
 	}
@@ -70,13 +65,8 @@ func TransactionWithResult[T any](t *Transaction, ctx context.Context, fn func(c
 }
 
 // TransactionWithResultAndOptions execute transaction with options and return result
-func TransactionWithResultAndOptions[T any](t *Transaction, ctx context.Context, fn func(context.Context) (T, error), opts ...*options.SessionOptions) (*TransactionResult[T], error) {
-	var sessionOpts []options.Lister[options.SessionOptions]
-	for range opts {
-		sessionOpts = append(sessionOpts, options.Session())
-	}
-
-	session, err := t.engine.Client().StartSession(sessionOpts...)
+func TransactionWithResultAndOptions[T any](t *Transaction, ctx context.Context, fn func(context.Context) (T, error), opts ...options.Lister[options.SessionOptions]) (*TransactionResult[T], error) {
+	session, err := t.engine.Client().StartSession(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
@@ -105,13 +95,8 @@ func (t *Transaction) Session(ctx context.Context) (*mongo.Session, error) {
 }
 
 // SessionWithOptions get transaction session with options
-func (t *Transaction) SessionWithOptions(ctx context.Context, opts ...*options.SessionOptions) (*mongo.Session, error) {
-	var sessionOpts []options.Lister[options.SessionOptions]
-	for range opts {
-		sessionOpts = append(sessionOpts, options.Session())
-	}
-
-	session, err := t.engine.Client().StartSession(sessionOpts...)
+func (t *Transaction) SessionWithOptions(ctx context.Context, opts ...options.Lister[options.SessionOptions]) (*mongo.Session, error) {
+	session, err := t.engine.Client().StartSession(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
