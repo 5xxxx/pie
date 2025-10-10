@@ -48,7 +48,7 @@ func main() {
 	// Create session
 	session := pie.Table[User](engine)
 
-	fmt.Println("=== Pie killer features demo ===\n")
+	fmt.Println("=== Pie killer features demo ===")
 
 	// 1. Smart query builder
 	demo1SmartQueryBuilder(ctx, session)

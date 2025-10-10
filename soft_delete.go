@@ -440,7 +440,7 @@ func NewSoftDeleteOptions() *SoftDeleteOptions {
 	return &SoftDeleteOptions{
 		DeletedAtField: "deleted_at",
 		AutoCleanup:    false,
-		CleanupAfter:   30 * 24 * time.Hour, // 30天
+		CleanupAfter:   30 * 24 * time.Hour, // Retain soft-deleted documents for 30 days by default
 	}
 }
 
