@@ -48,7 +48,7 @@ func main() {
 	// Create session
 	session := pie.Table[User](engine)
 
-	fmt.Println("=== Pie killer features demo ===\n")
+	fmt.Println("=== Pie killer features demo ===")
 
 	// 1. Smart query builder
 	demo1SmartQueryBuilder(ctx, session)
@@ -96,14 +96,14 @@ func demo1SmartQueryBuilder(ctx context.Context, session *pie.Session[User]) {
 
 	// Fuzzy query
 	users, err = session.
-		WhereLike("name", "%张%").
+		WhereLike("name", "%John%").
 		WhereStartsWith("email", "admin").
 		Find(ctx)
 
 	if err != nil {
 		fmt.Printf("  ❌ Fuzzy query failed: %v\n", err)
 	} else {
-		fmt.Printf("  ✅ Names containing '张' and emails starting with 'admin': %d\n", len(users))
+		fmt.Printf("  ✅ Names containing 'John' and emails starting with 'admin': %d\n", len(users))
 	}
 
 	// Complex condition combination
@@ -150,7 +150,7 @@ func demo2ConvenienceMethods(ctx context.Context, session *pie.Session[User]) {
 
 	// FirstOrCreate
 	newUser := &User{
-		Name:      "测试用户",
+		Name:      "Test User",
 		Email:     "test@example.com",
 		Age:       25,
 		Status:    "active",
@@ -211,7 +211,7 @@ func demo4StructQuery(ctx context.Context, session *pie.Session[User]) {
 
 	// Use struct to auto-generate query conditions
 	query := UserQuery{
-		Name:   "张",
+		Name:   "John",
 		MinAge: 20,
 		MaxAge: 40,
 		Status: []string{"active", "pending"},
@@ -224,7 +224,7 @@ func demo4StructQuery(ctx context.Context, session *pie.Session[User]) {
 		fmt.Printf("  ❌ Struct query failed: %v\n", err)
 	} else {
 		fmt.Printf("  ✅ WhereStruct: Found %d users\n", len(users))
-		fmt.Printf("     Query conditions: Name contains '张', Age 20-40, Status active/pending, Role admin\n")
+		fmt.Printf("     Query conditions: Name contains 'John', Age 20-40, Status active/pending, Role admin\n")
 		fmt.Printf("     🎉 HTTP request parameters can be directly converted to queries!\n\n")
 	}
 }
