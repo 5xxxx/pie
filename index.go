@@ -273,7 +273,7 @@ func (i *Indexes) Clone() *Indexes {
 	}
 }
 
-// 高级索引功能 - 合并自 advanced_indexes.go
+// Advanced index utilities merged from advanced_indexes.go
 
 // AddWildcardIndex add wildcard index
 // WildcardIndexOptions options for wildcard index

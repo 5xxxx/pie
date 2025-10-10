@@ -197,7 +197,8 @@ func (c *Cursor[T]) ForEach(ctx context.Context, fn func(*T) error) error {
 // Skip skip specified number of documents
 func (c *Cursor[T]) Skip(ctx context.Context, n int) error {
 	for i := 0; i < n && c.Next(ctx); i++ {
-		// 跳过文档
+		// Iterate until the requested number of documents have been
+		// consumed without decoding to avoid unnecessary allocations.
 	}
 	return c.Err()
 }
