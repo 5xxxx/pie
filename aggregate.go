@@ -2,340 +2,281 @@ package pie
 
 import (
 	"context"
-
-	"github.com/5xxxx/pie/schemas"
-
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
-	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
-
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// Aggregate represents an interface for performing aggregation operations on a MongoDB collection.
-// One executes the aggregation operation and stores the result in the provided result variable.
-// It returns an error if the operation fails.
-type Aggregate interface {
-	One(result any, ctx ...context.Context) error
-	All(result any, ctx ...context.Context) error
-	// SetAllowDiskUse sets the value for the AllowDiskUse field.
-	SetAllowDiskUse(b bool) Aggregate
-
-	// SetBatchSize sets the value for the BatchSize field.
-	SetBatchSize(i int32) Aggregate
-
-	// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-	SetBypassDocumentValidation(b bool) Aggregate
-
-	// SetCollation sets the value for the Collation field.
-	SetCollation(c *options.Collation) Aggregate
-
-	// SetMaxTime sets the value for the MaxTime field.
-	SetMaxTime(d time.Duration) Aggregate
-
-	// SetMaxAwaitTime sets the value for the MaxAwaitTime field.
-	SetMaxAwaitTime(d time.Duration) Aggregate
-
-	// SetComment sets the value for the Comment field.
-	SetComment(s string) Aggregate
-
-	// SetHint sets the value for the Hint field.
-	SetHint(h any) Aggregate
-
-	Pipeline(pipeline bson.A) Aggregate
-
-	Match(c Condition) Aggregate
-
-	SetDatabase(db string) Aggregate
-
-	Collection(doc any) Aggregate
-
-	SetCollReadPreference(rp *readpref.ReadPref) Aggregate
-
-	SetCollRegistry(r *bson.Registry) Aggregate
-
-	SetCollWriteConcern(wc *writeconcern.WriteConcern) Aggregate
-
-	SetReadConcern(rc *readconcern.ReadConcern) Aggregate
-	//AddFields() Aggregate
-	//Bucket() Aggregate
-	//BucketAuto() Aggregate
-	//CollStats() Aggregate
-	//Count() Aggregate
-	//CurrentOp() Aggregate
-	//Facet() Aggregate
-	//GeoNear() Aggregate
-	//GraphLookup() Aggregate
-	//Group() Aggregate
-	//IndexStats() Aggregate
-	//Limit() Aggregate
-	//ListLocalSession() Aggregate
-	//ListSession() Aggregate
-	//Lookup() Aggregate
-	//Match(filter Session) Aggregate
-	//Merge() Aggregate
-	//Out() Aggregate
-	//PlanCacheStats() Aggregate
-	//Project() Aggregate
-	//Redact() Aggregate
-	//ReplaceRoot() Aggregate
-	//ReplaceWith() Aggregate
-	//Sample() Aggregate
-	//Set() Aggregate
-	//Skip() Aggregate
-	//Sort() Aggregate
-	//SortByCount() Aggregate
-	//UnionWith() Aggregate
-	//Unset() Aggregate
-	//Unwind() Aggregate
-	//All(result any) error
+// Aggregate aggregation operation builder
+type Aggregate[T any] struct {
+	engine     *Engine
+	collection *mongo.Collection
+	pipeline   bson.A
+	options    *options.AggregateOptionsBuilder
 }
 
-// aggregate represents an aggregation operation.
-type aggregate struct {
-	db       string
-	doc      any
-	engine   Client
-	pipeline bson.A
-	opts     []*options.AggregateOptionsBuilder
-	collOpts []options.Lister[options.CollectionOptions]
-}
-
-// NewAggregate creates a new instance of the Aggregate struct with the provided client as the engine.
-func NewAggregate(engine Client) Aggregate {
-	return &aggregate{engine: engine}
-}
-
-// One retrieves a single document from the MongoDB collection that matches the aggregation pipeline and decodes it into the provided result variable.
-// If a context is provided, it will be used for the operation, otherwise a background context will be used.
-// The method determines the appropriate collection based on the type of the result variable. If 'result' is a struct, it uses the `collectionForStruct` method to obtain the collection
-func (a *aggregate) One(result any, ctx ...context.Context) error {
-
-	var c context.Context
-	if len(ctx) > 0 {
-		c = ctx[0]
-	} else {
-		c = context.Background()
+// NewAggregate create new aggregation operation
+func NewAggregate[T any](engine *Engine) *Aggregate[T] {
+	return &Aggregate[T]{
+		engine:   engine,
+		pipeline: bson.A{},
+		options:  options.Aggregate(),
 	}
+}
 
-	var coll *mongo.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.collectionForStruct(a.doc)
-	} else {
-		coll, err = a.collectionForStruct(result)
-	}
+// Collection set collection
+func (a *Aggregate[T]) Collection(name string) *Aggregate[T] {
+	a.collection = a.engine.Collection(name)
+	return a
+}
 
+// CollectionForStruct set collection by struct
+func (a *Aggregate[T]) CollectionForStruct(v interface{}) *Aggregate[T] {
+	collection, err := a.engine.CollectionForStruct(v)
 	if err != nil {
-		return err
+		// Here we can log the error but don't interrupt the chain call
+		return a
 	}
+	a.collection = collection
+	return a
+}
 
-	var opts []options.Lister[options.AggregateOptions]
-	for _, opt := range a.opts {
-		opts = append(opts, opt)
+// Match add match stage
+func (a *Aggregate[T]) Match(filter bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$match", filter}})
+	return a
+}
+
+// MatchOperator add match stage using operator
+func (a *Aggregate[T]) MatchOperator(op Operator) *Aggregate[T] {
+	return a.Match(op.ToBSON())
+}
+
+// Group add group stage
+func (a *Aggregate[T]) Group(group bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$group", group}})
+	return a
+}
+
+// Sort add sort stage
+func (a *Aggregate[T]) Sort(sort bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$sort", sort}})
+	return a
+}
+
+// Limit add limit stage
+func (a *Aggregate[T]) Limit(limit int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$limit", limit}})
+	return a
+}
+
+// Skip add skip stage
+func (a *Aggregate[T]) Skip(skip int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$skip", skip}})
+	return a
+}
+
+// Project add projection stage
+func (a *Aggregate[T]) Project(project bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$project", project}})
+	return a
+}
+
+// AddFields add fields stage
+func (a *Aggregate[T]) AddFields(fields bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$addFields", fields}})
+	return a
+}
+
+// Lookup add lookup stage
+func (a *Aggregate[T]) Lookup(from, localField, foreignField, as string) *Aggregate[T] {
+	lookup := bson.D{
+		{"from", from},
+		{"localField", localField},
+		{"foreignField", foreignField},
+		{"as", as},
 	}
-	aggregate, err := coll.Aggregate(c, a.pipeline, opts...)
-	if err != nil {
-		return err
-	}
-	if next := aggregate.Next(c); next {
-		if err := aggregate.Decode(result); err != nil {
-			return err
+	a.pipeline = append(a.pipeline, bson.D{{"$lookup", lookup}})
+	return a
+}
+
+// Unwind add unwind stage
+func (a *Aggregate[T]) Unwind(path string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$unwind", path}})
+	return a
+}
+
+// Facet add facet stage
+func (a *Aggregate[T]) Facet(facet bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$facet", facet}})
+	return a
+}
+
+// Count add count stage
+func (a *Aggregate[T]) Count(field string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$count", field}})
+	return a
+}
+
+// Sample add sample stage
+func (a *Aggregate[T]) Sample(size int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$sample", bson.D{{"size", size}}}})
+	return a
+}
+
+// ReplaceRoot add replace root stage
+func (a *Aggregate[T]) ReplaceRoot(newRoot bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$replaceRoot", bson.D{{"newRoot", newRoot}}}})
+	return a
+}
+
+// ReplaceWith add replace stage
+func (a *Aggregate[T]) ReplaceWith(replacement bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$replaceWith", replacement}})
+	return a
+}
+
+// Out add out stage
+func (a *Aggregate[T]) Out(collection string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$out", collection}})
+	return a
+}
+
+// Merge add merge stage
+func (a *Aggregate[T]) Merge(into string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$merge", bson.D{{"into", into}}}})
+	return a
+}
+
+// Pipeline add custom pipeline stage
+func (a *Aggregate[T]) Pipeline(stage bson.D) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, stage)
+	return a
+}
+
+// Option setting methods
+
+// SetAllowDiskUse set allow disk use
+func (a *Aggregate[T]) SetAllowDiskUse(allow bool) *Aggregate[T] {
+	a.options.SetAllowDiskUse(allow)
+	return a
+}
+
+// SetBatchSize set batch size
+func (a *Aggregate[T]) SetBatchSize(size int32) *Aggregate[T] {
+	a.options.SetBatchSize(size)
+	return a
+}
+
+// SetBypassDocumentValidation set bypass document validation
+func (a *Aggregate[T]) SetBypassDocumentValidation(bypass bool) *Aggregate[T] {
+	a.options.SetBypassDocumentValidation(bypass)
+	return a
+}
+
+// SetCollation set collation
+func (a *Aggregate[T]) SetCollation(collation *options.Collation) *Aggregate[T] {
+	a.options.SetCollation(collation)
+	return a
+}
+
+// SetMaxAwaitTime set max await time
+func (a *Aggregate[T]) SetMaxAwaitTime(duration int64) *Aggregate[T] {
+	a.options.SetMaxAwaitTime(time.Duration(duration))
+	return a
+}
+
+// SetComment set comment
+func (a *Aggregate[T]) SetComment(comment string) *Aggregate[T] {
+	a.options.SetComment(comment)
+	return a
+}
+
+// SetHint set hint
+func (a *Aggregate[T]) SetHint(hint interface{}) *Aggregate[T] {
+	a.options.SetHint(hint)
+	return a
+}
+
+// Exec execute aggregation operation
+func (a *Aggregate[T]) Exec(ctx context.Context) (*AggregateResult[T], error) {
+	if a.collection == nil {
+		// Try to get collection based on generic type
+		var zero T
+		collection, err := a.engine.CollectionForStruct(zero)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get collection: %w", err)
 		}
-	} else {
-		return mongo.ErrNoDocuments
-	}
-	return nil
-}
-
-// All retrieves all the documents from the MongoDB collection that match the aggregation pipeline and stores the result in the provided result variable.
-// If a context is provided, it will be used for the operation, otherwise a background context will be used.
-// The method determines the appropriate collection based on the type of the result variable. If 'result' is a struct, it uses the `collectionForStruct` method to obtain the collection
-func (a *aggregate) All(result any, ctx ...context.Context) error {
-	var c context.Context
-	if len(ctx) > 0 {
-		c = ctx[0]
-	} else {
-		c = context.Background()
+		a.collection = collection
 	}
 
-	var coll *mongo.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.collectionForStruct(a.doc)
-	} else {
-		coll, err = a.collectionForSlice(result)
-	}
+	cursor, err := a.collection.Aggregate(ctx, a.pipeline, a.options)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to execute aggregation: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []T
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, fmt.Errorf("failed to decode aggregation results: %w", err)
 	}
 
-	var opts []options.Lister[options.AggregateOptions]
-	for _, opt := range a.opts {
-		opts = append(opts, opt)
+	return &AggregateResult[T]{
+		Data:  results,
+		Error: nil,
+	}, nil
+}
+
+// ExecOne execute aggregation operation and return single result
+func (a *Aggregate[T]) ExecOne(ctx context.Context, result *T) error {
+	if a.collection == nil {
+		var zero T
+		collection, err := a.engine.CollectionForStruct(zero)
+		if err != nil {
+			return fmt.Errorf("failed to get collection: %w", err)
+		}
+		a.collection = collection
 	}
-	aggregate, err := coll.Aggregate(c, a.pipeline, opts...)
+
+	cursor, err := a.collection.Aggregate(ctx, a.pipeline, a.options)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute aggregation: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(result); err != nil {
+			return fmt.Errorf("failed to decode aggregation result: %w", err)
+		}
+		return nil
 	}
 
-	return aggregate.All(c, result)
+	return ErrEmptyResult
 }
 
-// SetAllowDiskUse sets the value for the AllowDiskUse field.
-func (a *aggregate) SetAllowDiskUse(b bool) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetAllowDiskUse(b))
-	return a
+// GetPipeline get pipeline
+func (a *Aggregate[T]) GetPipeline() bson.A {
+	return a.pipeline
 }
 
-// SetBatchSize sets the value for the BatchSize field.
-func (a *aggregate) SetBatchSize(i int32) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetBatchSize(i))
-	return a
-}
+// Clone clone aggregation operation
+func (a *Aggregate[T]) Clone() *Aggregate[T] {
+	newPipeline := make(bson.A, len(a.pipeline))
+	copy(newPipeline, a.pipeline)
 
-// SetBypassDocumentValidation sets the value for the BypassDocumentValidation field.
-func (a *aggregate) SetBypassDocumentValidation(b bool) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetBypassDocumentValidation(b))
-	return a
-}
-
-// SetCollation sets the value for the Collation field.
-func (a *aggregate) SetCollation(c *options.Collation) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetCollation(c))
-	return a
-}
-
-// SetMaxTime sets the value for the MaxTime field.
-func (a *aggregate) SetMaxTime(d time.Duration) Aggregate {
-	// Note: SetMaxTime is not available in v2, using MaxAwaitTime instead
-	a.opts = append(a.opts, options.Aggregate().SetMaxAwaitTime(d))
-	return a
-}
-
-// SetMaxAwaitTime sets the value for the MaxAwaitTime field.
-func (a *aggregate) SetMaxAwaitTime(d time.Duration) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetMaxAwaitTime(d))
-	return a
-}
-
-// SetComment sets the value for the Comment field.
-func (a *aggregate) SetComment(s string) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetComment(s))
-	return a
-}
-
-// SetHint sets the value for the Hint field.
-func (a *aggregate) SetHint(h any) Aggregate {
-	a.opts = append(a.opts, options.Aggregate().SetHint(h))
-	return a
-}
-
-// Pipeline appends a pipeline to the existing pipeline of the aggregate object.
-// The pipeline parameter is a slice of BSON documents representing the stages of the aggregation pipeline.
-// Each document in the pipeline slice represents a stage of the aggregation.
-// The Pipeline method returns the aggregate object to allow for method chaining.
-func (a *aggregate) Pipeline(pipeline bson.A) Aggregate {
-	a.pipeline = append(a.pipeline, pipeline...)
-	return a
-}
-
-// Match appends a $match stage to the pipeline based on the specified condition.
-// It takes a Condition as input and retrieves the filter expressions from it using the Filters() method.
-// The filter expressions are then added to the pipeline with the "$match" operator.
-// The updated pipeline is stored in the aggregate struct.
-// It returns the aggregate struct itself, allowing for method chaining.
-func (a *aggregate) Match(c Condition) Aggregate {
-	filters, err := c.Filters()
-	if err != nil {
-		panic(err)
+	return &Aggregate[T]{
+		engine:     a.engine,
+		collection: a.collection,
+		pipeline:   newPipeline,
+		options:    a.options,
 	}
-	a.pipeline = append(a.pipeline, bson.M{
-		"$match": filters,
-	})
-	return a
 }
 
-// SetDatabase sets the value for the db field in the aggregate struct.
-func (a *aggregate) SetDatabase(db string) Aggregate {
-	a.db = db
-	return a
-}
-
-// collectionForStruct returns a *mongo.Collection for the given document structure.
-// It takes an input parameter 'doc' which represents the document structure.
-// If 'a.doc' is not nil, it assigns the value returned by a.engine.CollectionNameForStruct(a.doc) to 'coll' and assigns the error to 'err',
-// otherwise it assigns the value returned by a.engine.CollectionNameForStruct(doc) to 'coll' and assigns the error to 'err'.
-// If 'err' is not nil, it returns nil and the error.
-// Otherwise, it returns a.collectionByName(coll.Name) and nil.
-func (a *aggregate) collectionForStruct(doc any) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.engine.CollectionNameForStruct(a.doc)
-	} else {
-		coll, err = a.engine.CollectionNameForStruct(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return a.collectionByName(coll.Name), nil
-}
-
-// collectionForSlice retrieves the collection by name for a given slice of documents.
-func (a *aggregate) collectionForSlice(doc any) (*mongo.Collection, error) {
-	var coll *schemas.Collection
-	var err error
-	if a.doc != nil {
-		coll, err = a.engine.CollectionNameForStruct(a.doc)
-	} else {
-		coll, err = a.engine.CollectionNameForSlice(doc)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return a.collectionByName(coll.Name), nil
-}
-
-// collectionByName returns a *mongo.Collection for the given name. If the collection options (a.collOpts) is nil, it initializes it as an empty slice. It then calls a.engine.Collection
-func (a *aggregate) collectionByName(name string) *mongo.Collection {
-	if a.collOpts == nil {
-		a.collOpts = make([]options.Lister[options.CollectionOptions], 0)
-	}
-	return a.engine.Collection(name, a.collOpts, a.db)
-}
-
-// SetReadConcern sets the value for the ReadConcern field.
-func (a *aggregate) SetReadConcern(rc *readconcern.ReadConcern) Aggregate {
-	a.collOpts = append(a.collOpts, options.Collection().SetReadConcern(rc))
-	return a
-}
-
-// SetCollWriteConcern sets the value for the WriteConcern field in the CollectionOptions.
-func (a *aggregate) SetCollWriteConcern(wc *writeconcern.WriteConcern) Aggregate {
-	a.collOpts = append(a.collOpts, options.Collection().SetWriteConcern(wc))
-	return a
-}
-
-// SetCollReadPreference sets the value for the ReadPreference field.
-func (a *aggregate) SetCollReadPreference(rp *readpref.ReadPref) Aggregate {
-	a.collOpts = append(a.collOpts, options.Collection().SetReadPreference(rp))
-	return a
-}
-
-// SetCollRegistry sets the value for the Registry field in the CollectionOptions.
-func (a *aggregate) SetCollRegistry(r *bson.Registry) Aggregate {
-	a.collOpts = append(a.collOpts, options.Collection().SetRegistry(r))
-	return a
-}
-
-// Collection sets the document to be used for the aggregate operation.
-// It returns the updated aggregate object.
-func (a *aggregate) Collection(doc any) Aggregate {
-	a.doc = doc
+// Clear clear pipeline
+func (a *Aggregate[T]) Clear() *Aggregate[T] {
+	a.pipeline = bson.A{}
 	return a
 }

@@ -1,32 +1,32 @@
-# Pie - MongoDB ORM Framework
+# Pie - MongoDB ORM 框架
 
-Pie is a modern, type-safe MongoDB ORM framework for Go that provides a rich, high-performance database operation experience.
+Pie 是一个现代化的 Go 语言 MongoDB ORM 框架，提供类型安全、高性能、功能丰富的数据库操作体验。
 
-## Features
+## 特性
 
-- **Type Safety**: Built on Go generics with compile-time type checking
-- **Smart Query Builder**: Intuitive chainable API with support for complex query conditions
-- **Struct Query**: Direct conversion of HTTP request parameters to query conditions
-- **Cache Support**: Built-in multi-level caching with Redis and memory cache support
-- **Hook System**: Complete lifecycle hook support
-- **Transaction Management**: Simple and easy-to-use transaction operations
-- **Index Management**: Automated index creation and management
-- **Aggregation Pipeline**: Powerful aggregation query support
-- **Change Streams**: Real-time data change monitoring
-- **Soft Delete**: Built-in soft delete functionality
-- **Pagination**: Efficient pagination implementation
-- **Query Logging**: Detailed query logging and performance monitoring
-- **Bulk Operations**: High-performance bulk write operations
+- **类型安全**: 基于 Go 泛型，提供编译时类型检查
+- **智能查询构建器**: 直观的链式调用，支持复杂查询条件
+- **结构体查询**: HTTP 请求参数直接转换为查询条件
+- **缓存支持**: 内置多级缓存，支持 Redis 和内存缓存
+- **钩子系统**: 完整的生命周期钩子支持
+- **事务管理**: 简单易用的事务操作
+- **索引管理**: 自动化的索引创建和管理
+- **聚合管道**: 强大的聚合查询支持
+- **变更流**: 实时数据变更监听
+- **软删除**: 内置软删除功能
+- **分页查询**: 高效的分页实现
+- **查询日志**: 详细的查询日志和性能监控
+- **批量操作**: 高效的批量写入操作
 
-## Installation
+## 安装
 
 ```bash
 go get github.com/5xxxx/pie
 ```
 
-## Quick Start
+## 快速开始
 
-### 1. Connect to Database
+### 1. 连接数据库
 
 ```go
 package main
@@ -39,7 +39,7 @@ import (
 )
 
 func main() {
-    // Create engine
+    // 创建引擎
     engine, err := pie.NewEngine(
         context.Background(),
         "mydb",
@@ -51,11 +51,11 @@ func main() {
     }
     defer engine.Disconnect(context.Background())
     
-    // Use engine...
+    // 使用引擎...
 }
 ```
 
-### 2. Define Models
+### 2. 定义模型
 
 ```go
 type User struct {
@@ -67,7 +67,7 @@ type User struct {
     UpdatedAt time.Time     `bson:"updated_at"`
 }
 
-// Hook methods
+// 钩子方法
 func (u *User) BeforeCreate(ctx context.Context) error {
     u.CreatedAt = time.Now()
     u.UpdatedAt = time.Now()
@@ -80,46 +80,46 @@ func (u *User) AfterCreate(ctx context.Context) error {
 }
 ```
 
-### 3. Basic Operations
+### 3. 基本操作
 
 ```go
-// Create type-safe session
+// 创建类型安全的会话
 session := pie.Table[User](engine)
 
-// Insert document
+// 插入文档
 user := &User{
-    Name:  "John Doe",
-    Email: "john@example.com",
+    Name:  "张三",
+    Email: "zhangsan@example.com",
     Age:   25,
 }
 result, err := session.Insert(context.Background(), user)
 
-// Query documents
+// 查询文档
 users, err := session.
     Where("age", pie.Gte("age", 18)).
     OrderBy("name").
     Limit(10).
     Find(context.Background())
 
-// Update document
+// 更新文档
 updateResult, err := session.
-    Where("email", "john@example.com").
+    Where("email", "zhangsan@example.com").
     Update(context.Background(), bson.D{{"$set", bson.D{{"age", 26}}}})
 
-// Delete document
+// 删除文档
 deleteResult, err := session.
-    Where("email", "john@example.com").
+    Where("email", "zhangsan@example.com").
     Delete(context.Background())
 ```
 
-## Core Features
+## 核心功能详解
 
-### 1. Smart Query Builder
+### 1. 智能查询构建器
 
-Pie provides rich query methods with chainable API:
+Pie 提供了丰富的查询方法，支持链式调用：
 
 ```go
-// Basic queries
+// 基础查询
 session.Where("status", "active")
 session.Where("age", pie.Gte("age", 18))
 session.WhereIn("role", []string{"admin", "user"})
@@ -127,26 +127,26 @@ session.WhereBetween("age", 18, 65)
 session.WhereNull("deleted_at")
 session.WhereNotNull("email")
 
-// Fuzzy queries
-session.WhereLike("name", "%John%")
+// 模糊查询
+session.WhereLike("name", "%张%")
 session.WhereStartsWith("email", "admin")
 session.WhereEndsWith("domain", ".com")
 
-// Date queries
+// 日期查询
 session.WhereRecentDays("created_at", 7)
 session.WhereMonth("created_at", time.Now().Month())
 session.WhereYear("created_at", 2024)
 
-// Complex conditions
+// 复杂条件
 session.Where("status", "active").
     OrWhere(func(q *pie.Query) {
         q.Where("role", "admin").WhereBetween("age", 30, 50)
     })
 ```
 
-### 2. Struct Query
+### 2. 结构体查询
 
-Convert HTTP request parameters directly into query conditions:
+可将 HTTP 请求参数直接转换为查询条件：
 
 ```go
 type UserQuery struct {
@@ -158,9 +158,9 @@ type UserQuery struct {
     Role     string   `pie:"role,omitempty" json:"role"`
 }
 
-// HTTP request: GET /users?name=John&min_age=20&max_age=40&status=active,pending
+// HTTP 请求: GET /users?name=张&min_age=20&max_age=40&status=active,pending
 query := UserQuery{
-    Name:   "John",
+    Name:   "张",
     MinAge: 20,
     MaxAge: 40,
     Status: []string{"active", "pending"},
@@ -170,33 +170,33 @@ var users []User
 err := session.WhereStruct(query).Find(ctx, &users)
 ```
 
-### 3. Convenience Methods
+### 3. 便捷方法
 
 ```go
-// Find by ID
+// 按ID查找
 user, err := session.FindByID(ctx, userID)
 
-// Check existence
+// 检查存在性
 exists, err := session.Where("email", "test@example.com").Exists(ctx)
 
-// Quick count
+// 快速计数
 count, err := session.Where("status", "active").QuickCount(ctx)
 
-// Find or create
+// 查找或创建
 user, isNew, err := session.
     Where("email", "test@example.com").
-    FirstOrCreate(ctx, &User{Email: "test@example.com", Name: "Test User"})
+    FirstOrCreate(ctx, &User{Email: "test@example.com", Name: "测试用户"})
 
-// Find or fail
+// 查找或失败
 user, err := session.
     Where("email", "test@example.com").
     FirstOrFail(ctx)
 ```
 
-### 4. Pagination
+### 4. 分页查询
 
 ```go
-// Full pagination (with total count)
+// 完整分页（包含总数统计）
 result, err := session.
     Where("status", "active").
     Paginate(ctx, pie.PaginateParams{
@@ -205,7 +205,7 @@ result, err := session.
     })
 // result.Total, result.TotalPages, result.HasNext, result.HasPrev
 
-// Simple pagination (without total count, faster)
+// 简单分页（不统计总数，更快）
 simpleResult, err := session.
     PaginateSimple(ctx, pie.PaginateParams{
         Page:     1,
@@ -213,79 +213,79 @@ simpleResult, err := session.
     })
 ```
 
-### 5. Cursor Operations
+### 5. 游标操作
 
 ```go
-// Get cursor
+// 获取游标
 cursor, err := session.
     Where("status", "active").
     FindCursor(ctx)
 
-// Method 1: Use Next() and Decode()
+// 方式1: 使用 Next() 和 Decode()
 for cursor.Next(ctx) {
     var user User
     if err := cursor.Decode(&user); err != nil {
         continue
     }
-    // Process user
+    // 处理用户
 }
 
-// Method 2: Use All() to get all at once
+// 方式2: 使用 All() 一次性获取
 users, err := cursor.All(ctx)
 
-// Method 3: Use Iterate() for iteration
+// 方式3: 使用 Iterate() 迭代处理
 cursor.Iterate(ctx, func(user *User) error {
-    // Process user
+    // 处理用户
     return nil
 })
 
-// Method 4: Use Take() to get first N
+// 方式4: 使用 Take() 获取前N个
 topUsers, err := cursor.Take(ctx, 5)
 
-// Method 5: Use First() to get first one
+// 方式5: 使用 First() 获取第一个
 firstUser, err := cursor.First(ctx)
 
 cursor.Close(ctx)
 ```
 
-### 6. Bulk Operations
+### 6. 批量操作
 
 ```go
-// Create bulk write operation
+// 创建批量写入操作
 bulkWrite := pie.NewBulkWrite[User](engine).
     CollectionForStruct(User{})
 
-// Insert multiple documents
-bulkWrite.InsertOne(&User{Name: "User 1"})
-bulkWrite.InsertOne(&User{Name: "User 2"})
+// 插入多个文档
+bulkWrite.InsertOne(&User{Name: "用户1"})
+bulkWrite.InsertOne(&User{Name: "用户2"})
 
-// Update operations
+// 更新操作
 bulkWrite.UpdateOne(
     bson.D{{"email", "old@example.com"}},
     bson.D{{"$set", bson.D{{"email", "new@example.com"}}}},
 )
 
-// Bulk update
+// 批量更新
 bulkWrite.UpdateMany(
     bson.D{{"status", "inactive"}},
     bson.D{{"$set", bson.D{{"status", "active"}}}},
 )
 
-// Delete operations
+// 删除操作
 bulkWrite.DeleteMany(bson.D{{"age", bson.D{{"$lt", 18}}}})
 
-// Execute bulk operation
+// 执行批量操作
 result, err := bulkWrite.ExecuteOrdered(ctx)
 ```
 
-### 7. Aggregation Queries
+### 7. 聚合查询
 
 ```go
-// Create aggregation operation
+// 创建聚合操作
 aggregate := pie.NewAggregate[User](engine).
     CollectionForStruct(User{})
 
-// Build aggregation pipeline
+// 构建聚合管道
 result, err := aggregate.
     Match(bson.D{{"status", "active"}}).
     Group(bson.D{
@@ -296,69 +296,69 @@ result, err := aggregate.
     Sort(bson.D{{"count", -1}}).
     Exec(ctx)
 
-// Process results
+// 处理结果
 for _, item := range result.Data {
-    // item is bson.M type
+    // item 是 bson.M 类型
 }
 ```
 
-### 8. Transaction Management
+### 8. 事务管理
 
 ```go
-// Execute transaction with engine
+// 使用引擎执行事务
 err := engine.WithTransaction(ctx, func(txCtx context.Context) error {
-    // Execute operations in transaction
+    // 在事务中执行操作
     session := pie.Table[User](engine)
     
-    // Insert user
-    _, err := session.Insert(txCtx, &User{Name: "Transaction User"})
+    // 插入用户
+    _, err := session.Insert(txCtx, &User{Name: "事务用户"})
     if err != nil {
         return err
     }
     
-    // Update other collections
+    // 更新其他集合
     orderSession := pie.Table[Order](engine)
     _, err = orderSession.Insert(txCtx, &Order{UserID: userID})
     return err
 })
 
-// Use transaction manager
+// 使用事务管理器
 tx := pie.MustTransaction(engine)
 err = tx.Execute(ctx, func(txCtx context.Context) error {
-    // Transaction operations
+    // 事务操作
     return nil
 })
 ```
 
-### 9. Cache Support
+### 9. 缓存支持
 
 ```go
-// Enable memory cache
+// 启用内存缓存
 engine.UseCache(pie.NewMemoryCache(), &pie.CacheConfig{
     TTL: 5 * time.Minute,
 })
 
-// Enable Redis cache
+// 启用 Redis 缓存
 redisCache := pie.NewRedisCache("localhost:6379", "", 0)
 engine.UseCache(redisCache, &pie.CacheConfig{
     TTL: 10 * time.Minute,
 })
 
-// Enable two-level cache
+// 启用二级缓存
 engine.UseTwoLevelCache(
-    pie.NewMemoryCache(),  // L1 cache
-    redisCache,            // L2 cache
+    pie.NewMemoryCache(),  // L1 缓存
+    redisCache,            // L2 缓存
     &pie.TwoLevelCacheConfig{
         L1TTL: 1 * time.Minute,
         L2TTL: 10 * time.Minute,
     },
 )
 
-// Use cache in session
+// 在会话中使用缓存
 session := pie.Table[User](engine).
     WithCache(5 * time.Minute)
 
-// Cache query results
+// 缓存查询结果
 var users []User
 err := session.
     Where("status", "active").
@@ -366,58 +366,58 @@ err := session.
     Find(ctx, &users)
 ```
 
-### 10. Hook System
+### 10. 钩子系统
 
 ```go
 type User struct {
-    // Field definitions...
+    // 字段定义...
 }
 
-// Before create hook
+// 创建前钩子
 func (u *User) BeforeCreate(ctx context.Context) error {
     u.CreatedAt = time.Now()
     u.UpdatedAt = time.Now()
     return nil
 }
 
-// After create hook
+// 创建后钩子
 func (u *User) AfterCreate(ctx context.Context) error {
     log.Printf("User %s created", u.Name)
     return nil
 }
 
-// Before update hook
+// 更新前钩子
 func (u *User) BeforeUpdate(ctx context.Context) error {
     u.UpdatedAt = time.Now()
     return nil
 }
 
-// After update hook
+// 更新后钩子
 func (u *User) AfterUpdate(ctx context.Context) error {
     log.Printf("User %s updated", u.Name)
     return nil
 }
 
-// Before delete hook
+// 删除前钩子
 func (u *User) BeforeDelete(ctx context.Context) error {
     log.Printf("About to delete user %s", u.Name)
     return nil
 }
 
-// After delete hook
+// 删除后钩子
 func (u *User) AfterDelete(ctx context.Context) error {
     log.Printf("User %s deleted", u.Name)
     return nil
 }
 
-// After find hook
+// 查找后钩子
 func (u *User) AfterFind(ctx context.Context) error {
-    // Handle post-find logic
+    // 处理查找后的逻辑
     return nil
 }
 ```
 
-### 11. Soft Delete
+### 11. 软删除
 
 ```go
 type User struct {
@@ -427,53 +427,53 @@ type User struct {
     DeletedAt *time.Time    `bson:"deleted_at,omitempty" pie:"soft_delete"`
 }
 
-// Soft delete
+// 软删除
 err := session.Where("email", "test@example.com").SoftDelete(ctx)
 
-// Restore soft deleted
+// 恢复软删除
 err := session.Where("email", "test@example.com").Restore(ctx)
 
-// Force delete (physical delete)
+// 强制删除（物理删除）
 err := session.Where("email", "test@example.com").ForceDelete(ctx)
 
-// Queries automatically exclude soft deleted records
+// 查询时自动排除软删除的记录
 var users []User
-err := session.Find(ctx, &users) // Automatically filters out records where deleted_at is not null
+err := session.Find(ctx, &users) // 自动过滤 deleted_at 不为 null 的记录
 ```
 
-### 12. Index Management
+### 12. 索引管理
 
 ```go
-// Create index manager
+// 创建索引管理器
 indexes := pie.MustIndexes(engine)
 
-// Create indexes for struct
+// 为结构体创建索引
 err := indexes.CreateIndexes(ctx, User{})
 
-// Manually create index
+// 手动创建索引
 err := indexes.CreateIndex(ctx, "users", bson.D{
     {"email", 1},
 }, &options.IndexOptions{
     Unique: pie.Bool(true),
 })
 
-// Create compound index
+// 创建复合索引
 err := indexes.CreateIndex(ctx, "users", bson.D{
     {"status", 1},
     {"created_at", -1},
 })
 
-// Drop index
+// 删除索引
 err := indexes.DropIndex(ctx, "users", "email_1")
 ```
 
-### 13. Change Stream Monitoring
+### 13. 变更流监听
 
 ```go
-// Create change stream watcher
+// 创建变更流监听器
 watcher := pie.NewWatcher[User](engine)
 
-// Watch collection changes
+// 监听集合变更
 err := watcher.
     WatchCollection().
     Filter(bson.D{{"operationType", "insert"}}).
@@ -482,7 +482,7 @@ err := watcher.
         return nil
     })
 
-// Watch database changes
+// 监听数据库变更
 dbWatcher := pie.NewDatabaseWatcher[User](engine)
 err = dbWatcher.
     WatchDatabase().
@@ -492,10 +492,10 @@ err = dbWatcher.
     })
 ```
 
-### 14. Query Scopes
+### 14. 查询作用域
 
 ```go
-// Define scopes
+// 定义作用域
 func ActiveScope(field string) pie.ScopeFunc {
     return func(q *pie.Query) {
         q.Where(field, "active")
@@ -508,7 +508,7 @@ func RecentScope(field string, days int) pie.ScopeFunc {
     }
 }
 
-// Use scopes
+// 使用作用域
 var users []User
 err := session.
     Scopes(
@@ -519,16 +519,16 @@ err := session.
     Find(ctx, &users)
 ```
 
-### 15. Query Logging and Monitoring
+### 15. 查询日志和监控
 
 ```go
-// Enable query logging
+// 启用查询日志
 engine, err := pie.NewEngine(ctx, "mydb",
     pie.WithQueryLog(os.Stdout),
     pie.WithSlowQueryThreshold(50*time.Millisecond),
 )
 
-// Custom log format
+// 自定义日志格式
 engine.SetQueryLogFormatter(func(entry *pie.LogEntry) string {
     return fmt.Sprintf("[%s] %s %s - %v", 
         entry.Timestamp.Format("15:04:05"),
@@ -538,31 +538,31 @@ engine.SetQueryLogFormatter(func(entry *pie.LogEntry) string {
     )
 })
 
-// Set slow query threshold
+// 设置慢查询阈值
 engine.SetSlowQueryThreshold(100 * time.Millisecond)
 ```
 
-## Advanced Features
+## 高级功能
 
-### 1. Custom Name Mapping
+### 1. 自定义命名映射
 
 ```go
-// Use snake case naming
+// 使用蛇形命名
 engine, err := pie.NewEngine(ctx, "mydb",
     pie.WithMapper(&pie.SnakeMapper{}),
 )
 
-// Use camel case naming
+// 使用驼峰命名
 engine, err := pie.NewEngine(ctx, "mydb",
     pie.WithMapper(&pie.CamelMapper{}),
 )
 
-// Use same naming
+// 使用相同命名
 engine, err := pie.NewEngine(ctx, "mydb",
     pie.WithMapper(&pie.SameMapper{}),
 )
 
-// Custom mapper
+// 自定义映射器
 type CustomMapper struct{}
 
 func (m CustomMapper) TableName(structName string) string {
@@ -574,7 +574,7 @@ func (m CustomMapper) FieldName(fieldName string) string {
 }
 ```
 
-### 2. Configuration Options
+### 2. 配置选项
 
 ```go
 engine, err := pie.NewEngine(ctx, "mydb",
@@ -594,10 +594,10 @@ engine, err := pie.NewEngine(ctx, "mydb",
 )
 ```
 
-### 3. Error Handling
+### 3. 错误处理
 
 ```go
-// Check specific error types
+// 检查特定错误类型
 if pie.IsDuplicateKeyError(err) {
     log.Println("Duplicate key error")
 }
@@ -610,54 +610,54 @@ if pie.IsTimeoutError(err) {
     log.Println("Operation timeout")
 }
 
-// Get error details
+// 获取错误详情
 if mongoErr, ok := err.(pie.MongoError); ok {
     log.Printf("MongoDB error code: %d", mongoErr.Code)
     log.Printf("MongoDB error message: %s", mongoErr.Message)
 }
 ```
 
-## Performance Optimization
+## 性能优化
 
-### 1. Connection Pool Configuration
+### 1. 连接池配置
 
 ```go
 engine, err := pie.NewEngine(ctx, "mydb",
-    pie.WithMaxPoolSize(100),        // Maximum connections
-    pie.WithMinPoolSize(5),          // Minimum connections
-    pie.WithMaxIdleTime(30*time.Minute), // Maximum idle time
+    pie.WithMaxPoolSize(100),        // 最大连接数
+    pie.WithMinPoolSize(5),          // 最小连接数
+    pie.WithMaxIdleTime(30*time.Minute), // 最大空闲时间
 )
 ```
 
-### 2. Query Optimization
+### 2. 查询优化
 
 ```go
-// Use projection to reduce data transfer
+// 使用投影减少数据传输
 var users []User
 err := session.
-    Select("name", "email").  // Only select needed fields
+    Select("name", "email").  // 只选择需要的字段
     Find(ctx, &users)
 
-// Use indexes to optimize queries
+// 使用索引优化查询
 err := session.
-    Where("email", "test@example.com").  // email field has index
+    Where("email", "test@example.com").  // email 字段有索引
     Find(ctx, &users)
 
-// Use cursor for large datasets
+// 使用游标处理大量数据
 cursor, err := session.FindCursor(ctx)
 defer cursor.Close(ctx)
 
 for cursor.Next(ctx) {
     var user User
     cursor.Decode(&user)
-    // Process single user
+    // 处理单个用户
 }
 ```
 
-### 3. Bulk Operation Optimization
+### 3. 批量操作优化
 
 ```go
-// Use bulk writes for better performance
+// 使用批量写入提高性能
 bulkWrite := pie.NewBulkWrite[User](engine)
 for _, user := range users {
     bulkWrite.InsertOne(user)
@@ -665,9 +665,9 @@ for _, user := range users {
 result, err := bulkWrite.ExecuteOrdered(ctx)
 ```
 
-## Best Practices
+## 最佳实践
 
-### 1. Model Design
+### 1. 模型设计
 
 ```go
 type User struct {
@@ -682,13 +682,13 @@ type User struct {
 }
 ```
 
-### 2. Error Handling
+### 2. 错误处理
 
 ```go
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
     session := pie.Table[User](s.engine)
     
-    // Check if email already exists
+    // 检查邮箱是否已存在
     exists, err := session.Where("email", user.Email).Exists(ctx)
     if err != nil {
         return fmt.Errorf("failed to check email existence: %w", err)
@@ -697,7 +697,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
         return errors.New("email already exists")
     }
     
-    // Create user
+    // 创建用户
     _, err = session.Insert(ctx, user)
     if err != nil {
         return fmt.Errorf("failed to create user: %w", err)
@@ -707,14 +707,14 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 }
 ```
 
-### 3. Transaction Usage
+### 3. 事务使用
 
 ```go
 func (s *UserService) TransferPoints(ctx context.Context, fromUserID, toUserID bson.ObjectID, points int) error {
     return s.engine.WithTransaction(ctx, func(txCtx context.Context) error {
         userSession := pie.Table[User](s.engine)
         
-        // Deduct points from sender
+        // 减少发送方积分
         _, err := userSession.
             Where("_id", pie.ID(fromUserID)).
             Update(txCtx, bson.D{{"$inc", bson.D{{"points", -points}}}})
@@ -722,7 +722,7 @@ func (s *UserService) TransferPoints(ctx context.Context, fromUserID, toUserID b
             return fmt.Errorf("failed to deduct points: %w", err)
         }
         
-        // Add points to receiver
+        // 增加接收方积分
         _, err = userSession.
             Where("_id", pie.ID(toUserID)).
             Update(txCtx, bson.D{{"$inc", bson.D{{"points", points}}}})
@@ -735,21 +735,21 @@ func (s *UserService) TransferPoints(ctx context.Context, fromUserID, toUserID b
 }
 ```
 
-## License
+## 许可证
 
 MIT License
 
-## Contributing
+## 贡献
 
-Issues and Pull Requests are welcome!
+欢迎提交 Issue 和 Pull Request！
 
-## Changelog
+## 更新日志
 
 ### v2.0.0
-- Complete rewrite based on Go 1.18+ generics
-- Added type-safe sessions
-- Added struct query functionality
-- Added smart query builder
-- Added cache support
-- Added change stream monitoring
-- Significant performance improvements
+- 完全重写，基于 Go 1.18+ 泛型
+- 新增类型安全的会话
+- 新增结构体查询功能
+- 新增智能查询构建器
+- 新增缓存支持
+- 新增变更流监听
+- 性能大幅提升
