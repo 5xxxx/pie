@@ -133,7 +133,6 @@ engine, err := pie.NewEngine(ctx, "mydb",
 // 查询配置
 engine, err := pie.NewEngine(ctx, "mydb",
     pie.WithQueryLog(os.Stdout),                 // 查询日志
-    pie.WithSlowQueryThreshold(50*time.Millisecond), // 慢查询阈值
     pie.WithQueryTimeout(30*time.Second),        // 查询超时
 )
 ```
@@ -239,7 +238,6 @@ engine, err := pie.NewEngine(ctx, "mydb",
 | 选项 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `WithQueryLog` | io.Writer | - | 查询日志输出 |
-| `WithSlowQueryThreshold` | time.Duration | - | 慢查询阈值 |
 | `WithQueryTimeout` | time.Duration | - | 查询超时 |
 | `WithCache` | Cache, *CacheConfig | - | 缓存配置 |
 
@@ -252,7 +250,6 @@ func createDevEngine() (*pie.Engine, error) {
     return pie.NewEngine(ctx, "dev_db",
         pie.WithURI("mongodb://localhost:27017"),
         pie.WithQueryLog(os.Stdout),
-        pie.WithSlowQueryThreshold(10*time.Millisecond),
         pie.WithMapper(&pie.SnakeMapper{}),
     )
 }

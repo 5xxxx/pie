@@ -402,7 +402,6 @@ func monitorPerformance() {
                 log.Printf("Performance Stats:")
                 log.Printf("  Queries/sec: %.2f", stats.QueriesPerSecond)
                 log.Printf("  Avg Query Time: %v", stats.AvgQueryTime)
-                log.Printf("  Slow Queries: %d", stats.SlowQueries)
                 log.Printf("  Cache Hit Rate: %.2f%%", stats.CacheHitRate)
             }
         }
@@ -410,22 +409,6 @@ func monitorPerformance() {
 }
 ```
 
-### 慢查询监控
-
-```go
-func setupSlowQueryMonitoring() {
-    engine.SetSlowQueryThreshold(100 * time.Millisecond)
-    
-    engine.SetQueryLogFormatter(func(entry *pie.LogEntry) string {
-        if entry.Duration > 100*time.Millisecond {
-            return fmt.Sprintf("[SLOW QUERY] %s %s - %v", 
-                entry.Operation, entry.Collection, entry.Duration)
-        }
-        return fmt.Sprintf("[QUERY] %s %s - %v", 
-            entry.Operation, entry.Collection, entry.Duration)
-    })
-}
-```
 
 ### 查询分析
 

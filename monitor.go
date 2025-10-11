@@ -20,7 +20,6 @@ type Monitor struct {
 type CommandMonitor struct {
 	enabled     bool
 	logger      *log.Logger
-	slowQuery   time.Duration
 	commandChan chan *CommandEvent
 }
 
@@ -92,7 +91,6 @@ func NewCommandMonitor() *CommandMonitor {
 	return &CommandMonitor{
 		enabled:     false,
 		logger:      log.New(log.Writer(), "[CMD] ", log.LstdFlags),
-		slowQuery:   100 * time.Millisecond,
 		commandChan: make(chan *CommandEvent, 1000),
 	}
 }
@@ -168,12 +166,6 @@ func (m *Monitor) DisableServerMonitor() *Monitor {
 	return m
 }
 
-// SetSlowQueryThreshold set slow query threshold
-func (m *Monitor) SetSlowQueryThreshold(duration time.Duration) *Monitor {
-	m.commandMonitor.SetSlowQueryThreshold(duration)
-	return m
-}
-
 // SetLogger set logger
 func (m *Monitor) SetLogger(logger *log.Logger) *Monitor {
 	m.commandMonitor.SetLogger(logger)
@@ -219,11 +211,6 @@ func (cm *CommandMonitor) IsEnabled() bool {
 	return cm.enabled
 }
 
-// SetSlowQueryThreshold set slow query threshold
-func (cm *CommandMonitor) SetSlowQueryThreshold(duration time.Duration) {
-	cm.slowQuery = duration
-}
-
 // SetLogger set logger
 func (cm *CommandMonitor) SetLogger(logger *log.Logger) {
 	cm.logger = logger
@@ -240,10 +227,7 @@ func (cm *CommandMonitor) LogCommand(event *CommandEvent) {
 		return
 	}
 
-	// check if slow query
-	if event.Duration > cm.slowQuery {
-		cm.logger.Printf("⚠️ SLOW QUERY [%v] %s: %v", event.Duration, event.CommandName, event.Command)
-	} else if event.Failure != nil {
+	if event.Failure != nil {
 		cm.logger.Printf("❌ ERROR [%v] %s: %v - %v", event.Duration, event.CommandName, event.Command, event.Failure)
 	} else {
 		cm.logger.Printf("✅ [%v] %s: %v", event.Duration, event.CommandName, event.Command)
@@ -372,7 +356,6 @@ type MonitorOptions struct {
 	CommandMonitor bool
 	PoolMonitor    bool
 	ServerMonitor  bool
-	SlowQuery      time.Duration
 	Logger         *log.Logger
 }
 
@@ -382,7 +365,6 @@ func NewMonitorOptions() *MonitorOptions {
 		CommandMonitor: true,
 		PoolMonitor:    false,
 		ServerMonitor:  false,
-		SlowQuery:      100 * time.Millisecond,
 		Logger:         log.New(log.Writer(), "[MONITOR] ", log.LstdFlags),
 	}
 }
@@ -402,12 +384,6 @@ func (mo *MonitorOptions) WithPoolMonitor() *MonitorOptions {
 // WithServerMonitor enable server monitoring
 func (mo *MonitorOptions) WithServerMonitor() *MonitorOptions {
 	mo.ServerMonitor = true
-	return mo
-}
-
-// WithSlowQueryThreshold set slow query threshold
-func (mo *MonitorOptions) WithSlowQueryThreshold(duration time.Duration) *MonitorOptions {
-	mo.SlowQuery = duration
 	return mo
 }
 

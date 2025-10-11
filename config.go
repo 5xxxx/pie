@@ -175,16 +175,6 @@ func WithQueryLogFormatter(formatter LogFormatter) EngineOption {
 	}
 }
 
-// WithSlowQueryThreshold set slow query threshold
-func WithSlowQueryThreshold(duration time.Duration) EngineOption {
-	return func(cfg *EngineConfig) {
-		if cfg.queryLogger == nil {
-			cfg.queryLogger = NewQueryLogger(nil)
-		}
-		cfg.queryLogger.SetSlowQueryThreshold(duration)
-	}
-}
-
 // WithHooks set hook manager
 func WithHooks(manager *HookManager) EngineOption {
 	return func(cfg *EngineConfig) {

@@ -42,7 +42,6 @@ func main() {
 	// Create engine and enable query logging
 	engine, err := pie.NewEngine(ctx, "testdb",
 		pie.WithQueryLog(os.Stdout),
-		pie.WithSlowQueryThreshold(50*time.Millisecond),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create engine: %v", err)

@@ -14,7 +14,6 @@ type QueryLogger struct {
 	enabled   bool
 	writer    io.Writer
 	formatter LogFormatter
-	slowQuery time.Duration
 }
 
 // LogEntry log entry
@@ -48,7 +47,6 @@ func NewQueryLogger(writer io.Writer) *QueryLogger {
 		enabled:   false,
 		writer:    writer,
 		formatter: &MongoShellFormatter{},
-		slowQuery: 0,
 	}
 }
 
@@ -72,19 +70,9 @@ func (ql *QueryLogger) SetFormatter(formatter LogFormatter) {
 	ql.formatter = formatter
 }
 
-// SetSlowQueryThreshold set slow query threshold
-func (ql *QueryLogger) SetSlowQueryThreshold(duration time.Duration) {
-	ql.slowQuery = duration
-}
-
 // Log record log
 func (ql *QueryLogger) Log(entry *LogEntry) {
 	if !ql.enabled {
-		return
-	}
-
-	// If slow query threshold is set, only record queries that exceed threshold
-	if ql.slowQuery > 0 && entry.Duration < ql.slowQuery {
 		return
 	}
 
@@ -101,11 +89,6 @@ func (f *MongoShellFormatter) Format(entry *LogEntry) string {
 		entry.Timestamp.Format("2006-01-02 15:04:05"),
 		entry.Duration.Round(time.Millisecond),
 	))
-
-	// Slow query warning
-	if entry.Duration > 100*time.Millisecond {
-		sb.WriteString("⚠️ SLOW QUERY ")
-	}
 
 	// Error mark
 	if entry.Error != nil {

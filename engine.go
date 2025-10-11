@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -180,11 +179,6 @@ func (e *Engine) SetQueryLogOutput(writer io.Writer) {
 // SetQueryLogFormatter set log formatter
 func (e *Engine) SetQueryLogFormatter(formatter LogFormatter) {
 	e.queryLogger.SetFormatter(formatter)
-}
-
-// SetSlowQueryThreshold set slow query threshold
-func (e *Engine) SetSlowQueryThreshold(duration time.Duration) {
-	e.queryLogger.SetSlowQueryThreshold(duration)
 }
 
 // WithTransaction execute transaction

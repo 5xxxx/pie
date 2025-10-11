@@ -98,13 +98,11 @@ engine.WithMaxPoolSize(100).WithMinPoolSize(10)
 
 ## 8. Query Logging and Monitoring
 
-Enable query logging, monitor slow queries, and regularly analyze query performance.
+Enable query logging and regularly analyze query performance.
 
 ```go
 engine.OnQuery(func(event *pie.QueryEvent) {
-    if event.Duration > 100*time.Millisecond {
-        log.Printf("Slow Query: %s, Duration: %v", event.Query, event.Duration)
-    }
+    log.Printf("Query: %s, Duration: %v", event.Query, event.Duration)
 })
 ```
 

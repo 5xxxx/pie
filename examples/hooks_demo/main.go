@@ -102,8 +102,7 @@ func main() {
 	// 1. Create engine and enable query logging
 	fmt.Println("=== Create engine and enable query logging ===")
 	engine, err := pie.NewEngine(ctx, "testdb",
-		pie.WithQueryLog(os.Stdout),                     // Enable query logging
-		pie.WithSlowQueryThreshold(10*time.Millisecond), // Only log queries over 10ms
+		pie.WithQueryLog(os.Stdout), // Enable query logging
 	)
 	if err != nil {
 		log.Fatal(err)
