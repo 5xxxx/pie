@@ -5,16 +5,20 @@ import starlight from '@astrojs/starlight';
 // https://astro.build/config
 export default defineConfig({
     site: 'https://5xxxx.github.io',
-    base: '/pie',
+    base: process.env.NODE_ENV === 'development' ? '' : '/pie',
+    trailingSlash: 'always',
     output: 'static',
+    i18n: {
+        defaultLocale: 'en',
+        locales: ['en', 'zh'],
+        routing: {
+            prefixDefaultLocale: true,
+            redirectToDefaultLocale: false
+        }
+    },
 	integrations: [
 		starlight({
 			title: 'Pie Documentation',
-            defaultLocale: 'en',
-            locales: {
-                en: { label: 'English', lang: 'en' },
-                zh: { label: '简体中文', lang: 'zh-CN' }
-            },
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/5xxxx/pie' }],
             sidebar: [
                 { 
