@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-    site: 'https://5xxxx.github.io',
+    site: 'https://5xxxx.github.io/pie',
     output: 'static',
 	integrations: [
 		starlight({
