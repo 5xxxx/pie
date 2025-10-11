@@ -44,115 +44,327 @@ func (a *Aggregate[T]) CollectionForStruct(v interface{}) *Aggregate[T] {
 	return a
 }
 
-// Match add match stage
+// ========== 阶段方法 ==========
+
+// MatchStage 创建匹配阶段构建器
+func (a *Aggregate[T]) MatchStage() *MatchStage[T] {
+	return &MatchStage[T]{
+		agg:     a,
+		filters: []bson.D{},
+	}
+}
+
+// Match 添加匹配条件（便捷方法）
 func (a *Aggregate[T]) Match(filter bson.D) *Aggregate[T] {
+	if len(filter) == 0 {
+		return a
+	}
 	a.pipeline = append(a.pipeline, bson.D{{"$match", filter}})
 	return a
 }
 
-// MatchOperator add match stage using operator
-func (a *Aggregate[T]) MatchOperator(op Operator) *Aggregate[T] {
-	return a.Match(op.ToBSON())
-}
-
-// Group add group stage
-func (a *Aggregate[T]) Group(group bson.D) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$group", group}})
-	return a
-}
-
-// Sort add sort stage
-func (a *Aggregate[T]) Sort(sort bson.D) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$sort", sort}})
-	return a
-}
-
-// Limit add limit stage
-func (a *Aggregate[T]) Limit(limit int64) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$limit", limit}})
-	return a
-}
-
-// Skip add skip stage
-func (a *Aggregate[T]) Skip(skip int64) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$skip", skip}})
-	return a
-}
-
-// Project add projection stage
-func (a *Aggregate[T]) Project(project bson.D) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$project", project}})
-	return a
-}
-
-// AddFields add fields stage
-func (a *Aggregate[T]) AddFields(fields bson.D) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$addFields", fields}})
-	return a
-}
-
-// Lookup add lookup stage
-func (a *Aggregate[T]) Lookup(from, localField, foreignField, as string) *Aggregate[T] {
-	lookup := bson.D{
-		{"from", from},
-		{"localField", localField},
-		{"foreignField", foreignField},
-		{"as", as},
+// AddFieldsStage 创建添加字段阶段构建器
+func (a *Aggregate[T]) AddFieldsStage() *AddFieldsStage[T] {
+	return &AddFieldsStage[T]{
+		agg:    a,
+		fields: bson.D{},
 	}
-	a.pipeline = append(a.pipeline, bson.D{{"$lookup", lookup}})
+}
+
+// SetStage 创建设置字段阶段构建器(AddFields的别名)
+func (a *Aggregate[T]) SetStage() *AddFieldsStage[T] {
+	return a.AddFieldsStage()
+}
+
+// UnsetStage 移除字段阶段
+func (a *Aggregate[T]) UnsetStage(fields ...string) *Aggregate[T] {
+	unsetDoc := bson.D{}
+	for _, field := range fields {
+		unsetDoc = append(unsetDoc, bson.E{Key: field, Value: ""})
+	}
+	a.pipeline = append(a.pipeline, bson.D{{"$unset", unsetDoc}})
 	return a
 }
 
-// Unwind add unwind stage
-func (a *Aggregate[T]) Unwind(path string) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$unwind", path}})
-	return a
-}
-
-// Facet add facet stage
-func (a *Aggregate[T]) Facet(facet bson.D) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$facet", facet}})
-	return a
-}
-
-// Count add count stage
-func (a *Aggregate[T]) Count(field string) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$count", field}})
-	return a
-}
-
-// Sample add sample stage
-func (a *Aggregate[T]) Sample(size int64) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$sample", bson.D{{"size", size}}}})
-	return a
-}
-
-// ReplaceRoot add replace root stage
-func (a *Aggregate[T]) ReplaceRoot(newRoot bson.D) *Aggregate[T] {
+// ReplaceRootStage 替换根文档阶段
+func (a *Aggregate[T]) ReplaceRootStage(newRoot any) *Aggregate[T] {
 	a.pipeline = append(a.pipeline, bson.D{{"$replaceRoot", bson.D{{"newRoot", newRoot}}}})
 	return a
 }
 
-// ReplaceWith add replace stage
-func (a *Aggregate[T]) ReplaceWith(replacement bson.D) *Aggregate[T] {
+// ReplaceWithStage 替换文档阶段
+func (a *Aggregate[T]) ReplaceWithStage(replacement any) *Aggregate[T] {
 	a.pipeline = append(a.pipeline, bson.D{{"$replaceWith", replacement}})
 	return a
 }
 
-// Out add out stage
-func (a *Aggregate[T]) Out(collection string) *Aggregate[T] {
+// UnwindStage 创建展开阶段构建器
+func (a *Aggregate[T]) UnwindStage(path string) *UnwindStage[T] {
+	return &UnwindStage[T]{
+		agg:     a,
+		path:    path,
+		options: bson.D{},
+	}
+}
+
+// GroupStage 创建分组阶段构建器
+func (a *Aggregate[T]) GroupStage() *GroupStage[T] {
+	return &GroupStage[T]{
+		agg:          a,
+		id:           bson.D{},
+		accumulators: bson.D{},
+	}
+}
+
+// Group 添加分组阶段（便捷方法）
+func (a *Aggregate[T]) Group(id bson.D, accumulators ...bson.E) *Aggregate[T] {
+	groupDoc := bson.D{{"_id", id}}
+	groupDoc = append(groupDoc, accumulators...)
+	a.pipeline = append(a.pipeline, bson.D{{"$group", groupDoc}})
+	return a
+}
+
+// ProjectStage 创建投影阶段构建器
+func (a *Aggregate[T]) ProjectStage() *ProjectStage[T] {
+	return &ProjectStage[T]{
+		agg:    a,
+		fields: bson.D{},
+	}
+}
+
+// SortStage 创建排序阶段构建器
+func (a *Aggregate[T]) SortStage() *SortStage[T] {
+	return &SortStage[T]{
+		agg:   a,
+		sorts: bson.D{},
+	}
+}
+
+// Sort 添加排序阶段（便捷方法）
+func (a *Aggregate[T]) Sort(sort bson.D) *Aggregate[T] {
+	if len(sort) == 0 {
+		return a
+	}
+	a.pipeline = append(a.pipeline, bson.D{{"$sort", sort}})
+	return a
+}
+
+// LimitStage 限制阶段
+func (a *Aggregate[T]) LimitStage(n int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$limit", n}})
+	return a
+}
+
+// SkipStage 跳过阶段
+func (a *Aggregate[T]) SkipStage(n int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$skip", n}})
+	return a
+}
+
+// LookupStage 创建关联查询阶段构建器
+func (a *Aggregate[T]) LookupStage(from, localField, foreignField, as string) *LookupStage[T] {
+	return &LookupStage[T]{
+		agg:  a,
+		from: from,
+		options: bson.D{
+			{"localField", localField},
+			{"foreignField", foreignField},
+			{"as", as},
+		},
+	}
+}
+
+// GraphLookupStage 创建图查找阶段构建器
+func (a *Aggregate[T]) GraphLookupStage(from string) *GraphLookupStage[T] {
+	return &GraphLookupStage[T]{
+		agg:     a,
+		options: bson.D{{"from", from}},
+	}
+}
+
+// UnionWithStage 创建联合阶段构建器
+func (a *Aggregate[T]) UnionWithStage(collection string) *UnionWithStage[T] {
+	return &UnionWithStage[T]{
+		agg:     a,
+		options: bson.D{{"coll", collection}},
+	}
+}
+
+// FacetStage 创建分面阶段构建器
+func (a *Aggregate[T]) FacetStage() *FacetStage[T] {
+	return &FacetStage[T]{
+		agg:    a,
+		facets: bson.D{},
+	}
+}
+
+// SampleStage 采样阶段
+func (a *Aggregate[T]) SampleStage(size int64) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$sample", bson.D{{"size", size}}}})
+	return a
+}
+
+// CountStage 计数阶段
+func (a *Aggregate[T]) CountStage(field string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$count", field}})
+	return a
+}
+
+// OutStage 输出阶段
+func (a *Aggregate[T]) OutStage(collection string) *Aggregate[T] {
 	a.pipeline = append(a.pipeline, bson.D{{"$out", collection}})
 	return a
 }
 
-// Merge add merge stage
-func (a *Aggregate[T]) Merge(into string) *Aggregate[T] {
-	a.pipeline = append(a.pipeline, bson.D{{"$merge", bson.D{{"into", into}}}})
+// MergeStage 创建合并阶段构建器
+func (a *Aggregate[T]) MergeStage(into string) *MergeStage[T] {
+	return &MergeStage[T]{
+		agg:     a,
+		into:    into,
+		options: bson.D{},
+	}
+}
+
+// BucketStage 创建分桶阶段构建器
+func (a *Aggregate[T]) BucketStage() *BucketStage[T] {
+	return &BucketStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// BucketAutoStage 创建自动分桶阶段构建器
+func (a *Aggregate[T]) BucketAutoStage() *BucketAutoStage[T] {
+	return &BucketAutoStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// SortByCountStage 按计数排序阶段
+func (a *Aggregate[T]) SortByCountStage(field string) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$sortByCount", field}})
 	return a
 }
 
-// Pipeline add custom pipeline stage
-func (a *Aggregate[T]) Pipeline(stage bson.D) *Aggregate[T] {
+// RedactStage 编辑阶段
+func (a *Aggregate[T]) RedactStage(expression any) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$redact", expression}})
+	return a
+}
+
+// GeoNearStage 创建地理邻近阶段构建器
+func (a *Aggregate[T]) GeoNearStage() *GeoNearStage[T] {
+	return &GeoNearStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// SetWindowFieldsStage 创建窗口字段阶段构建器
+func (a *Aggregate[T]) SetWindowFieldsStage() *SetWindowFieldsStage[T] {
+	return &SetWindowFieldsStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// DocumentsStage 文档阶段
+func (a *Aggregate[T]) DocumentsStage(documents ...any) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$documents", documents}})
+	return a
+}
+
+// SearchStage 创建搜索阶段构建器
+func (a *Aggregate[T]) SearchStage() *SearchStage[T] {
+	return &SearchStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// SearchMetaStage 创建搜索元数据阶段构建器
+func (a *Aggregate[T]) SearchMetaStage() *SearchMetaStage[T] {
+	return &SearchMetaStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// VectorSearchStage 创建向量搜索阶段构建器
+func (a *Aggregate[T]) VectorSearchStage() *VectorSearchStage[T] {
+	return &VectorSearchStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// DensifyStage 创建密度化阶段构建器
+func (a *Aggregate[T]) DensifyStage() *DensifyStage[T] {
+	return &DensifyStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// FillStage 创建填充阶段构建器
+func (a *Aggregate[T]) FillStage() *FillStage[T] {
+	return &FillStage[T]{
+		agg:     a,
+		options: bson.D{},
+	}
+}
+
+// CollStatsStage 集合统计阶段
+func (a *Aggregate[T]) CollStatsStage(options M) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$collStats", options}})
+	return a
+}
+
+// IndexStatsStage 索引统计阶段
+func (a *Aggregate[T]) IndexStatsStage() *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$indexStats", bson.D{}}})
+	return a
+}
+
+// PlanCacheStatsStage 查询计划缓存统计阶段
+func (a *Aggregate[T]) PlanCacheStatsStage() *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$planCacheStats", bson.D{}}})
+	return a
+}
+
+// CurrentOpStage 当前操作阶段
+func (a *Aggregate[T]) CurrentOpStage(options M) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$currentOp", options}})
+	return a
+}
+
+// ListSessionsStage 会话列表阶段
+func (a *Aggregate[T]) ListSessionsStage(options M) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$listSessions", options}})
+	return a
+}
+
+// ListSampledQueriesStage 采样查询列表阶段
+func (a *Aggregate[T]) ListSampledQueriesStage(options M) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$listSampledQueries", options}})
+	return a
+}
+
+// ChangeStreamStage 更改流阶段
+func (a *Aggregate[T]) ChangeStreamStage(options M) *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$changeStream", options}})
+	return a
+}
+
+// ChangeStreamSplitLargeEventStage 更改流分割大事件阶段
+func (a *Aggregate[T]) ChangeStreamSplitLargeEventStage() *Aggregate[T] {
+	a.pipeline = append(a.pipeline, bson.D{{"$changeStreamSplitLargeEvent", bson.D{}}})
+	return a
+}
+
+// RawStage 原始阶段
+func (a *Aggregate[T]) RawStage(stage M) *Aggregate[T] {
 	a.pipeline = append(a.pipeline, stage)
 	return a
 }

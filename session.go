@@ -762,6 +762,8 @@ func (s *Session[T]) FindOneAndReplace(ctx context.Context, replacement *T, retu
 	} else {
 		opts.SetReturnDocument(options.Before)
 	}
+	// 设置upsert为false，确保只替换现有文档
+	opts.SetUpsert(false)
 
 	var result T
 

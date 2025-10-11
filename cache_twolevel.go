@@ -178,5 +178,9 @@ func (tlc *TwoLevelCache) updateStats() {
 		tlc.stats.L2HitRate = float64(tlc.stats.L2Hits) / float64(tlc.stats.Total) * 100
 		totalHits := tlc.stats.L1Hits + tlc.stats.L2Hits
 		tlc.stats.TotalHitRate = float64(totalHits) / float64(tlc.stats.Total) * 100
+	} else {
+		tlc.stats.L1HitRate = 0
+		tlc.stats.L2HitRate = 0
+		tlc.stats.TotalHitRate = 0
 	}
 }

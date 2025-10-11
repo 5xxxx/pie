@@ -95,8 +95,25 @@ func parseStructToConditions(filter interface{}) []bson.E {
 
 // buildCondition build query condition based on operator
 func buildCondition(field string, operator string, value reflect.Value) bson.E {
-	// Skip zero value
-	if isZeroValue(value) {
+	// 对于null和notNull操作符，总是生成条件，不管值是什么
+	switch operator {
+	case "null":
+		// Field is null - always generate condition
+		return bson.E{Key: "$or", Value: []bson.D{
+			{{Key: field, Value: bson.D{{Key: "$exists", Value: false}}}},
+			{{Key: field, Value: nil}},
+		}}
+
+	case "notNull":
+		// Field is not null - always generate condition
+		return bson.E{Key: "$and", Value: []bson.D{
+			{{Key: field, Value: bson.D{{Key: "$exists", Value: true}}}},
+			{{Key: field, Value: bson.D{{Key: "$ne", Value: nil}}}},
+		}}
+	}
+
+	// 检查value是否有效
+	if !value.IsValid() {
 		return bson.E{}
 	}
 
@@ -104,27 +121,59 @@ func buildCondition(field string, operator string, value reflect.Value) bson.E {
 
 	switch operator {
 	case "eq":
+		// Skip zero value for exact match
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: val}
 
 	case "ne":
+		// Skip zero value for not equal
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$ne", Value: val}}}
 
 	case "gt":
+		// Skip zero value for greater than
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$gt", Value: val}}}
 
 	case "gte":
+		// Skip zero value for greater than or equal
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$gte", Value: val}}}
 
 	case "lt":
+		// Skip zero value for less than
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$lt", Value: val}}}
 
 	case "lte":
+		// Skip zero value for less than or equal
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$lte", Value: val}}}
 
 	case "in":
+		// Skip zero value for in
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$in", Value: val}}}
 
 	case "nin":
+		// Skip zero value for not in
+		if isZeroValue(value) {
+			return bson.E{}
+		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$nin", Value: val}}}
 
 	case "like":
@@ -186,26 +235,12 @@ func buildCondition(field string, operator string, value reflect.Value) bson.E {
 		return bson.E{Key: field, Value: bson.D{{Key: "$elemMatch", Value: val}}}
 
 	case "exists":
-		// Field exists
+		// Field exists - always generate condition regardless of value
 		exists := true
 		if boolVal, ok := val.(bool); ok {
 			exists = boolVal
 		}
 		return bson.E{Key: field, Value: bson.D{{Key: "$exists", Value: exists}}}
-
-	case "null":
-		// Field is null
-		return bson.E{Key: "$or", Value: []bson.D{
-			{{Key: field, Value: bson.D{{Key: "$exists", Value: false}}}},
-			{{Key: field, Value: nil}},
-		}}
-
-	case "notNull":
-		// Field is not null
-		return bson.E{Key: "$and", Value: []bson.D{
-			{{Key: field, Value: bson.D{{Key: "$exists", Value: true}}}},
-			{{Key: field, Value: bson.D{{Key: "$ne", Value: nil}}}},
-		}}
 
 	case "between":
 		// Range query (requires array type)
@@ -218,7 +253,9 @@ func buildCondition(field string, operator string, value reflect.Value) bson.E {
 
 	default:
 		// Default exact match
-		return bson.E{Key: field, Value: val}
+		if !isZeroValue(value) {
+			return bson.E{Key: field, Value: val}
+		}
 	}
 
 	return bson.E{}

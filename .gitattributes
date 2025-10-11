@@ -1,0 +1,7 @@
+/docs-site/**        export-ignore
+/.github/**          export-ignore
+/.devcontainer/**    export-ignore
+/.vscode/**          export-ignore
+/testdata/**         export-ignore
+/examples/**         export-ignore   
+

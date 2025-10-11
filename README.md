@@ -11,7 +11,7 @@ Pie is a modern, type-safe MongoDB ORM framework for Go that provides a rich, hi
 - **Hook System**: Complete lifecycle hook support
 - **Transaction Management**: Simple and easy-to-use transaction operations
 - **Index Management**: Automated index creation and management
-- **Aggregation Pipeline**: Powerful aggregation query support
+- **Advanced Aggregation**: Comprehensive stage builders with 100+ expression functions
 - **Change Streams**: Real-time data change monitoring
 - **Soft Delete**: Built-in soft delete functionality
 - **Pagination**: Efficient pagination implementation
@@ -280,26 +280,117 @@ result, err := bulkWrite.ExecuteOrdered(ctx)
 
 ### 7. Aggregation Queries
 
+Pie provides a powerful aggregation framework with stage builders and expression functions for complex data processing.
+
+#### Basic Aggregation
+
 ```go
 // Create aggregation operation
 aggregate := pie.NewAggregate[User](engine).
     CollectionForStruct(User{})
 
-// Build aggregation pipeline
+// Build aggregation pipeline using stage builders
 result, err := aggregate.
-    Match(bson.D{{"status", "active"}}).
-    Group(bson.D{
-        {"_id", "$role"},
-        {"count", bson.D{{"$sum", 1}}},
-        {"avgAge", bson.D{{"$avg", "$age"}}},
-    }).
-    Sort(bson.D{{"count", -1}}).
+    MatchStage().Where("status", "active").
+    GroupStage().
+        By("role", "$role").
+        Count("total").
+        Avg("avgAge", "$age").
+        Max("maxAge", "$age").
+        Min("minAge", "$age").
+        Done().
+    SortStage().Desc("total").
     Exec(ctx)
 
 // Process results
 for _, item := range result.Data {
     // item is bson.M type
 }
+```
+
+#### Advanced Aggregation with Expressions
+
+```go
+// Complex aggregation with expressions
+result, err := aggregate.
+    MatchStage().
+        Where("active", true).
+        Between("age", 18, 65).
+        In("status", "active", "pending").
+    AddFieldsStage().
+        Add("ageGroup", pie.Cond(
+            pie.GteExpr("$age", 30),
+            "adult",
+            "young",
+        )).
+        Add("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Add("scoreRounded", pie.Round("$score", 1)).
+        Done().
+    GroupStage().
+        By("ageGroup", "$ageGroup").
+        Count("total").
+        Avg("avgScore", "$score").
+        Push("names", "$fullName").
+        Done().
+    ProjectStage().
+        Include("ageGroup", "total", "avgScore", "names").
+        Field("nameCount", pie.SizeArray("$names")).
+        Done().
+    SortStage().Desc("total").
+    LimitStage(10).
+    Exec(ctx)
+```
+
+#### Lookup and Join Operations
+
+```go
+// Join with orders collection
+result, err := aggregate.
+    LookupStage("orders", "_id", "user_id", "user_orders").
+        Pipeline(
+            bson.M{"$match": bson.M{"status": "completed"}},
+            bson.M{"$limit": 5},
+        ).
+        Done().
+    AddFieldsStage().
+        Add("orderCount", pie.SizeArray("$user_orders")).
+        Add("totalSpent", pie.Sum("$user_orders.amount")).
+        Done().
+    MatchStage().Where("orderCount", pie.GtExpr(0, 0)).
+    ProjectStage().
+        Include("name", "email", "orderCount", "totalSpent").
+        Done().
+    Exec(ctx)
+```
+
+#### Facet Analysis
+
+```go
+// Multi-dimensional analysis using facets
+result, err := aggregate.
+    FacetStage().
+        Facet("activeUsers",
+            bson.M{"$match": bson.M{"active": true}},
+            bson.M{"$count": "count"},
+        ).
+        Facet("scoreStats",
+            bson.M{"$group": bson.M{
+                "_id":      nil,
+                "avgScore": bson.M{"$avg": "$score"},
+                "maxScore": bson.M{"$max": "$score"},
+                "minScore": bson.M{"$min": "$score"},
+            }},
+        ).
+        Facet("ageGroups",
+            bson.M{"$bucket": bson.M{
+                "groupBy":    "$age",
+                "boundaries": []int{0, 25, 30, 35, 100},
+                "default":    "other",
+                "output":     bson.M{"count": bson.M{"$sum": 1}},
+            }},
+        ).
+        Done().
+    Exec(ctx)
 ```
 
 ### 8. Transaction Management
@@ -544,7 +635,240 @@ engine.SetSlowQueryThreshold(100 * time.Millisecond)
 
 ## Advanced Features
 
-### 1. Custom Name Mapping
+### 1. Aggregation Stage Builders
+
+Pie provides comprehensive stage builders for MongoDB aggregation pipelines, making complex data processing intuitive and type-safe.
+
+#### Match Stage Builder
+
+```go
+// Basic matching with chainable conditions
+result, err := aggregate.
+    MatchStage().
+        Where("status", "active").
+        Between("age", 18, 65).
+        In("role", "admin", "user").
+        Regex("name", "^A").
+        Exists("email", true).
+        Text("search term").
+    Exec(ctx)
+
+// Complex logical conditions
+result, err := aggregate.
+    MatchStage().
+        And(
+            bson.D{{"age", bson.D{{"$gte", 18}}}},
+            bson.D{{"active", true}},
+        ).
+        Or(
+            bson.D{{"status", "active"}},
+            bson.D{{"status", "pending"}},
+        ).
+    Exec(ctx)
+```
+
+#### Group Stage Builder
+
+```go
+// Comprehensive grouping with multiple accumulators
+result, err := aggregate.
+    GroupStage().
+        By("category", "$category").
+        By("year", pie.Year("$created_at")).
+        Count("total").
+        Sum("totalAmount", "$amount").
+        Avg("avgAmount", "$amount").
+        Max("maxAmount", "$amount").
+        Min("minAmount", "$amount").
+        StdDevPop("stdDev", "$amount").
+        Push("items", "$item").
+        AddToSet("uniqueItems", "$item").
+        First("firstItem", "$item").
+        Last("lastItem", "$item").
+        Done().
+    Exec(ctx)
+```
+
+#### Project Stage Builder
+
+```go
+// Field projection and computed fields
+result, err := aggregate.
+    ProjectStage().
+        Include("name", "email", "status").
+        Exclude("password", "secret").
+        Field("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Field("ageGroup", pie.Cond(
+            pie.GteExpr("$age", 30),
+            "adult",
+            "young",
+        )).
+        Slice("recentTags", "$tags", 3).
+        Done().
+    Exec(ctx)
+```
+
+#### Lookup Stage Builder
+
+```go
+// Advanced lookup with pipeline
+result, err := aggregate.
+    LookupStage("orders", "_id", "user_id", "user_orders").
+        Let(pie.M{"userId": "$_id"}).
+        Pipeline(
+            bson.M{"$match": bson.M{
+                "$expr": bson.M{"$eq": []string{"$user_id", "$$userId"}},
+                "status": "completed",
+            }},
+            bson.M{"$sort": bson.M{"created_at": -1}},
+            bson.M{"$limit": 5},
+        ).
+        Done().
+    Exec(ctx)
+```
+
+#### Unwind Stage Builder
+
+```go
+// Array unwinding with options
+result, err := aggregate.
+    UnwindStage("$tags").
+        PreserveNullAndEmptyArrays(true).
+        IncludeArrayIndex("tagIndex").
+        Done().
+    GroupStage().
+        By("tag", "$tags").
+        Count("count").
+        Done().
+    SortStage().Desc("count").
+    Exec(ctx)
+```
+
+#### Facet Stage Builder
+
+```go
+// Multi-dimensional analysis
+result, err := aggregate.
+    FacetStage().
+        Facet("activeUsers",
+            bson.M{"$match": bson.M{"active": true}},
+            bson.M{"$count": "count"},
+        ).
+        Facet("scoreDistribution",
+            bson.M{"$bucket": bson.M{
+                "groupBy":    "$score",
+                "boundaries": []int{0, 60, 80, 90, 100},
+                "default":    "other",
+                "output":     bson.M{"count": bson.M{"$sum": 1}},
+            }},
+        ).
+        Facet("topPerformers",
+            bson.M{"$match": bson.M{"score": bson.M{"$gte": 90}}},
+            bson.M{"$sort": bson.M{"score": -1}},
+            bson.M{"$limit": 10},
+        ).
+        Done().
+    Exec(ctx)
+```
+
+### 2. Aggregation Expression Functions
+
+Pie provides 100+ expression functions for complex data transformations and calculations.
+
+#### Date Expressions
+
+```go
+// Date manipulation and formatting
+result, err := aggregate.
+    AddFieldsStage().
+        Add("year", pie.Year("$created_at")).
+        Add("month", pie.Month("$created_at")).
+        Add("dayOfWeek", pie.DayOfWeek("$created_at")).
+        Add("formattedDate", pie.DateToString("$created_at", "%Y-%m-%d", "UTC")).
+        Add("daysSince", pie.DateDiff("$created_at", pie.Now(), "day")).
+        Add("nextWeek", pie.DateAdd("$created_at", 7, "day")).
+        Done().
+    Exec(ctx)
+```
+
+#### Arithmetic Expressions
+
+```go
+// Mathematical operations
+result, err := aggregate.
+    AddFieldsStage().
+        Add("total", pie.Add("$price", "$tax", "$shipping")).
+        Add("discount", pie.Multiply("$price", 0.1)).
+        Add("finalPrice", pie.Subtract("$price", pie.Multiply("$price", 0.1))).
+        Add("rounded", pie.Round("$price", 2)).
+        Add("power", pie.Pow("$base", 2)).
+        Add("sqrt", pie.Sqrt("$value")).
+        Done().
+    Exec(ctx)
+```
+
+#### String Expressions
+
+```go
+// String manipulation
+result, err := aggregate.
+    AddFieldsStage().
+        Add("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Add("upperName", pie.ToUpper("$name")).
+        Add("lowerEmail", pie.ToLower("$email")).
+        Add("initials", pie.Concat(
+            pie.SubStr("$firstName", 0, 1),
+            pie.SubStr("$lastName", 0, 1),
+        )).
+        Add("nameLength", pie.StrLenCP("$name")).
+        Add("words", pie.Split("$description", " ")).
+        Done().
+    Exec(ctx)
+```
+
+#### Array Expressions
+
+```go
+// Array operations
+result, err := aggregate.
+    AddFieldsStage().
+        Add("firstItem", pie.First("$items")).
+        Add("lastItem", pie.Last("$items")).
+        Add("itemCount", pie.SizeArray("$items")).
+        Add("firstThree", pie.Slice("$items", 3)).
+        Add("filtered", pie.FilterArray("$items", pie.GtExpr("$$item", 0))).
+        Add("mapped", pie.MapArray("$items", "item", pie.Multiply("$$item", 2))).
+        Add("reversed", pie.ReverseArray("$items")).
+        Done().
+    Exec(ctx)
+```
+
+#### Conditional Expressions
+
+```go
+// Conditional logic
+result, err := aggregate.
+    AddFieldsStage().
+        Add("status", pie.Cond(
+            pie.GteExpr("$score", 80),
+            "excellent",
+            pie.Cond(
+                pie.GteExpr("$score", 60),
+                "good",
+                "needs_improvement",
+            ),
+        )).
+        Add("displayName", pie.IfNull("$nickname", "$name")).
+        Add("grade", pie.Switch([]pie.M{
+            {"case": pie.GteExpr("$score", 90), "then": "A"},
+            {"case": pie.GteExpr("$score", 80), "then": "B"},
+            {"case": pie.GteExpr("$score", 70), "then": "C"},
+        }, "F")).
+        Done().
+    Exec(ctx)
+```
+
+### 3. Custom Name Mapping
 
 ```go
 // Use snake case naming
@@ -739,17 +1063,3 @@ func (s *UserService) TransferPoints(ctx context.Context, fromUserID, toUserID b
 
 MIT License
 
-## Contributing
-
-Issues and Pull Requests are welcome!
-
-## Changelog
-
-### v2.0.0
-- Complete rewrite based on Go 1.18+ generics
-- Added type-safe sessions
-- Added struct query functionality
-- Added smart query builder
-- Added cache support
-- Added change stream monitoring
-- Significant performance improvements

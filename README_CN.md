@@ -11,7 +11,7 @@ Pie 是一个现代化的 Go 语言 MongoDB ORM 框架，提供类型安全、�
 - **钩子系统**: 完整的生命周期钩子支持
 - **事务管理**: 简单易用的事务操作
 - **索引管理**: 自动化的索引创建和管理
-- **聚合管道**: 强大的聚合查询支持
+- **高级聚合**: 全面的阶段构建器，包含 100+ 表达式函数
 - **变更流**: 实时数据变更监听
 - **软删除**: 内置软删除功能
 - **分页查询**: 高效的分页实现
@@ -280,26 +280,117 @@ result, err := bulkWrite.ExecuteOrdered(ctx)
 
 ### 7. 聚合查询
 
+Pie 提供了强大的聚合框架，包含阶段构建器和表达式函数，用于复杂的数据处理。
+
+#### 基础聚合
+
 ```go
 // 创建聚合操作
 aggregate := pie.NewAggregate[User](engine).
     CollectionForStruct(User{})
 
-// 构建聚合管道
+// 使用阶段构建器构建聚合管道
 result, err := aggregate.
-    Match(bson.D{{"status", "active"}}).
-    Group(bson.D{
-        {"_id", "$role"},
-        {"count", bson.D{{"$sum", 1}}},
-        {"avgAge", bson.D{{"$avg", "$age"}}},
-    }).
-    Sort(bson.D{{"count", -1}}).
+    MatchStage().Where("status", "active").
+    GroupStage().
+        By("role", "$role").
+        Count("total").
+        Avg("avgAge", "$age").
+        Max("maxAge", "$age").
+        Min("minAge", "$age").
+        Done().
+    SortStage().Desc("total").
     Exec(ctx)
 
 // 处理结果
 for _, item := range result.Data {
     // item 是 bson.M 类型
 }
+```
+
+#### 高级聚合与表达式
+
+```go
+// 使用表达式的复杂聚合
+result, err := aggregate.
+    MatchStage().
+        Where("active", true).
+        Between("age", 18, 65).
+        In("status", "active", "pending").
+    AddFieldsStage().
+        Add("ageGroup", pie.Cond(
+            pie.GteExpr("$age", 30),
+            "adult",
+            "young",
+        )).
+        Add("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Add("scoreRounded", pie.Round("$score", 1)).
+        Done().
+    GroupStage().
+        By("ageGroup", "$ageGroup").
+        Count("total").
+        Avg("avgScore", "$score").
+        Push("names", "$fullName").
+        Done().
+    ProjectStage().
+        Include("ageGroup", "total", "avgScore", "names").
+        Field("nameCount", pie.SizeArray("$names")).
+        Done().
+    SortStage().Desc("total").
+    LimitStage(10).
+    Exec(ctx)
+```
+
+#### 关联查询操作
+
+```go
+// 与订单集合关联查询
+result, err := aggregate.
+    LookupStage("orders", "_id", "user_id", "user_orders").
+        Pipeline(
+            bson.M{"$match": bson.M{"status": "completed"}},
+            bson.M{"$limit": 5},
+        ).
+        Done().
+    AddFieldsStage().
+        Add("orderCount", pie.SizeArray("$user_orders")).
+        Add("totalSpent", pie.Sum("$user_orders.amount")).
+        Done().
+    MatchStage().Where("orderCount", pie.GtExpr(0, 0)).
+    ProjectStage().
+        Include("name", "email", "orderCount", "totalSpent").
+        Done().
+    Exec(ctx)
+```
+
+#### 分面分析
+
+```go
+// 使用分面进行多维度分析
+result, err := aggregate.
+    FacetStage().
+        Facet("activeUsers",
+            bson.M{"$match": bson.M{"active": true}},
+            bson.M{"$count": "count"},
+        ).
+        Facet("scoreStats",
+            bson.M{"$group": bson.M{
+                "_id":      nil,
+                "avgScore": bson.M{"$avg": "$score"},
+                "maxScore": bson.M{"$max": "$score"},
+                "minScore": bson.M{"$min": "$score"},
+            }},
+        ).
+        Facet("ageGroups",
+            bson.M{"$bucket": bson.M{
+                "groupBy":    "$age",
+                "boundaries": []int{0, 25, 30, 35, 100},
+                "default":    "other",
+                "output":     bson.M{"count": bson.M{"$sum": 1}},
+            }},
+        ).
+        Done().
+    Exec(ctx)
 ```
 
 ### 8. 事务管理
@@ -544,7 +635,240 @@ engine.SetSlowQueryThreshold(100 * time.Millisecond)
 
 ## 高级功能
 
-### 1. 自定义命名映射
+### 1. 聚合阶段构建器
+
+Pie 提供了全面的 MongoDB 聚合管道阶段构建器，使复杂的数据处理变得直观且类型安全。
+
+#### 匹配阶段构建器
+
+```go
+// 基础匹配，支持链式条件
+result, err := aggregate.
+    MatchStage().
+        Where("status", "active").
+        Between("age", 18, 65).
+        In("role", "admin", "user").
+        Regex("name", "^张").
+        Exists("email", true).
+        Text("搜索词").
+    Exec(ctx)
+
+// 复杂逻辑条件
+result, err := aggregate.
+    MatchStage().
+        And(
+            bson.D{{"age", bson.D{{"$gte", 18}}}},
+            bson.D{{"active", true}},
+        ).
+        Or(
+            bson.D{{"status", "active"}},
+            bson.D{{"status", "pending"}},
+        ).
+    Exec(ctx)
+```
+
+#### 分组阶段构建器
+
+```go
+// 全面的分组聚合，支持多种累加器
+result, err := aggregate.
+    GroupStage().
+        By("category", "$category").
+        By("year", pie.Year("$created_at")).
+        Count("total").
+        Sum("totalAmount", "$amount").
+        Avg("avgAmount", "$amount").
+        Max("maxAmount", "$amount").
+        Min("minAmount", "$amount").
+        StdDevPop("stdDev", "$amount").
+        Push("items", "$item").
+        AddToSet("uniqueItems", "$item").
+        First("firstItem", "$item").
+        Last("lastItem", "$item").
+        Done().
+    Exec(ctx)
+```
+
+#### 投影阶段构建器
+
+```go
+// 字段投影和计算字段
+result, err := aggregate.
+    ProjectStage().
+        Include("name", "email", "status").
+        Exclude("password", "secret").
+        Field("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Field("ageGroup", pie.Cond(
+            pie.GteExpr("$age", 30),
+            "adult",
+            "young",
+        )).
+        Slice("recentTags", "$tags", 3).
+        Done().
+    Exec(ctx)
+```
+
+#### 关联查询阶段构建器
+
+```go
+// 高级关联查询，支持管道
+result, err := aggregate.
+    LookupStage("orders", "_id", "user_id", "user_orders").
+        Let(pie.M{"userId": "$_id"}).
+        Pipeline(
+            bson.M{"$match": bson.M{
+                "$expr": bson.M{"$eq": []string{"$user_id", "$$userId"}},
+                "status": "completed",
+            }},
+            bson.M{"$sort": bson.M{"created_at": -1}},
+            bson.M{"$limit": 5},
+        ).
+        Done().
+    Exec(ctx)
+```
+
+#### 展开阶段构建器
+
+```go
+// 数组展开，支持选项
+result, err := aggregate.
+    UnwindStage("$tags").
+        PreserveNullAndEmptyArrays(true).
+        IncludeArrayIndex("tagIndex").
+        Done().
+    GroupStage().
+        By("tag", "$tags").
+        Count("count").
+        Done().
+    SortStage().Desc("count").
+    Exec(ctx)
+```
+
+#### 分面阶段构建器
+
+```go
+// 多维度分析
+result, err := aggregate.
+    FacetStage().
+        Facet("activeUsers",
+            bson.M{"$match": bson.M{"active": true}},
+            bson.M{"$count": "count"},
+        ).
+        Facet("scoreDistribution",
+            bson.M{"$bucket": bson.M{
+                "groupBy":    "$score",
+                "boundaries": []int{0, 60, 80, 90, 100},
+                "default":    "other",
+                "output":     bson.M{"count": bson.M{"$sum": 1}},
+            }},
+        ).
+        Facet("topPerformers",
+            bson.M{"$match": bson.M{"score": bson.M{"$gte": 90}}},
+            bson.M{"$sort": bson.M{"score": -1}},
+            bson.M{"$limit": 10},
+        ).
+        Done().
+    Exec(ctx)
+```
+
+### 2. 聚合表达式函数
+
+Pie 提供了 100+ 个表达式函数，用于复杂的数据转换和计算。
+
+#### 日期表达式
+
+```go
+// 日期操作和格式化
+result, err := aggregate.
+    AddFieldsStage().
+        Add("year", pie.Year("$created_at")).
+        Add("month", pie.Month("$created_at")).
+        Add("dayOfWeek", pie.DayOfWeek("$created_at")).
+        Add("formattedDate", pie.DateToString("$created_at", "%Y-%m-%d", "UTC")).
+        Add("daysSince", pie.DateDiff("$created_at", pie.Now(), "day")).
+        Add("nextWeek", pie.DateAdd("$created_at", 7, "day")).
+        Done().
+    Exec(ctx)
+```
+
+#### 算术表达式
+
+```go
+// 数学运算
+result, err := aggregate.
+    AddFieldsStage().
+        Add("total", pie.Add("$price", "$tax", "$shipping")).
+        Add("discount", pie.Multiply("$price", 0.1)).
+        Add("finalPrice", pie.Subtract("$price", pie.Multiply("$price", 0.1))).
+        Add("rounded", pie.Round("$price", 2)).
+        Add("power", pie.Pow("$base", 2)).
+        Add("sqrt", pie.Sqrt("$value")).
+        Done().
+    Exec(ctx)
+```
+
+#### 字符串表达式
+
+```go
+// 字符串操作
+result, err := aggregate.
+    AddFieldsStage().
+        Add("fullName", pie.Concat("$firstName", " ", "$lastName")).
+        Add("upperName", pie.ToUpper("$name")).
+        Add("lowerEmail", pie.ToLower("$email")).
+        Add("initials", pie.Concat(
+            pie.SubStr("$firstName", 0, 1),
+            pie.SubStr("$lastName", 0, 1),
+        )).
+        Add("nameLength", pie.StrLenCP("$name")).
+        Add("words", pie.Split("$description", " ")).
+        Done().
+    Exec(ctx)
+```
+
+#### 数组表达式
+
+```go
+// 数组操作
+result, err := aggregate.
+    AddFieldsStage().
+        Add("firstItem", pie.First("$items")).
+        Add("lastItem", pie.Last("$items")).
+        Add("itemCount", pie.SizeArray("$items")).
+        Add("firstThree", pie.Slice("$items", 3)).
+        Add("filtered", pie.FilterArray("$items", pie.GtExpr("$$item", 0))).
+        Add("mapped", pie.MapArray("$items", "item", pie.Multiply("$$item", 2))).
+        Add("reversed", pie.ReverseArray("$items")).
+        Done().
+    Exec(ctx)
+```
+
+#### 条件表达式
+
+```go
+// 条件逻辑
+result, err := aggregate.
+    AddFieldsStage().
+        Add("status", pie.Cond(
+            pie.GteExpr("$score", 80),
+            "excellent",
+            pie.Cond(
+                pie.GteExpr("$score", 60),
+                "good",
+                "needs_improvement",
+            ),
+        )).
+        Add("displayName", pie.IfNull("$nickname", "$name")).
+        Add("grade", pie.Switch([]pie.M{
+            {"case": pie.GteExpr("$score", 90), "then": "A"},
+            {"case": pie.GteExpr("$score", 80), "then": "B"},
+            {"case": pie.GteExpr("$score", 70), "then": "C"},
+        }, "F")).
+        Done().
+    Exec(ctx)
+```
+
+### 3. 自定义命名映射
 
 ```go
 // 使用蛇形命名
@@ -743,13 +1067,3 @@ MIT License
 
 欢迎提交 Issue 和 Pull Request！
 
-## 更新日志
-
-### v2.0.0
-- 完全重写，基于 Go 1.18+ 泛型
-- 新增类型安全的会话
-- 新增结构体查询功能
-- 新增智能查询构建器
-- 新增缓存支持
-- 新增变更流监听
-- 性能大幅提升

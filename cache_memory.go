@@ -233,7 +233,13 @@ func (mc *MemoryCache) Stats() *CacheStats {
 
 // Close close cache
 func (mc *MemoryCache) Close() {
-	close(mc.stopCleanup)
+	select {
+	case <-mc.stopCleanup:
+		// Already closed
+		return
+	default:
+		close(mc.stopCleanup)
+	}
 }
 
 // cleanupExpired clean up expired items

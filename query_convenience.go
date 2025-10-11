@@ -28,7 +28,7 @@ func (s *Session[T]) FirstOne(ctx context.Context) (*T, error) {
 	result, err := s.FindOne(ctx)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, nil
+			return nil, ErrEmptyResult
 		}
 		return nil, err
 	}
@@ -38,11 +38,14 @@ func (s *Session[T]) FirstOne(ctx context.Context) (*T, error) {
 // Exists check if document exists that matches conditions
 func (s *Session[T]) Exists(ctx context.Context) (bool, error) {
 	s.query.Limit(1)
-	count, err := s.CountDocuments(ctx)
+	_, err := s.FindOne(ctx)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, nil
+		}
 		return false, err
 	}
-	return count > 0, nil
+	return true, nil
 }
 
 // FindAndCount query and count total (for pagination)
