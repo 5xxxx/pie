@@ -43,7 +43,7 @@ func setupConvenienceTestDB(t *testing.T) {
 	// 从环境变量获取MongoDB连接地址，默认为本地地址
 	mongoURI := os.Getenv("MONGO_TEST_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27018/pie-test"
+		mongoURI = "mongodb://admin:password@localhost:27017/pie-test"
 	}
 
 	// 连接到MongoDB

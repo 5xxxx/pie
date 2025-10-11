@@ -1,0 +1,110 @@
+---
+title: Pie - MongoDB ORM 框架
+description: 现代化的 Go 语言 MongoDB ORM 框架，提供类型安全、高性能、功能丰富的数据库操作体验
+template: splash
+hero:
+  tagline: 现代化的 Go 语言 MongoDB ORM 框架
+  actions:
+    - text: 快速开始
+      link: /getting-started/
+      icon: right-arrow
+    - text: 查看 GitHub
+      link: https://github.com/5xxxx/pie
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## 核心特性
+
+Pie 为 Go 语言带来了强大的 MongoDB ORM 能力，专注于开发者体验和类型安全。
+
+<CardGrid stagger>
+	<Card title="类型安全 ORM" icon="shield-check">
+		基于 Go 泛型构建，提供编译时类型检查，避免运行时错误
+	</Card>
+	<Card title="智能查询构建器" icon="search">
+		直观的链式调用 API，让复杂查询变得可读可维护
+	</Card>
+	<Card title="结构体查询" icon="code">
+		通过结构体标签将 HTTP 请求参数直接转换为 MongoDB 查询
+	</Card>
+	<Card title="多级缓存" icon="database">
+		内置 Redis 和内存缓存，支持自动缓存失效
+	</Card>
+	<Card title="生命周期钩子" icon="hook">
+		BeforeCreate、AfterUpdate、BeforeDelete 钩子，灵活控制数据
+	</Card>
+	<Card title="查询作用域" icon="filter">
+		可复用的查询逻辑，通过作用域更好地组织代码
+	</Card>
+	<Card title="高级聚合" icon="chart">
+		100+ 表达式函数和阶段构建器，处理复杂数据处理
+	</Card>
+	<Card title="自定义映射器" icon="settings">
+		灵活的字段和表名映射策略
+	</Card>
+	<Card title="错误处理" icon="warning">
+		完善的错误类型，提供详细的上下文信息
+	</Card>
+</CardGrid>
+
+## 快速安装
+
+```bash
+go get github.com/5xxxx/pie
+```
+
+## 简单示例
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "github.com/5xxxx/pie"
+)
+
+func main() {
+    // 创建引擎
+    engine, err := pie.NewEngine(
+        context.Background(),
+        "mydb",
+        pie.WithURI("mongodb://localhost:27017"),
+    )
+    if err != nil {
+        log.Fatal("Failed to create engine:", err)
+    }
+    defer engine.Disconnect(context.Background())
+    
+    // 创建类型安全的会话
+    session := pie.Table[User](engine)
+    
+    // 插入文档
+    user := &User{Name: "张三", Email: "zhangsan@example.com"}
+    result, err := session.Insert(context.Background(), user)
+    
+    // 查询文档
+    var users []User
+    err = session.Where("age", pie.Gte("age", 18)).Find(context.Background(), &users)
+}
+```
+
+## 开始使用
+
+<CardGrid stagger>
+	<Card title="快速开始" icon="rocket" link="/getting-started/">
+		学习如何连接数据库、定义模型和执行基本操作
+	</Card>
+	<Card title="核心功能" icon="cog" link="/core-features/query-builder/">
+		深入了解查询构建器、聚合查询、事务管理等核心功能
+	</Card>
+	<Card title="高级功能" icon="star" link="/advanced/cache/">
+		探索缓存、钩子、软删除等高级特性
+	</Card>
+	<Card title="API 参考" icon="book" link="/reference/configuration/">
+		查看完整的 API 参考文档和配置选项
+	</Card>
+</CardGrid>

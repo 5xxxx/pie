@@ -1,36 +1,110 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
+title: Pie - MongoDB ORM Framework
+description: A modern, type-safe MongoDB ORM framework for Go that provides a rich, high-performance database operation experience
 template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: A modern, type-safe MongoDB ORM framework for Go
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /en/getting-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: View on GitHub
+      link: https://github.com/5xxxx/pie
       icon: external
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Core Features
+
+Pie brings powerful ORM capabilities to Go with MongoDB, focusing on developer experience and type safety.
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Type-Safe ORM" icon="shield-check">
+		Built on Go generics with compile-time type checking to prevent runtime errors
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Smart Query Builder" icon="search">
+		Intuitive chainable API that makes complex queries readable and maintainable
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Struct Query" icon="code">
+		Convert HTTP request parameters directly to MongoDB queries with struct tags
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Multi-Level Caching" icon="database">
+		Built-in Redis and memory caching with automatic cache invalidation
+	</Card>
+	<Card title="Lifecycle Hooks" icon="hook">
+		BeforeCreate, AfterUpdate, BeforeDelete hooks for flexible data control
+	</Card>
+	<Card title="Query Scopes" icon="filter">
+		Reusable query logic with scopes for better code organization
+	</Card>
+	<Card title="Advanced Aggregation" icon="chart">
+		100+ expression functions and stage builders for complex data processing
+	</Card>
+	<Card title="Custom Mappers" icon="settings">
+		Flexible field and table name mapping strategies
+	</Card>
+	<Card title="Error Handling" icon="warning">
+		Comprehensive error types with detailed context information
+	</Card>
+</CardGrid>
+
+## Quick Installation
+
+```bash
+go get github.com/5xxxx/pie
+```
+
+## Simple Example
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "github.com/5xxxx/pie"
+)
+
+func main() {
+    // Create engine
+    engine, err := pie.NewEngine(
+        context.Background(),
+        "mydb",
+        pie.WithURI("mongodb://localhost:27017"),
+    )
+    if err != nil {
+        log.Fatal("Failed to create engine:", err)
+    }
+    defer engine.Disconnect(context.Background())
+    
+    // Create type-safe session
+    session := pie.Table[User](engine)
+    
+    // Insert document
+    user := &User{Name: "John Doe", Email: "john@example.com"}
+    result, err := session.Insert(context.Background(), user)
+    
+    // Query documents
+    var users []User
+    err = session.Where("age", pie.Gte("age", 18)).Find(context.Background(), &users)
+}
+```
+
+## Get Started
+
+<CardGrid stagger>
+	<Card title="Quick Start" icon="rocket" link="/en/getting-started/">
+		Learn how to connect to database, define models and perform basic operations
+	</Card>
+	<Card title="Core Features" icon="cog" link="/en/core-features/query-builder/">
+		Deep dive into query builder, aggregation, transaction management and more
+	</Card>
+	<Card title="Advanced Features" icon="star" link="/en/advanced/cache/">
+		Explore advanced features like caching, hooks, soft delete and more
+	</Card>
+	<Card title="API Reference" icon="book" link="/en/reference/configuration/">
+		View complete API reference documentation and configuration options
 	</Card>
 </CardGrid>
