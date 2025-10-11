@@ -33,6 +33,11 @@ export default defineConfig({
                     translations: { 'zh-CN': '核心功能' },
                     items: [
                         { 
+                            label: 'Generics Guide', 
+                            link: '/core-features/generics/',
+                            translations: { 'zh-CN': '泛型使用指南' }
+                        },
+                        { 
                             label: 'Query Builder', 
                             link: '/core-features/query-builder/',
                             translations: { 'zh-CN': '查询构建器' }
@@ -96,7 +101,7 @@ export default defineConfig({
                         { 
                             label: 'Change Streams', 
                             link: '/advanced/change-streams/',
-                            translations: { 'zh-CN': '变更流' }
+                            translations: { 'zh-CN': 'Change Streams' }
                         },
                         { 
                             label: 'Query Scopes', 
