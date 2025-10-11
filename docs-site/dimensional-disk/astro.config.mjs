@@ -10,9 +10,9 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Pie Documentation',
-            defaultLocale: 'root',
+            defaultLocale: 'en',
             locales: {
-                root: { label: 'English', lang: 'en' },
+                en: { label: 'English', lang: 'en' },
                 zh: { label: '简体中文', lang: 'zh-CN' }
             },
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/5xxxx/pie' }],
