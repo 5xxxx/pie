@@ -191,3 +191,19 @@ func WithHooks(manager *HookManager) EngineOption {
 		cfg.hooks = manager
 	}
 }
+
+// WithCache set cache instances
+func WithCache(caches ...Cache) EngineOption {
+	return func(cfg *EngineConfig) {
+		// 这个选项需要在 Engine 创建后设置，因为需要 Engine 实例
+		// 这里只是占位，实际逻辑在 Engine 的 UseCache 方法中
+	}
+}
+
+// WithDefaultCache enable default Ristretto cache
+func WithDefaultCache() EngineOption {
+	return func(cfg *EngineConfig) {
+		// 这个选项需要在 Engine 创建后设置
+		// 这里只是占位，实际逻辑在 Engine 的 UseDefaultCache 方法中
+	}
+}

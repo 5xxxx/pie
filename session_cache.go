@@ -94,28 +94,6 @@ func (s *Session[T]) CacheEmpty(ttl time.Duration) *Session[T] {
 	return s
 }
 
-// CacheL1Only use L1 cache only
-func (s *Session[T]) CacheL1Only() *Session[T] {
-	// This method needs to be handled during actual query
-	if s.cacheConfig == nil {
-		s.cacheConfig = &SessionCacheConfig{}
-	}
-	s.cacheConfig.Enabled = true
-	// Can add a flag to indicate using L1 only
-	return s
-}
-
-// CacheL2Only use L2 cache only
-func (s *Session[T]) CacheL2Only() *Session[T] {
-	// This method needs to be handled during actual query
-	if s.cacheConfig == nil {
-		s.cacheConfig = &SessionCacheConfig{}
-	}
-	s.cacheConfig.Enabled = true
-	// Can add a flag to indicate using L2 only
-	return s
-}
-
 // getFromCache get result from cache
 func (s *Session[T]) getFromCache(ctx context.Context, key string) ([]T, bool, error) {
 	if s.engine.cacheManager == nil || s.cacheConfig == nil || !s.cacheConfig.Enabled {
@@ -161,12 +139,18 @@ func (s *Session[T]) setToCache(ctx context.Context, key string, results []T) er
 
 	// If there are tags, use the method with tags
 	if len(s.cacheConfig.Tags) > 0 {
-		if memCache, ok := s.engine.cacheManager.cache.(*MemoryCache); ok {
-			return memCache.SetWithTags(ctx, key, data, ttl, s.cacheConfig.Tags)
+		// 对于链式缓存，我们需要遍历所有缓存实例
+		for _, cache := range s.engine.cacheManager.GetCaches() {
+			if ristrettoCache, ok := cache.(*RistrettoCache); ok {
+				ristrettoCache.SetWithTags(ctx, key, data, ttl, s.cacheConfig.Tags)
+			} else if redisCache, ok := cache.(*RedisCache); ok {
+				redisCache.SetWithTags(ctx, key, data, ttl, s.cacheConfig.Tags)
+			} else {
+				// 对于其他缓存类型，使用普通的 Set 方法
+				cache.Set(ctx, key, data, ttl)
+			}
 		}
-		if redisCache, ok := s.engine.cacheManager.cache.(*RedisCache); ok {
-			return redisCache.SetWithTags(ctx, key, data, ttl, s.cacheConfig.Tags)
-		}
+		return nil
 	}
 
 	return s.engine.cacheManager.Set(ctx, key, data, ttl)

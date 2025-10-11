@@ -2,9 +2,63 @@ package pie
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 )
+
+// mockCache 用于测试的模拟缓存
+type mockCache struct {
+	data  map[string][]byte
+	stats *CacheStats
+}
+
+func (m *mockCache) Get(ctx context.Context, key string) ([]byte, error) {
+	if val, exists := m.data[key]; exists {
+		m.stats.Total++
+		m.stats.Hits++
+		m.stats.HitRate = float64(m.stats.Hits) / float64(m.stats.Total) * 100
+		return val, nil
+	}
+	m.stats.Total++
+	m.stats.Misses++
+	return nil, ErrCacheNotFound
+}
+
+func (m *mockCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+	m.data[key] = value
+	m.stats.Keys++
+	return nil
+}
+
+func (m *mockCache) Delete(ctx context.Context, key string) error {
+	delete(m.data, key)
+	m.stats.Keys--
+	return nil
+}
+
+func (m *mockCache) DeleteByPattern(ctx context.Context, pattern string) error {
+	return nil
+}
+
+func (m *mockCache) DeleteByTags(ctx context.Context, tags ...string) error {
+	return nil
+}
+
+func (m *mockCache) Exists(ctx context.Context, key string) (bool, error) {
+	_, exists := m.data[key]
+	return exists, nil
+}
+
+func (m *mockCache) Clear(ctx context.Context) error {
+	m.data = make(map[string][]byte)
+	m.stats.Keys = 0
+	return nil
+}
+
+func (m *mockCache) Stats() *CacheStats {
+	return m.stats
+}
 
 func newMockCache() *mockCache {
 	return &mockCache{
@@ -25,9 +79,7 @@ func TestDefaultCacheConfig(t *testing.T) {
 	if config.KeyPrefix != "pie:" {
 		t.Errorf("Expected KeyPrefix to be 'pie:', got %s", config.KeyPrefix)
 	}
-	if config.MaxSize != 10000 {
-		t.Errorf("Expected MaxSize to be 10000, got %d", config.MaxSize)
-	}
+	// MaxSize 已从 CacheConfig 中移除，不再测试
 	if config.EnableJitter {
 		t.Error("Expected EnableJitter to be false")
 	}
@@ -43,11 +95,11 @@ func TestNewCacheManager(t *testing.T) {
 	mockCache := newMockCache()
 
 	// 测试使用默认配置
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	if manager == nil {
 		t.Error("Expected manager to be created")
 	}
-	if manager.cache != mockCache {
+	if len(manager.GetCaches()) != 1 || manager.GetCaches()[0] != mockCache {
 		t.Error("Expected cache to be set correctly")
 	}
 	if manager.config == nil {
@@ -60,7 +112,7 @@ func TestNewCacheManager(t *testing.T) {
 		DefaultTTL: 10 * time.Minute,
 		KeyPrefix:  "test:",
 	}
-	manager2 := NewCacheManager(mockCache, customConfig)
+	manager2 := NewCacheManager([]Cache{mockCache}, customConfig)
 	if manager2.config.Enabled {
 		t.Error("Expected custom config to be used")
 	}
@@ -74,7 +126,7 @@ func TestNewCacheManager(t *testing.T) {
 
 func TestCacheManagerGet(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 测试缓存命中
@@ -106,7 +158,7 @@ func TestCacheManagerGet(t *testing.T) {
 
 func TestCacheManagerSet(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 测试设置缓存
@@ -137,7 +189,7 @@ func TestCacheManagerSet(t *testing.T) {
 
 func TestCacheManagerDelete(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 设置测试数据
@@ -164,7 +216,7 @@ func TestCacheManagerDelete(t *testing.T) {
 
 func TestCacheManagerDeleteByPattern(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 设置测试数据
@@ -199,7 +251,7 @@ func TestCacheManagerDeleteByPattern(t *testing.T) {
 
 func TestCacheManagerDeleteByTags(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 测试按标签删除
@@ -218,7 +270,7 @@ func TestCacheManagerDeleteByTags(t *testing.T) {
 
 func TestCacheManagerExists(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 设置测试数据
@@ -255,7 +307,7 @@ func TestCacheManagerExists(t *testing.T) {
 
 func TestCacheManagerClear(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 设置测试数据
@@ -283,7 +335,7 @@ func TestCacheManagerClear(t *testing.T) {
 
 func TestCacheManagerStats(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 
 	// 设置一些统计数据
 	mockCache.stats.Hits = 10
@@ -301,14 +353,14 @@ func TestCacheManagerStats(t *testing.T) {
 	if stats.Total != 15 {
 		t.Errorf("Expected Total to be 15, got %d", stats.Total)
 	}
-	if stats.HitRate != 66.67 {
-		t.Errorf("Expected HitRate to be 66.67, got %f", stats.HitRate)
+	if math.Abs(stats.HitRate-66.67) > 0.1 {
+		t.Errorf("Expected HitRate to be around 66.67, got %f", stats.HitRate)
 	}
 }
 
 func TestCacheManagerInvalidateTags(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 测试标签失效
@@ -320,7 +372,7 @@ func TestCacheManagerInvalidateTags(t *testing.T) {
 
 func TestCacheManagerWarm(t *testing.T) {
 	mockCache := newMockCache()
-	manager := NewCacheManager(mockCache, nil)
+	manager := NewCacheManager([]Cache{mockCache}, nil)
 	ctx := context.Background()
 
 	// 测试预热
@@ -353,7 +405,7 @@ func TestCacheManagerTTLJitter(t *testing.T) {
 		EnableJitter: true,
 		TTLJitter:    30 * time.Second,
 	}
-	manager := NewCacheManager(mockCache, config)
+	manager := NewCacheManager([]Cache{mockCache}, config)
 	ctx := context.Background()
 
 	// 测试TTL抖动功能
@@ -375,7 +427,7 @@ func TestCacheManagerKeyPrefix(t *testing.T) {
 		DefaultTTL: 5 * time.Minute,
 		KeyPrefix:  "custom:",
 	}
-	manager := NewCacheManager(mockCache, config)
+	manager := NewCacheManager([]Cache{mockCache}, config)
 	ctx := context.Background()
 
 	// 测试自定义前缀

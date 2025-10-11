@@ -1,153 +1,344 @@
 ---
-title: Cache Support
-description: Learn Pie's multi-level caching features to improve query performance
+title: Cache Plugin Architecture
+description: Learn Pie's flexible plugin-based caching system with Ristretto and Redis support
 ---
 
-# Cache Support
+# Cache Plugin Architecture
 
-Pie provides powerful multi-level caching functionality, supporting memory cache, Redis cache, and two-level cache, which can significantly improve query performance.
+Pie features a flexible plugin-based caching system that supports multiple cache implementations and chaining. The system provides Ristretto (default) and Redis implementations, while allowing users to implement custom cache plugins.
+
+## Overview
+
+The cache plugin architecture allows you to:
+- Use multiple cache instances in a chain
+- Implement custom cache backends
+- Combine different cache types (memory + Redis)
+- Enable automatic cache backfilling
+- Monitor cache performance across all layers
 
 ## Basic Usage
 
-### Memory Cache
+### Default Ristretto Cache
 
 ```go
-// Enable memory cache
-engine.UseCache(pie.NewMemoryCache(), &pie.CacheConfig{
-    TTL: 5 * time.Minute,
-})
+// Enable default Ristretto memory cache
+engine.UseDefaultCache()
 
 // Use cache in session
-session := pie.Table[User](engine).WithCache(5 * time.Minute)
-
-// Cache query results
-var users []User
-err := session.
-    Where("status", "active").
-    Cache("active_users").
-    Find(ctx, &users)
+session := pie.Table[User](engine)
+users, err := session.Cache(5 * time.Minute).Find(ctx)
 ```
 
 ### Redis Cache
 
 ```go
-// Create Redis cache
-redisCache := pie.NewRedisCache("localhost:6379", "", 0)
-
 // Enable Redis cache
-engine.UseCache(redisCache, &pie.CacheConfig{
-    TTL: 10 * time.Minute,
-})
+redisConfig := &pie.RedisCacheConfig{
+    Addr:     "localhost:6379",
+    Password: "",
+    DB:       0,
+    PoolSize: 10,
+}
+engine.UseRedis(redisConfig)
 
 // Use cache
-session := pie.Table[User](engine).WithCache(10 * time.Minute)
+session := pie.Table[User](engine)
+users, err := session.Cache(10 * time.Minute).Find(ctx)
 ```
 
-### Two-Level Cache
+### Multi-Level Cache Chain
 
 ```go
-// Create two-level cache
-memoryCache := pie.NewMemoryCache()
-redisCache := pie.NewRedisCache("localhost:6379", "", 0)
+// Create multiple cache instances
+ristrettoCache, _ := pie.NewRistrettoCache(nil)
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{
+    Addr: "localhost:6379",
+})
 
-// Enable two-level cache
-engine.UseTwoLevelCache(
-    memoryCache,  // L1 cache
-    redisCache,   // L2 cache
-    &pie.TwoLevelCacheConfig{
-        L1TTL: 1 * time.Minute,  // L1 cache time
-        L2TTL: 10 * time.Minute, // L2 cache time
-    },
-)
+// Use chained caching (L1: Ristretto, L2: Redis)
+engine.UseCache(ristrettoCache, redisCache)
+
+// Cache operations will automatically:
+// 1. Check L1 cache first
+// 2. If miss, check L2 cache
+// 3. If L2 hit, backfill to L1
+// 4. Write to all cache layers on Set
 ```
 
 ## Cache Configuration
 
-### Basic Configuration
+### Ristretto Configuration
 
 ```go
-// Cache configuration
-config := &pie.CacheConfig{
-    TTL:            5 * time.Minute,    // Cache expiration time
-    MaxSize:        1000,               // Maximum cache entries
-    CleanupInterval: 10 * time.Minute,  // Cleanup interval
-    EnableMetrics:  true,               // Enable metrics
+// Custom Ristretto configuration
+ristrettoConfig := &pie.RistrettoCacheConfig{
+    NumCounters: 100000,              // ~10x max entries
+    MaxCost:     100 * 1024 * 1024,  // 100MB
+    BufferItems: 64,                  // Get buffer size
 }
 
-engine.UseCache(pie.NewMemoryCache(), config)
-```
-
-### Advanced Configuration
-
-```go
-// Advanced cache configuration
-config := &pie.CacheConfig{
-    TTL:            5 * time.Minute,
-    MaxSize:        10000,
-    CleanupInterval: 5 * time.Minute,
-    EnableMetrics:  true,
-    KeyPrefix:      "pie:cache:",           // Key prefix
-    Serializer:     &pie.JSONSerializer{},  // Serializer
-    Compressor:     &pie.GzipCompressor{},  // Compressor
+ristrettoCache, err := pie.NewRistrettoCache(ristrettoConfig)
+if err != nil {
+    log.Fatal(err)
 }
 
-engine.UseCache(pie.NewMemoryCache(), config)
+engine.UseCache(ristrettoCache)
 ```
 
-## Cache Strategies
-
-### Query Caching
+### Redis Configuration
 
 ```go
-// Basic query caching
-var users []User
-err := session.
-    Where("status", "active").
-    Cache("active_users").
-    Find(ctx, &users)
+// Redis configuration
+redisConfig := &pie.RedisCacheConfig{
+    Addr:     "localhost:6379",
+    Password: "your-password",
+    DB:       0,
+    PoolSize: 20,
+}
 
-// Query caching with parameters
-var users []User
-err := session.
-    Where("status", "active").
-    Where("age", pie.Gte("age", 18)).
-    Cache("active_adult_users").
-    Find(ctx, &users)
+redisCache, err := pie.NewRedisCache(redisConfig)
+if err != nil {
+    log.Fatal(err)
+}
 
-// Dynamic cache keys
-cacheKey := fmt.Sprintf("users_by_status_%s", status)
-var users []User
-err := session.
-    Where("status", status).
-    Cache(cacheKey).
-    Find(ctx, &users)
+engine.UseCache(redisCache)
 ```
 
-### Pagination Caching
+### Cache Manager Configuration
 
 ```go
-// Pagination result caching
-result, err := session.
-    Where("status", "active").
-    Cache("active_users_page_1").
-    Paginate(ctx, pie.PaginateParams{
-        Page:     1,
-        PageSize: 10,
-    })
+// Cache manager configuration
+config := &pie.CacheConfig{
+    Enabled:       true,
+    DefaultTTL:    5 * time.Minute,
+    KeyPrefix:     "pie:",
+    EnableJitter:  true,
+    TTLJitter:     2 * time.Minute,
+    EmptyCacheTTL: 30 * time.Second,
+}
+
+engine.UseCache(ristrettoCache, redisCache)
+// Configuration is applied to the cache manager
 ```
 
-### Aggregation Caching
+## Custom Cache Implementation
+
+### Implementing the Cache Interface
 
 ```go
-// Aggregation query caching
-result, err := aggregate.
-    MatchStage().Where("status", "active").
-    GroupStage().
-        By("role", "$role").
-        Count("total").
-        Done().
-    Cache("user_stats_by_role").
-    Exec(ctx)
+// Custom cache implementation
+type MyCache struct {
+    data  map[string][]byte
+    stats *pie.CacheStats
+    mu    sync.RWMutex
+}
+
+func NewMyCache() *MyCache {
+    return &MyCache{
+        data:  make(map[string][]byte),
+        stats: &pie.CacheStats{},
+    }
+}
+
+// Implement Cache interface
+func (m *MyCache) Get(ctx context.Context, key string) ([]byte, error) {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    m.stats.Total++
+    if val, exists := m.data[key]; exists {
+        m.stats.Hits++
+        m.stats.HitRate = float64(m.stats.Hits) / float64(m.stats.Total) * 100
+        return val, nil
+    }
+    
+    m.stats.Misses++
+    return nil, pie.ErrCacheNotFound
+}
+
+func (m *MyCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    m.data[key] = value
+    m.stats.Keys++
+    return nil
+}
+
+func (m *MyCache) Delete(ctx context.Context, key string) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    delete(m.data, key)
+    m.stats.Keys--
+    return nil
+}
+
+func (m *MyCache) DeleteByPattern(ctx context.Context, pattern string) error {
+    // Implement pattern-based deletion
+    return nil
+}
+
+func (m *MyCache) DeleteByTags(ctx context.Context, tags ...string) error {
+    // Implement tag-based deletion
+    return nil
+}
+
+func (m *MyCache) Exists(ctx context.Context, key string) (bool, error) {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    _, exists := m.data[key]
+    return exists, nil
+}
+
+func (m *MyCache) Clear(ctx context.Context) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    m.data = make(map[string][]byte)
+    m.stats.Keys = 0
+    return nil
+}
+
+func (m *MyCache) Stats() *pie.CacheStats {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    stats := *m.stats
+    return &stats
+}
+```
+
+### Using Custom Cache
+
+```go
+// Use custom cache
+myCache := NewMyCache()
+engine.UseCache(myCache)
+
+// Or combine with other caches
+engine.UseCache(myCache, ristrettoCache, redisCache)
+```
+
+## Session Cache Usage
+
+### Basic Caching
+
+```go
+// Basic caching
+session := pie.Table[User](engine)
+users, err := session.Cache(5 * time.Minute).Find(ctx)
+```
+
+### Cache with Tags
+
+```go
+// Cache with tags for easy invalidation
+users, err := session.CacheWithTags("users", "active").Find(ctx)
+
+// Invalidate by tags
+engine.Cache().DeleteByTags("users")
+```
+
+### Cache with TTL Jitter
+
+```go
+// Use TTL jitter to prevent cache stampede
+users, err := session.CacheWithJitter(10*time.Minute, 2*time.Minute).Find(ctx)
+```
+
+### Cache Empty Results
+
+```go
+// Cache empty results to prevent cache penetration
+users, err := session.CacheEmpty(30*time.Second).Find(ctx)
+```
+
+## Cache Chain Behavior
+
+### Read Operations
+
+When reading from a cache chain:
+
+1. **Sequential Lookup**: Check caches in order (L1 → L2 → L3...)
+2. **Backfill**: If found in L2+, automatically backfill to L1
+3. **Return**: Return the first found value
+
+```go
+// Example: L1 miss, L2 hit, automatic backfill to L1
+ristrettoCache, _ := pie.NewRistrettoCache(nil)
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{Addr: "localhost:6379"})
+
+engine.UseCache(ristrettoCache, redisCache)
+
+// First call: L1 miss, L2 miss, query database
+users, err := session.Cache(5*time.Minute).Find(ctx)
+
+// Second call: L1 hit (backfilled from L2)
+users, err := session.Cache(5*time.Minute).Find(ctx)
+```
+
+### Write Operations
+
+When writing to a cache chain:
+
+1. **Write All**: Write to all cache layers simultaneously
+2. **Error Handling**: Continue on individual cache errors
+3. **Consistency**: All layers get the same data
+
+```go
+// Write to all cache layers
+err := session.Cache(5*time.Minute).Set(ctx, "key", data)
+// Writes to both Ristretto and Redis
+```
+
+### Delete Operations
+
+When deleting from a cache chain:
+
+1. **Delete All**: Delete from all cache layers
+2. **Pattern Matching**: Apply pattern deletion to all layers
+3. **Tag Invalidation**: Apply tag-based deletion to all layers
+
+```go
+// Delete from all layers
+engine.Cache().Delete("key")
+
+// Pattern deletion
+engine.Cache().DeleteByPattern("users:*")
+
+// Tag-based deletion
+engine.Cache().DeleteByTags("users", "active")
+```
+
+## Performance Monitoring
+
+### Cache Statistics
+
+```go
+// Get aggregated statistics from all cache layers
+stats := engine.Cache().Stats()
+
+fmt.Printf("Cache Statistics:")
+fmt.Printf("  Total Requests: %d", stats.Total)
+fmt.Printf("  Hits: %d", stats.Hits)
+fmt.Printf("  Misses: %d", stats.Misses)
+fmt.Printf("  Hit Rate: %.2f%%", stats.HitRate)
+fmt.Printf("  Keys: %d", stats.Keys)
+fmt.Printf("  Size: %d bytes", stats.Size)
+fmt.Printf("  Evicted Keys: %d", stats.EvictedKeys)
+```
+
+### Individual Cache Statistics
+
+```go
+// Get statistics from individual caches
+caches := engine.Cache().GetCaches()
+for i, cache := range caches {
+    stats := cache.Stats()
+    fmt.Printf("Cache Layer %d: Hit Rate %.2f%%", i+1, stats.HitRate)
+}
 ```
 
 ## Real-World Applications
@@ -156,12 +347,12 @@ result, err := aggregate.
 
 ```go
 func getUserWithCache(userID bson.ObjectID) (*User, error) {
-    session := pie.Table[User](engine).WithCache(10 * time.Minute)
+    session := pie.Table[User](engine)
     
     var user User
     err := session.
         Where("_id", userID).
-        Cache(fmt.Sprintf("user_%s", userID.Hex())).
+        Cache(10 * time.Minute).
         First(ctx, &user)
     
     if err != nil {
@@ -184,11 +375,7 @@ func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
     }
     
     // Clear related cache
-    cacheKey := fmt.Sprintf("user_%s", userID.Hex())
-    engine.Cache().Delete(cacheKey)
-    
-    // Clear list cache
-    engine.Cache().DeleteByPattern("users_*")
+    engine.Cache().DeleteByPattern("user:*")
     
     return nil
 }
@@ -198,43 +385,29 @@ func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
 
 ```go
 func getCachedUserStats() (*UserStats, error) {
-    session := pie.Table[User](engine).WithCache(30 * time.Minute)
+    session := pie.Table[User](engine)
     
     var stats UserStats
     
     // Cache total user count
     totalCount, err := session.
-        Cache("user_total_count").
+        Cache(30 * time.Minute).
         Count(ctx)
     if err != nil {
         return nil, err
     }
     stats.TotalCount = totalCount
     
-    // Cache active user count
+    // Cache active user count with tags
     activeCount, err := session.
         Where("status", "active").
-        Cache("user_active_count").
+        CacheWithTags("users", "stats").
         Count(ctx)
     if err != nil {
         return nil, err
     }
     stats.ActiveCount = activeCount
     
-    // Cache role-based statistics
-    var roleStats []bson.M
-    err = session.
-        GroupStage().
-            By("role", "$role").
-            Count("count").
-            Done().
-        Cache("user_stats_by_role").
-        Exec(ctx, &roleStats)
-    if err != nil {
-        return nil, err
-    }
-    
-    stats.RoleStats = roleStats
     return &stats, nil
 }
 ```
@@ -243,12 +416,12 @@ func getCachedUserStats() (*UserStats, error) {
 
 ```go
 func getCachedConfig(key string) (string, error) {
-    session := pie.Table[Config](engine).WithCache(1 * time.Hour)
+    session := pie.Table[Config](engine)
     
     var config Config
     err := session.
         Where("key", key).
-        Cache(fmt.Sprintf("config_%s", key)).
+        CacheWithTags("config").
         First(ctx, &config)
     
     if err != nil {
@@ -273,8 +446,8 @@ func setConfigWithCache(key, value string) error {
         return err
     }
     
-    // Clear cache
-    engine.Cache().Delete(fmt.Sprintf("config_%s", key))
+    // Clear config cache by tags
+    engine.Cache().DeleteByTags("config")
     
     return nil
 }
@@ -282,73 +455,34 @@ func setConfigWithCache(key, value string) error {
 
 ## Advanced Usage
 
-### Custom Cache Keys
-
-```go
-// Custom cache key generator
-func customCacheKey(query *pie.Query) string {
-    // Generate cache key based on query conditions
-    conditions := query.GetConditions()
-    hash := sha256.Sum256([]byte(fmt.Sprintf("%v", conditions)))
-    return fmt.Sprintf("custom_%x", hash[:8])
-}
-
-// Use custom cache key
-var users []User
-err := session.
-    Where("status", "active").
-    Where("age", pie.Gte("age", 18)).
-    CacheWithKey(customCacheKey).
-    Find(ctx, &users)
-```
-
-### Conditional Caching
-
-```go
-// Decide whether to use cache based on conditions
-func getUsersWithConditionalCache(useCache bool) ([]User, error) {
-    session := pie.Table[User](engine)
-    
-    query := session.Where("status", "active")
-    
-    if useCache {
-        query = query.Cache("active_users")
-    }
-    
-    var users []User
-    err := query.Find(ctx, &users)
-    return users, err
-}
-```
-
 ### Cache Warming
 
 ```go
 func warmupCache() error {
-    session := pie.Table[User](engine).WithCache(1 * time.Hour)
+    session := pie.Table[User](engine)
     
     // Warm up common queries
     queries := []struct {
         name  string
-        query func() *pie.Query
+        query func() *pie.Session[User]
     }{
         {
             name: "active_users",
-            query: func() *pie.Query {
-                return session.Where("status", "active")
+            query: func() *pie.Session[User] {
+                return session.Where("status", "active").Cache(1*time.Hour)
             },
         },
         {
             name: "admin_users",
-            query: func() *pie.Query {
-                return session.Where("role", "admin")
+            query: func() *pie.Session[User] {
+                return session.Where("role", "admin").Cache(1*time.Hour)
             },
         },
     }
     
     for _, q := range queries {
         var users []User
-        err := q.query().Cache(q.name).Find(ctx, &users)
+        err := q.query().Find(ctx, &users)
         if err != nil {
             log.Printf("Failed to warmup cache for %s: %v", q.name, err)
         } else {
@@ -360,18 +494,36 @@ func warmupCache() error {
 }
 ```
 
-### Cache Invalidation
+### Conditional Caching
+
+```go
+func getUsersWithConditionalCache(useCache bool) ([]User, error) {
+    session := pie.Table[User](engine)
+    
+    query := session.Where("status", "active")
+    
+    if useCache {
+        query = query.Cache(5 * time.Minute)
+    }
+    
+    var users []User
+    err := query.Find(ctx, &users)
+    return users, err
+}
+```
+
+### Cache Invalidation Strategies
 
 ```go
 func invalidateUserCache(userID bson.ObjectID) error {
     cache := engine.Cache()
     
     // Clear specific user cache
-    cache.Delete(fmt.Sprintf("user_%s", userID.Hex()))
+    cache.Delete(fmt.Sprintf("user:%s", userID.Hex()))
     
     // Clear related list cache
-    cache.DeleteByPattern("users_*")
-    cache.DeleteByPattern("active_users_*")
+    cache.DeleteByPattern("users:*")
+    cache.DeleteByPattern("active_users:*")
     
     return nil
 }
@@ -379,46 +531,46 @@ func invalidateUserCache(userID bson.ObjectID) error {
 func invalidateAllUserCache() error {
     cache := engine.Cache()
     
-    // Clear all user-related cache
-    cache.DeleteByPattern("user_*")
-    cache.DeleteByPattern("users_*")
+    // Clear all user-related cache using tags
+    cache.DeleteByTags("users", "user_stats")
     
     return nil
 }
 ```
 
-## Performance Optimization
+## Best Practices
 
-### 1. Reasonable Cache Time Settings
+### 1. Choose Appropriate Cache Strategy
 
 ```go
-// Set different cache times based on data update frequency
-const (
-    UserCacheTTL      = 10 * time.Minute  // User info, medium update frequency
-    ConfigCacheTTL    = 1 * time.Hour     // Config info, low update frequency
-    StatsCacheTTL     = 30 * time.Minute  // Statistics, medium update frequency
-    SessionCacheTTL   = 5 * time.Minute   // Session info, high update frequency
-)
+// Read-heavy, write-light data: long cache time
+func getStaticData() ([]StaticData, error) {
+    session := pie.Table[StaticData](engine)
+    return session.Cache(1 * time.Hour).Find(ctx)
+}
+
+// Read-light, write-heavy data: short cache time
+func getFrequentlyUpdatedData() ([]DynamicData, error) {
+    session := pie.Table[DynamicData](engine)
+    return session.Cache(1 * time.Minute).Find(ctx)
+}
 ```
 
-### 2. Use Cache Warming
+### 2. Use Multi-Level Caching
 
 ```go
-func startCacheWarmup() {
-    go func() {
-        ticker := time.NewTicker(5 * time.Minute)
-        defer ticker.Stop()
-        
-        for {
-            select {
-            case <-ticker.C:
-                if err := warmupCache(); err != nil {
-                    log.Printf("Cache warmup failed: %v", err)
-                }
-            }
-        }
-    }()
-}
+// L1: Fast memory cache for hot data
+// L2: Persistent Redis cache for warm data
+ristrettoCache, _ := pie.NewRistrettoCache(&pie.RistrettoCacheConfig{
+    NumCounters: 100000,
+    MaxCost:     50 * 1024 * 1024, // 50MB
+})
+
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{
+    Addr: "localhost:6379",
+})
+
+engine.UseCache(ristrettoCache, redisCache)
 ```
 
 ### 3. Monitor Cache Performance
@@ -428,27 +580,26 @@ func monitorCachePerformance() {
     cache := engine.Cache()
     
     // Get cache statistics
-    stats := cache.GetStats()
+    stats := cache.Stats()
     
-    log.Printf("Cache Stats:")
-    log.Printf("  Hits: %d", stats.Hits)
-    log.Printf("  Misses: %d", stats.Misses)
-    log.Printf("  Hit Rate: %.2f%%", stats.HitRate())
-    log.Printf("  Size: %d", stats.Size)
-    log.Printf("  Memory Usage: %d bytes", stats.MemoryUsage)
+    log.Printf("Cache Performance:")
+    log.Printf("  Hit Rate: %.2f%%", stats.HitRate)
+    log.Printf("  Total Requests: %d", stats.Total)
+    log.Printf("  Memory Usage: %d bytes", stats.Size)
+    
+    // Alert if hit rate is too low
+    if stats.HitRate < 50.0 {
+        log.Printf("WARNING: Low cache hit rate: %.2f%%", stats.HitRate)
+    }
 }
 ```
 
-### 4. Use Compression to Reduce Memory Usage
+### 4. Use TTL Jitter
 
 ```go
-// Enable compression
-config := &pie.CacheConfig{
-    TTL:        5 * time.Minute,
-    Compressor: &pie.GzipCompressor{},
-}
-
-engine.UseCache(pie.NewMemoryCache(), config)
+// Prevent cache stampede with TTL jitter
+session := pie.Table[User](engine)
+users, err := session.CacheWithJitter(10*time.Minute, 2*time.Minute).Find(ctx)
 ```
 
 ## Error Handling
@@ -461,24 +612,16 @@ func handleCacheError(err error) {
         return
     }
     
-    // Check if it's a cache error
-    if cacheErr, ok := err.(pie.CacheError); ok {
-        switch cacheErr.Type {
-        case pie.CacheErrorTypeNotFound:
-            log.Println("Cache miss")
-        case pie.CacheErrorTypeExpired:
-            log.Println("Cache expired")
-        case pie.CacheErrorTypeSerialization:
-            log.Println("Cache serialization error")
-        case pie.CacheErrorTypeDeserialization:
-            log.Println("Cache deserialization error")
-        default:
-            log.Printf("Cache error: %v", err)
-        }
-        return
+    switch err {
+    case pie.ErrCacheNotFound:
+        log.Println("Cache miss - this is normal")
+    case pie.ErrCacheExpired:
+        log.Println("Cache expired - refreshing")
+    case pie.ErrCacheDisabled:
+        log.Println("Cache is disabled")
+    default:
+        log.Printf("Cache error: %v", err)
     }
-    
-    log.Printf("Unexpected error: %v", err)
 }
 ```
 
@@ -486,14 +629,14 @@ func handleCacheError(err error) {
 
 ```go
 func getUsersWithFallback() ([]User, error) {
-    session := pie.Table[User](engine).WithCache(5 * time.Minute)
+    session := pie.Table[User](engine)
     
     var users []User
     
     // Try to get from cache
     err := session.
         Where("status", "active").
-        Cache("active_users").
+        Cache(5 * time.Minute).
         Find(ctx, &users)
     
     if err != nil {
@@ -507,88 +650,9 @@ func getUsersWithFallback() ([]User, error) {
         if err != nil {
             return nil, err
         }
-        
-        // Asynchronously update cache
-        go func() {
-            session.
-                Where("status", "active").
-                Cache("active_users").
-                Find(context.Background(), &users)
-        }()
     }
     
     return users, nil
-}
-```
-
-## Best Practices
-
-### 1. Choose Appropriate Cache Strategy
-
-```go
-// Read-heavy, write-light data: long cache time
-func getStaticData() ([]StaticData, error) {
-    session := pie.Table[StaticData](engine).WithCache(1 * time.Hour)
-    // ...
-}
-
-// Read-light, write-heavy data: short cache time or no cache
-func getFrequentlyUpdatedData() ([]DynamicData, error) {
-    session := pie.Table[DynamicData](engine).WithCache(1 * time.Minute)
-    // ...
-}
-```
-
-### 2. Cache Key Naming Conventions
-
-```go
-// Use meaningful cache keys
-const (
-    UserCachePrefix      = "user:"
-    UserListCachePrefix  = "users:list:"
-    UserStatsCachePrefix = "users:stats:"
-)
-
-func getUserCacheKey(userID bson.ObjectID) string {
-    return fmt.Sprintf("%s%s", UserCachePrefix, userID.Hex())
-}
-
-func getUserListCacheKey(status string, page int) string {
-    return fmt.Sprintf("%s%s:page:%d", UserListCachePrefix, status, page)
-}
-```
-
-### 3. Cache Update Strategy
-
-```go
-// Update cache when updating data
-func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
-    session := pie.Table[User](engine)
-    
-    // Update database
-    _, err := session.
-        Where("_id", userID).
-        Update(ctx, updates)
-    
-    if err != nil {
-        return err
-    }
-    
-    // Update cache
-    var user User
-    err = session.
-        Where("_id", userID).
-        First(ctx, &user)
-    
-    if err == nil {
-        cacheKey := getUserCacheKey(userID)
-        engine.Cache().Set(cacheKey, user, 10*time.Minute)
-    }
-    
-    // Clear related list cache
-    engine.Cache().DeleteByPattern("users:list:*")
-    
-    return nil
 }
 ```
 

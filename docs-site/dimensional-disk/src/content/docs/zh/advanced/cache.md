@@ -1,153 +1,344 @@
 ---
-title: 缓存支持
-description: 学习 Pie 的多级缓存功能，提升查询性能
+title: 缓存插件架构
+description: 学习 Pie 灵活的插件式缓存系统，支持 Ristretto 和 Redis
 ---
 
-# 缓存支持
+# 缓存插件架构
 
-Pie 提供了强大的多级缓存功能，支持内存缓存、Redis 缓存和二级缓存，能够显著提升查询性能。
+Pie 采用灵活的插件式缓存系统，支持多种缓存实现和链式组合。系统提供 Ristretto（默认）和 Redis 实现，同时允许用户实现自定义缓存插件。
+
+## 概述
+
+缓存插件架构允许您：
+- 在链中使用多个缓存实例
+- 实现自定义缓存后端
+- 组合不同的缓存类型（内存 + Redis）
+- 启用自动缓存回填
+- 监控所有层级的缓存性能
 
 ## 基本用法
 
-### 内存缓存
+### 默认 Ristretto 缓存
 
 ```go
-// 启用内存缓存
-engine.UseCache(pie.NewMemoryCache(), &pie.CacheConfig{
-    TTL: 5 * time.Minute,
-})
+// 启用默认 Ristretto 内存缓存
+engine.UseDefaultCache()
 
 // 在会话中使用缓存
-session := pie.Table[User](engine).WithCache(5 * time.Minute)
-
-// 缓存查询结果
-var users []User
-err := session.
-    Where("status", "active").
-    Cache("active_users").
-    Find(ctx, &users)
+session := pie.Table[User](engine)
+users, err := session.Cache(5 * time.Minute).Find(ctx)
 ```
 
 ### Redis 缓存
 
 ```go
-// 创建 Redis 缓存
-redisCache := pie.NewRedisCache("localhost:6379", "", 0)
-
 // 启用 Redis 缓存
-engine.UseCache(redisCache, &pie.CacheConfig{
-    TTL: 10 * time.Minute,
-})
+redisConfig := &pie.RedisCacheConfig{
+    Addr:     "localhost:6379",
+    Password: "",
+    DB:       0,
+    PoolSize: 10,
+}
+engine.UseRedis(redisConfig)
 
 // 使用缓存
-session := pie.Table[User](engine).WithCache(10 * time.Minute)
+session := pie.Table[User](engine)
+users, err := session.Cache(10 * time.Minute).Find(ctx)
 ```
 
-### 二级缓存
+### 多层缓存链
 
 ```go
-// 创建二级缓存
-memoryCache := pie.NewMemoryCache()
-redisCache := pie.NewRedisCache("localhost:6379", "", 0)
+// 创建多个缓存实例
+ristrettoCache, _ := pie.NewRistrettoCache(nil)
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{
+    Addr: "localhost:6379",
+})
 
-// 启用二级缓存
-engine.UseTwoLevelCache(
-    memoryCache,  // L1 缓存
-    redisCache,   // L2 缓存
-    &pie.TwoLevelCacheConfig{
-        L1TTL: 1 * time.Minute,  // L1 缓存时间
-        L2TTL: 10 * time.Minute, // L2 缓存时间
-    },
-)
+// 使用链式缓存（L1: Ristretto, L2: Redis）
+engine.UseCache(ristrettoCache, redisCache)
+
+// 缓存操作将自动：
+// 1. 首先检查 L1 缓存
+// 2. 如果未命中，检查 L2 缓存
+// 3. 如果 L2 命中，回填到 L1
+// 4. Set 时写入所有缓存层
 ```
 
 ## 缓存配置
 
-### 基础配置
+### Ristretto 配置
 
 ```go
-// 缓存配置
-config := &pie.CacheConfig{
-    TTL:           5 * time.Minute,    // 缓存过期时间
-    MaxSize:       1000,               // 最大缓存条目数
-    CleanupInterval: 10 * time.Minute, // 清理间隔
-    EnableMetrics: true,               // 启用指标
+// 自定义 Ristretto 配置
+ristrettoConfig := &pie.RistrettoCacheConfig{
+    NumCounters: 100000,              // ~10x 最大条目数
+    MaxCost:     100 * 1024 * 1024,   // 100MB
+    BufferItems: 64,                  // Get buffer 大小
 }
 
-engine.UseCache(pie.NewMemoryCache(), config)
-```
-
-### 高级配置
-
-```go
-// 高级缓存配置
-config := &pie.CacheConfig{
-    TTL:            5 * time.Minute,
-    MaxSize:        10000,
-    CleanupInterval: 5 * time.Minute,
-    EnableMetrics:  true,
-    KeyPrefix:      "pie:cache:",      // 键前缀
-    Serializer:     &pie.JSONSerializer{}, // 序列化器
-    Compressor:     &pie.GzipCompressor{},  // 压缩器
+ristrettoCache, err := pie.NewRistrettoCache(ristrettoConfig)
+if err != nil {
+    log.Fatal(err)
 }
 
-engine.UseCache(pie.NewMemoryCache(), config)
+engine.UseCache(ristrettoCache)
 ```
 
-## 缓存策略
-
-### 查询缓存
+### Redis 配置
 
 ```go
-// 基础查询缓存
-var users []User
-err := session.
-    Where("status", "active").
-    Cache("active_users").
-    Find(ctx, &users)
+// Redis 配置
+redisConfig := &pie.RedisCacheConfig{
+    Addr:     "localhost:6379",
+    Password: "your-password",
+    DB:       0,
+    PoolSize: 20,
+}
 
-// 带参数的查询缓存
-var users []User
-err := session.
-    Where("status", "active").
-    Where("age", pie.Gte("age", 18)).
-    Cache("active_adult_users").
-    Find(ctx, &users)
+redisCache, err := pie.NewRedisCache(redisConfig)
+if err != nil {
+    log.Fatal(err)
+}
 
-// 动态缓存键
-cacheKey := fmt.Sprintf("users_by_status_%s", status)
-var users []User
-err := session.
-    Where("status", status).
-    Cache(cacheKey).
-    Find(ctx, &users)
+engine.UseCache(redisCache)
 ```
 
-### 分页缓存
+### 缓存管理器配置
 
 ```go
-// 分页结果缓存
-result, err := session.
-    Where("status", "active").
-    Cache("active_users_page_1").
-    Paginate(ctx, pie.PaginateParams{
-        Page:     1,
-        PageSize: 10,
-    })
+// 缓存管理器配置
+config := &pie.CacheConfig{
+    Enabled:       true,
+    DefaultTTL:    5 * time.Minute,
+    KeyPrefix:     "pie:",
+    EnableJitter:  true,
+    TTLJitter:     2 * time.Minute,
+    EmptyCacheTTL: 30 * time.Second,
+}
+
+engine.UseCache(ristrettoCache, redisCache)
+// 配置将应用到缓存管理器
 ```
 
-### 聚合缓存
+## 自定义缓存实现
+
+### 实现 Cache 接口
 
 ```go
-// 聚合查询缓存
-result, err := aggregate.
-    MatchStage().Where("status", "active").
-    GroupStage().
-        By("role", "$role").
-        Count("total").
-        Done().
-    Cache("user_stats_by_role").
-    Exec(ctx)
+// 自定义缓存实现
+type MyCache struct {
+    data  map[string][]byte
+    stats *pie.CacheStats
+    mu    sync.RWMutex
+}
+
+func NewMyCache() *MyCache {
+    return &MyCache{
+        data:  make(map[string][]byte),
+        stats: &pie.CacheStats{},
+    }
+}
+
+// 实现 Cache 接口
+func (m *MyCache) Get(ctx context.Context, key string) ([]byte, error) {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    m.stats.Total++
+    if val, exists := m.data[key]; exists {
+        m.stats.Hits++
+        m.stats.HitRate = float64(m.stats.Hits) / float64(m.stats.Total) * 100
+        return val, nil
+    }
+    
+    m.stats.Misses++
+    return nil, pie.ErrCacheNotFound
+}
+
+func (m *MyCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    m.data[key] = value
+    m.stats.Keys++
+    return nil
+}
+
+func (m *MyCache) Delete(ctx context.Context, key string) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    delete(m.data, key)
+    m.stats.Keys--
+    return nil
+}
+
+func (m *MyCache) DeleteByPattern(ctx context.Context, pattern string) error {
+    // 实现基于模式的删除
+    return nil
+}
+
+func (m *MyCache) DeleteByTags(ctx context.Context, tags ...string) error {
+    // 实现基于标签的删除
+    return nil
+}
+
+func (m *MyCache) Exists(ctx context.Context, key string) (bool, error) {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    _, exists := m.data[key]
+    return exists, nil
+}
+
+func (m *MyCache) Clear(ctx context.Context) error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    
+    m.data = make(map[string][]byte)
+    m.stats.Keys = 0
+    return nil
+}
+
+func (m *MyCache) Stats() *pie.CacheStats {
+    m.mu.RLock()
+    defer m.mu.RUnlock()
+    
+    stats := *m.stats
+    return &stats
+}
+```
+
+### 使用自定义缓存
+
+```go
+// 使用自定义缓存
+myCache := NewMyCache()
+engine.UseCache(myCache)
+
+// 或与其他缓存组合
+engine.UseCache(myCache, ristrettoCache, redisCache)
+```
+
+## 会话缓存使用
+
+### 基础缓存
+
+```go
+// 基础缓存
+session := pie.Table[User](engine)
+users, err := session.Cache(5 * time.Minute).Find(ctx)
+```
+
+### 带标签的缓存
+
+```go
+// 带标签的缓存，便于失效
+users, err := session.CacheWithTags("users", "active").Find(ctx)
+
+// 按标签失效
+engine.Cache().DeleteByTags("users")
+```
+
+### 带 TTL 抖动的缓存
+
+```go
+// 使用 TTL 抖动防止缓存雪崩
+users, err := session.CacheWithJitter(10*time.Minute, 2*time.Minute).Find(ctx)
+```
+
+### 缓存空结果
+
+```go
+// 缓存空结果防止缓存穿透
+users, err := session.CacheEmpty(30*time.Second).Find(ctx)
+```
+
+## 缓存链行为
+
+### 读操作
+
+从缓存链读取时：
+
+1. **顺序查找**：按顺序检查缓存（L1 → L2 → L3...）
+2. **回填**：如果在 L2+ 找到，自动回填到 L1
+3. **返回**：返回第一个找到的值
+
+```go
+// 示例：L1 未命中，L2 命中，自动回填到 L1
+ristrettoCache, _ := pie.NewRistrettoCache(nil)
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{Addr: "localhost:6379"})
+
+engine.UseCache(ristrettoCache, redisCache)
+
+// 第一次调用：L1 未命中，L2 未命中，查询数据库
+users, err := session.Cache(5*time.Minute).Find(ctx)
+
+// 第二次调用：L1 命中（从 L2 回填）
+users, err := session.Cache(5*time.Minute).Find(ctx)
+```
+
+### 写操作
+
+写入缓存链时：
+
+1. **写入全部**：同时写入所有缓存层
+2. **错误处理**：单个缓存错误时继续执行
+3. **一致性**：所有层都获得相同数据
+
+```go
+// 写入所有缓存层
+err := session.Cache(5*time.Minute).Set(ctx, "key", data)
+// 同时写入 Ristretto 和 Redis
+```
+
+### 删除操作
+
+从缓存链删除时：
+
+1. **删除全部**：从所有缓存层删除
+2. **模式匹配**：对所有层应用模式删除
+3. **标签失效**：对所有层应用基于标签的删除
+
+```go
+// 从所有层删除
+engine.Cache().Delete("key")
+
+// 模式删除
+engine.Cache().DeleteByPattern("users:*")
+
+// 基于标签的删除
+engine.Cache().DeleteByTags("users", "active")
+```
+
+## 性能监控
+
+### 缓存统计
+
+```go
+// 获取所有缓存层的聚合统计
+stats := engine.Cache().Stats()
+
+fmt.Printf("缓存统计:")
+fmt.Printf("  总请求数: %d", stats.Total)
+fmt.Printf("  命中数: %d", stats.Hits)
+fmt.Printf("  未命中数: %d", stats.Misses)
+fmt.Printf("  命中率: %.2f%%", stats.HitRate)
+fmt.Printf("  键数量: %d", stats.Keys)
+fmt.Printf("  大小: %d 字节", stats.Size)
+fmt.Printf("  被驱逐的键: %d", stats.EvictedKeys)
+```
+
+### 单个缓存统计
+
+```go
+// 获取单个缓存的统计
+caches := engine.Cache().GetCaches()
+for i, cache := range caches {
+    stats := cache.Stats()
+    fmt.Printf("缓存层 %d: 命中率 %.2f%%", i+1, stats.HitRate)
+}
 ```
 
 ## 实际应用场景
@@ -156,12 +347,12 @@ result, err := aggregate.
 
 ```go
 func getUserWithCache(userID primitive.ObjectID) (*User, error) {
-    session := pie.Table[User](engine).WithCache(10 * time.Minute)
+    session := pie.Table[User](engine)
     
     var user User
     err := session.
         Where("_id", userID).
-        Cache(fmt.Sprintf("user_%s", userID.Hex())).
+        Cache(10 * time.Minute).
         First(ctx, &user)
     
     if err != nil {
@@ -184,11 +375,7 @@ func updateUserWithCache(userID primitive.ObjectID, updates bson.D) error {
     }
     
     // 清除相关缓存
-    cacheKey := fmt.Sprintf("user_%s", userID.Hex())
-    engine.Cache().Delete(cacheKey)
-    
-    // 清除列表缓存
-    engine.Cache().DeleteByPattern("users_*")
+    engine.Cache().DeleteByPattern("user:*")
     
     return nil
 }
@@ -198,43 +385,29 @@ func updateUserWithCache(userID primitive.ObjectID, updates bson.D) error {
 
 ```go
 func getCachedUserStats() (*UserStats, error) {
-    session := pie.Table[User](engine).WithCache(30 * time.Minute)
+    session := pie.Table[User](engine)
     
     var stats UserStats
     
     // 缓存用户总数
     totalCount, err := session.
-        Cache("user_total_count").
+        Cache(30 * time.Minute).
         Count(ctx)
     if err != nil {
         return nil, err
     }
     stats.TotalCount = totalCount
     
-    // 缓存活跃用户数
+    // 缓存活跃用户数（带标签）
     activeCount, err := session.
         Where("status", "active").
-        Cache("user_active_count").
+        CacheWithTags("users", "stats").
         Count(ctx)
     if err != nil {
         return nil, err
     }
     stats.ActiveCount = activeCount
     
-    // 缓存按角色分组的统计
-    var roleStats []bson.M
-    err = session.
-        GroupStage().
-            By("role", "$role").
-            Count("count").
-            Done().
-        Cache("user_stats_by_role").
-        Exec(ctx, &roleStats)
-    if err != nil {
-        return nil, err
-    }
-    
-    stats.RoleStats = roleStats
     return &stats, nil
 }
 ```
@@ -243,12 +416,12 @@ func getCachedUserStats() (*UserStats, error) {
 
 ```go
 func getCachedConfig(key string) (string, error) {
-    session := pie.Table[Config](engine).WithCache(1 * time.Hour)
+    session := pie.Table[Config](engine)
     
     var config Config
     err := session.
         Where("key", key).
-        Cache(fmt.Sprintf("config_%s", key)).
+        CacheWithTags("config").
         First(ctx, &config)
     
     if err != nil {
@@ -273,8 +446,8 @@ func setConfigWithCache(key, value string) error {
         return err
     }
     
-    // 清除缓存
-    engine.Cache().Delete(fmt.Sprintf("config_%s", key))
+    // 按标签清除配置缓存
+    engine.Cache().DeleteByTags("config")
     
     return nil
 }
@@ -282,24 +455,43 @@ func setConfigWithCache(key, value string) error {
 
 ## 高级用法
 
-### 自定义缓存键
+### 缓存预热
 
 ```go
-// 自定义缓存键生成器
-func customCacheKey(query *pie.Query) string {
-    // 基于查询条件生成缓存键
-    conditions := query.GetConditions()
-    hash := sha256.Sum256([]byte(fmt.Sprintf("%v", conditions)))
-    return fmt.Sprintf("custom_%x", hash[:8])
+func warmupCache() error {
+    session := pie.Table[User](engine)
+    
+    // 预热常用查询
+    queries := []struct {
+        name  string
+        query func() *pie.Session[User]
+    }{
+        {
+            name: "active_users",
+            query: func() *pie.Session[User] {
+                return session.Where("status", "active").Cache(1*time.Hour)
+            },
+        },
+        {
+            name: "admin_users",
+            query: func() *pie.Session[User] {
+                return session.Where("role", "admin").Cache(1*time.Hour)
+            },
+        },
+    }
+    
+    for _, q := range queries {
+        var users []User
+        err := q.query().Find(ctx, &users)
+        if err != nil {
+            log.Printf("预热缓存失败 %s: %v", q.name, err)
+        } else {
+            log.Printf("预热缓存成功 %s: %d 用户", q.name, len(users))
+        }
+    }
+    
+    return nil
 }
-
-// 使用自定义缓存键
-var users []User
-err := session.
-    Where("status", "active").
-    Where("age", pie.Gte("age", 18)).
-    CacheWithKey(customCacheKey).
-    Find(ctx, &users)
 ```
 
 ### 条件缓存
@@ -312,7 +504,7 @@ func getUsersWithConditionalCache(useCache bool) ([]User, error) {
     query := session.Where("status", "active")
     
     if useCache {
-        query = query.Cache("active_users")
+        query = query.Cache(5 * time.Minute)
     }
     
     var users []User
@@ -321,57 +513,18 @@ func getUsersWithConditionalCache(useCache bool) ([]User, error) {
 }
 ```
 
-### 缓存预热
-
-```go
-func warmupCache() error {
-    session := pie.Table[User](engine).WithCache(1 * time.Hour)
-    
-    // 预热常用查询
-    queries := []struct {
-        name string
-        query func() *pie.Query
-    }{
-        {
-            name: "active_users",
-            query: func() *pie.Query {
-                return session.Where("status", "active")
-            },
-        },
-        {
-            name: "admin_users",
-            query: func() *pie.Query {
-                return session.Where("role", "admin")
-            },
-        },
-    }
-    
-    for _, q := range queries {
-        var users []User
-        err := q.query().Cache(q.name).Find(ctx, &users)
-        if err != nil {
-            log.Printf("Failed to warmup cache for %s: %v", q.name, err)
-        } else {
-            log.Printf("Warmed up cache for %s: %d users", q.name, len(users))
-        }
-    }
-    
-    return nil
-}
-```
-
-### 缓存失效
+### 缓存失效策略
 
 ```go
 func invalidateUserCache(userID primitive.ObjectID) error {
     cache := engine.Cache()
     
     // 清除特定用户缓存
-    cache.Delete(fmt.Sprintf("user_%s", userID.Hex()))
+    cache.Delete(fmt.Sprintf("user:%s", userID.Hex()))
     
     // 清除相关列表缓存
-    cache.DeleteByPattern("users_*")
-    cache.DeleteByPattern("active_users_*")
+    cache.DeleteByPattern("users:*")
+    cache.DeleteByPattern("active_users:*")
     
     return nil
 }
@@ -379,46 +532,46 @@ func invalidateUserCache(userID primitive.ObjectID) error {
 func invalidateAllUserCache() error {
     cache := engine.Cache()
     
-    // 清除所有用户相关缓存
-    cache.DeleteByPattern("user_*")
-    cache.DeleteByPattern("users_*")
+    // 使用标签清除所有用户相关缓存
+    cache.DeleteByTags("users", "user_stats")
     
     return nil
 }
 ```
 
-## 性能优化
+## 最佳实践
 
-### 1. 合理设置缓存时间
+### 1. 选择合适的缓存策略
 
 ```go
-// 根据数据更新频率设置不同的缓存时间
-const (
-    UserCacheTTL      = 10 * time.Minute  // 用户信息，更新频率中等
-    ConfigCacheTTL    = 1 * time.Hour     // 配置信息，更新频率低
-    StatsCacheTTL     = 30 * time.Minute  // 统计数据，更新频率中等
-    SessionCacheTTL   = 5 * time.Minute   // 会话信息，更新频率高
-)
+// 读多写少的数据：长时间缓存
+func getStaticData() ([]StaticData, error) {
+    session := pie.Table[StaticData](engine)
+    return session.Cache(1 * time.Hour).Find(ctx)
+}
+
+// 读少写多的数据：短时间缓存
+func getFrequentlyUpdatedData() ([]DynamicData, error) {
+    session := pie.Table[DynamicData](engine)
+    return session.Cache(1 * time.Minute).Find(ctx)
+}
 ```
 
-### 2. 使用缓存预热
+### 2. 使用多层缓存
 
 ```go
-func startCacheWarmup() {
-    go func() {
-        ticker := time.NewTicker(5 * time.Minute)
-        defer ticker.Stop()
-        
-        for {
-            select {
-            case <-ticker.C:
-                if err := warmupCache(); err != nil {
-                    log.Printf("Cache warmup failed: %v", err)
-                }
-            }
-        }
-    }()
-}
+// L1：快速内存缓存用于热数据
+// L2：持久化 Redis 缓存用于温数据
+ristrettoCache, _ := pie.NewRistrettoCache(&pie.RistrettoCacheConfig{
+    NumCounters: 100000,
+    MaxCost:     50 * 1024 * 1024, // 50MB
+})
+
+redisCache, _ := pie.NewRedisCache(&pie.RedisCacheConfig{
+    Addr: "localhost:6379",
+})
+
+engine.UseCache(ristrettoCache, redisCache)
 ```
 
 ### 3. 监控缓存性能
@@ -427,28 +580,27 @@ func startCacheWarmup() {
 func monitorCachePerformance() {
     cache := engine.Cache()
     
-    // 获取缓存统计信息
-    stats := cache.GetStats()
+    // 获取缓存统计
+    stats := cache.Stats()
     
-    log.Printf("Cache Stats:")
-    log.Printf("  Hits: %d", stats.Hits)
-    log.Printf("  Misses: %d", stats.Misses)
-    log.Printf("  Hit Rate: %.2f%%", stats.HitRate())
-    log.Printf("  Size: %d", stats.Size)
-    log.Printf("  Memory Usage: %d bytes", stats.MemoryUsage)
+    log.Printf("缓存性能:")
+    log.Printf("  命中率: %.2f%%", stats.HitRate)
+    log.Printf("  总请求数: %d", stats.Total)
+    log.Printf("  内存使用: %d 字节", stats.Size)
+    
+    // 命中率过低时告警
+    if stats.HitRate < 50.0 {
+        log.Printf("警告: 缓存命中率过低: %.2f%%", stats.HitRate)
+    }
 }
 ```
 
-### 4. 使用压缩减少内存使用
+### 4. 使用 TTL 抖动
 
 ```go
-// 启用压缩
-config := &pie.CacheConfig{
-    TTL:        5 * time.Minute,
-    Compressor: &pie.GzipCompressor{},
-}
-
-engine.UseCache(pie.NewMemoryCache(), config)
+// 使用 TTL 抖动防止缓存雪崩
+session := pie.Table[User](engine)
+users, err := session.CacheWithJitter(10*time.Minute, 2*time.Minute).Find(ctx)
 ```
 
 ## 错误处理
@@ -461,24 +613,16 @@ func handleCacheError(err error) {
         return
     }
     
-    // 检查是否是缓存错误
-    if cacheErr, ok := err.(pie.CacheError); ok {
-        switch cacheErr.Type {
-        case pie.CacheErrorTypeNotFound:
-            log.Println("Cache miss")
-        case pie.CacheErrorTypeExpired:
-            log.Println("Cache expired")
-        case pie.CacheErrorTypeSerialization:
-            log.Println("Cache serialization error")
-        case pie.CacheErrorTypeDeserialization:
-            log.Println("Cache deserialization error")
-        default:
-            log.Printf("Cache error: %v", err)
-        }
-        return
+    switch err {
+    case pie.ErrCacheNotFound:
+        log.Println("缓存未命中 - 这是正常的")
+    case pie.ErrCacheExpired:
+        log.Println("缓存已过期 - 正在刷新")
+    case pie.ErrCacheDisabled:
+        log.Println("缓存已禁用")
+    default:
+        log.Printf("缓存错误: %v", err)
     }
-    
-    log.Printf("Unexpected error: %v", err)
 }
 ```
 
@@ -486,19 +630,19 @@ func handleCacheError(err error) {
 
 ```go
 func getUsersWithFallback() ([]User, error) {
-    session := pie.Table[User](engine).WithCache(5 * time.Minute)
+    session := pie.Table[User](engine)
     
     var users []User
     
     // 尝试从缓存获取
     err := session.
         Where("status", "active").
-        Cache("active_users").
+        Cache(5 * time.Minute).
         Find(ctx, &users)
     
     if err != nil {
-        // 缓存失败，从数据库获取
-        log.Printf("Cache miss, falling back to database: %v", err)
+        // 缓存未命中，降级到数据库
+        log.Printf("缓存未命中，降级到数据库: %v", err)
         
         err = session.
             Where("status", "active").
@@ -507,88 +651,9 @@ func getUsersWithFallback() ([]User, error) {
         if err != nil {
             return nil, err
         }
-        
-        // 异步更新缓存
-        go func() {
-            session.
-                Where("status", "active").
-                Cache("active_users").
-                Find(context.Background(), &users)
-        }()
     }
     
     return users, nil
-}
-```
-
-## 最佳实践
-
-### 1. 合理选择缓存策略
-
-```go
-// 读多写少的数据：长时间缓存
-func getStaticData() ([]StaticData, error) {
-    session := pie.Table[StaticData](engine).WithCache(1 * time.Hour)
-    // ...
-}
-
-// 读少写多的数据：短时间缓存或不缓存
-func getFrequentlyUpdatedData() ([]DynamicData, error) {
-    session := pie.Table[DynamicData](engine).WithCache(1 * time.Minute)
-    // ...
-}
-```
-
-### 2. 缓存键命名规范
-
-```go
-// 使用有意义的缓存键
-const (
-    UserCachePrefix     = "user:"
-    UserListCachePrefix = "users:list:"
-    UserStatsCachePrefix = "users:stats:"
-)
-
-func getUserCacheKey(userID primitive.ObjectID) string {
-    return fmt.Sprintf("%s%s", UserCachePrefix, userID.Hex())
-}
-
-func getUserListCacheKey(status string, page int) string {
-    return fmt.Sprintf("%s%s:page:%d", UserListCachePrefix, status, page)
-}
-```
-
-### 3. 缓存更新策略
-
-```go
-// 更新数据时同时更新缓存
-func updateUserWithCache(userID primitive.ObjectID, updates bson.D) error {
-    session := pie.Table[User](engine)
-    
-    // 更新数据库
-    _, err := session.
-        Where("_id", userID).
-        Update(ctx, updates)
-    
-    if err != nil {
-        return err
-    }
-    
-    // 更新缓存
-    var user User
-    err = session.
-        Where("_id", userID).
-        First(ctx, &user)
-    
-    if err == nil {
-        cacheKey := getUserCacheKey(userID)
-        engine.Cache().Set(cacheKey, user, 10*time.Minute)
-    }
-    
-    // 清除相关列表缓存
-    engine.Cache().DeleteByPattern("users:list:*")
-    
-    return nil
 }
 ```
 

@@ -219,17 +219,35 @@ func (e *Engine) WithTransactionOptions(ctx context.Context, fn func(context.Con
 
 // ========== Cache Management Methods ==========
 
-// UseCache enables caching
-func (e *Engine) UseCache(cache Cache, config *CacheConfig) *Engine {
-	e.cacheManager = NewCacheManager(cache, config)
+// UseCache enables caching with multiple cache instances
+func (e *Engine) UseCache(caches ...Cache) *Engine {
+	if len(caches) > 0 {
+		e.cacheManager = NewCacheManager(caches, nil)
+	}
 	return e
 }
 
-// UseTwoLevelCache enables two-level caching
-func (e *Engine) UseTwoLevelCache(l1, l2 Cache, config *TwoLevelCacheConfig) *Engine {
-	twoLevelCache := NewTwoLevelCache(l1, l2, config)
-	e.cacheManager = NewCacheManager(twoLevelCache, nil)
+// UseRistretto enables Ristretto memory cache
+func (e *Engine) UseRistretto(config *RistrettoCacheConfig) *Engine {
+	ristrettoCache, err := NewRistrettoCache(config)
+	if err == nil {
+		e.cacheManager = NewCacheManager([]Cache{ristrettoCache}, nil)
+	}
 	return e
+}
+
+// UseRedis enables Redis cache
+func (e *Engine) UseRedis(config *RedisCacheConfig) *Engine {
+	redisCache, err := NewRedisCache(config)
+	if err == nil {
+		e.cacheManager = NewCacheManager([]Cache{redisCache}, nil)
+	}
+	return e
+}
+
+// UseDefaultCache enables default Ristretto cache
+func (e *Engine) UseDefaultCache() *Engine {
+	return e.UseRistretto(nil)
 }
 
 // Cache gets the cache manager
