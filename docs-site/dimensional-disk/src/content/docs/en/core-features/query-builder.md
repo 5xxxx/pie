@@ -303,6 +303,7 @@ err := session.
 
 ## Next Steps
 
+- [Generics Guide](/core-features/generics/) - Learn about generics usage and benefits
 - [Struct Query](/core-features/struct-query/) - Convert HTTP params to queries
 - [Pagination](/core-features/pagination/) - Implement pagination
 - [Cursor Operations](/core-features/cursor/) - Use cursors for large datasets

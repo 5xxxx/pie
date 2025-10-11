@@ -320,6 +320,7 @@ err := session.Latest("created_at", 10).Find(ctx, &latestUsers)
 
 现在您已经了解了 Pie 的基本用法，可以继续学习：
 
+- [泛型使用指南](/core-features/generics/) - 深入了解泛型的使用方式和优势
 - [查询构建器](/core-features/query-builder/) - 深入了解查询功能
 - [聚合查询](/core-features/aggregation/) - 学习复杂的数据聚合
 - [事务管理](/core-features/transactions/) - 掌握事务操作

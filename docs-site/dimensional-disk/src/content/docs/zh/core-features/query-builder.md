@@ -410,6 +410,7 @@ err := session.
 
 ## 下一步
 
+- [泛型使用指南](/core-features/generics/) - 深入了解泛型的使用方式和优势
 - [结构体查询](/core-features/struct-query/) - 学习如何将 HTTP 参数转换为查询条件
 - [分页查询](/core-features/pagination/) - 掌握分页实现
 - [游标操作](/core-features/cursor/) - 学习高效的数据遍历
