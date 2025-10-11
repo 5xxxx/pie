@@ -13,14 +13,14 @@ Pie 提供了内置的软删除功能，允许您"删除"数据而不实际从�
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" pie:"soft_delete"`
 }
 
 type Product struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Price     float64            `bson:"price"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" pie:"soft_delete"`
@@ -109,7 +109,7 @@ err := session.
 ### 用户管理
 
 ```go
-func deleteUser(userID primitive.ObjectID) error {
+func deleteUser(userID bson.ObjectID) error {
     session := pie.Table[User](engine)
     
     // 软删除用户
@@ -124,7 +124,7 @@ func deleteUser(userID primitive.ObjectID) error {
     return nil
 }
 
-func restoreUser(userID primitive.ObjectID) error {
+func restoreUser(userID bson.ObjectID) error {
     session := pie.Table[User](engine)
     
     // 恢复用户
@@ -139,7 +139,7 @@ func restoreUser(userID primitive.ObjectID) error {
     return nil
 }
 
-func permanentlyDeleteUser(userID primitive.ObjectID) error {
+func permanentlyDeleteUser(userID bson.ObjectID) error {
     session := pie.Table[User](engine)
     
     // 强制删除用户
@@ -158,7 +158,7 @@ func permanentlyDeleteUser(userID primitive.ObjectID) error {
 ### 订单管理
 
 ```go
-func cancelOrder(orderID primitive.ObjectID) error {
+func cancelOrder(orderID bson.ObjectID) error {
     session := pie.Table[Order](engine)
     
     // 软删除订单
@@ -178,7 +178,7 @@ func cancelOrder(orderID primitive.ObjectID) error {
     return nil
 }
 
-func restoreOrder(orderID primitive.ObjectID) error {
+func restoreOrder(orderID bson.ObjectID) error {
     session := pie.Table[Order](engine)
     
     // 恢复订单
@@ -233,11 +233,11 @@ func cleanupOldSoftDeletedData() error {
 
 ```go
 type CustomUser struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" pie:"soft_delete"`
-    DeletedBy *primitive.ObjectID `bson:"deleted_by,omitempty"`
+    DeletedBy *bson.ObjectID `bson:"deleted_by,omitempty"`
     DeleteReason string          `bson:"delete_reason,omitempty"`
 }
 
@@ -304,7 +304,7 @@ func (u *User) AfterRestore(ctx context.Context) error {
 ### 批量软删除
 
 ```go
-func batchSoftDeleteUsers(userIDs []primitive.ObjectID) error {
+func batchSoftDeleteUsers(userIDs []bson.ObjectID) error {
     session := pie.Table[User](engine)
     
     // 批量软删除
@@ -319,7 +319,7 @@ func batchSoftDeleteUsers(userIDs []primitive.ObjectID) error {
     return nil
 }
 
-func batchRestoreUsers(userIDs []primitive.ObjectID) error {
+func batchRestoreUsers(userIDs []bson.ObjectID) error {
     session := pie.Table[User](engine)
     
     // 批量恢复
@@ -474,7 +474,7 @@ func invalidateUserCache() error {
 ```go
 // 好的做法：对重要数据使用软删除
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" pie:"soft_delete"`
@@ -482,7 +482,7 @@ type User struct {
 
 // 避免的做法：对临时数据使用软删除
 type TempData struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Data      string             `bson:"data"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" pie:"soft_delete"` // 不需要
 }
@@ -514,7 +514,7 @@ func scheduleSoftDeleteCleanup() {
 ### 3. 软删除权限控制
 
 ```go
-func canSoftDeleteUser(userID primitive.ObjectID, currentUserID primitive.ObjectID) bool {
+func canSoftDeleteUser(userID bson.ObjectID, currentUserID bson.ObjectID) bool {
     // 检查权限
     if !hasPermission(currentUserID, "delete_user") {
         return false
@@ -543,16 +543,16 @@ func canSoftDeleteUser(userID primitive.ObjectID, currentUserID primitive.Object
 
 ```go
 type SoftDeleteAudit struct {
-    ID          primitive.ObjectID `bson:"_id,omitempty"`
-    EntityID    primitive.ObjectID `bson:"entity_id"`
+    ID          bson.ObjectID `bson:"_id,omitempty"`
+    EntityID    bson.ObjectID `bson:"entity_id"`
     EntityType  string             `bson:"entity_type"`
     Action      string             `bson:"action"` // "soft_delete" or "restore"
-    DeletedBy   primitive.ObjectID `bson:"deleted_by"`
+    DeletedBy   bson.ObjectID `bson:"deleted_by"`
     DeletedAt   time.Time          `bson:"deleted_at"`
     Reason      string             `bson:"reason,omitempty"`
 }
 
-func logSoftDeleteAudit(entityID primitive.ObjectID, entityType, action string, reason string) {
+func logSoftDeleteAudit(entityID bson.ObjectID, entityType, action string, reason string) {
     audit := &SoftDeleteAudit{
         EntityID:   entityID,
         EntityType: entityType,

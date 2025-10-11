@@ -23,7 +23,7 @@ indexes := engine.Indexes()
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name" pie:"index"`
     Email     string             `bson:"email" pie:"unique"`
     Age       int                `bson:"age"`
@@ -69,7 +69,7 @@ err = indexes.CreateIndex(ctx, "users", bson.D{
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name" pie:"index"`           // 普通索引
     Email     string             `bson:"email" pie:"unique"`         // 唯一索引
     Age       int                `bson:"age" pie:"index,sparse"`     // 稀疏索引
@@ -82,11 +82,11 @@ type User struct {
 
 ```go
 type Order struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
-    UserID    primitive.ObjectID `bson:"user_id" pie:"index:user_status"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
+    UserID    bson.ObjectID `bson:"user_id" pie:"index:user_status"`
     Status    string             `bson:"status" pie:"index:user_status"`
     CreatedAt time.Time          `bson:"created_at" pie:"index:user_created"`
-    UserID2   primitive.ObjectID `bson:"user_id2" pie:"index:user_created"`
+    UserID2   bson.ObjectID `bson:"user_id2" pie:"index:user_created"`
 }
 ```
 
@@ -94,7 +94,7 @@ type Order struct {
 
 ```go
 type Product struct {
-    ID          primitive.ObjectID `bson:"_id,omitempty"`
+    ID          bson.ObjectID `bson:"_id,omitempty"`
     Name        string             `bson:"name" pie:"index,text"`
     Description string             `bson:"description" pie:"index,text"`
     Price       float64            `bson:"price" pie:"index,sparse"`
@@ -264,8 +264,8 @@ err := indexes.CreateIndex(ctx, "sessions", bson.D{
 
 // 或者使用标签
 type Session struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
-    UserID    primitive.ObjectID `bson:"user_id"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
+    UserID    bson.ObjectID `bson:"user_id"`
     ExpiresAt time.Time          `bson:"expires_at" pie:"index,expire,3600"` // 1小时后过期
 }
 ```

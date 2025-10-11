@@ -346,7 +346,7 @@ for i, cache := range caches {
 ### 用户信息缓存
 
 ```go
-func getUserWithCache(userID primitive.ObjectID) (*User, error) {
+func getUserWithCache(userID bson.ObjectID) (*User, error) {
     session := pie.Table[User](engine)
     
     var user User
@@ -362,7 +362,7 @@ func getUserWithCache(userID primitive.ObjectID) (*User, error) {
     return &user, nil
 }
 
-func updateUserWithCache(userID primitive.ObjectID, updates bson.D) error {
+func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
     session := pie.Table[User](engine)
     
     // 更新用户
@@ -516,7 +516,7 @@ func getUsersWithConditionalCache(useCache bool) ([]User, error) {
 ### 缓存失效策略
 
 ```go
-func invalidateUserCache(userID primitive.ObjectID) error {
+func invalidateUserCache(userID bson.ObjectID) error {
     cache := engine.Cache()
     
     // 清除特定用户缓存

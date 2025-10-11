@@ -32,7 +32,7 @@ engine, err := pie.NewEngine(ctx, "mydb",
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     FirstName string             `bson:"first_name"`
     LastName  string             `bson:"last_name"`
     Email     string             `bson:"email"`

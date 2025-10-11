@@ -134,7 +134,7 @@ func createUser(userData *UserData) error {
     return nil
 }
 
-func getUserByID(userID primitive.ObjectID) (*User, error) {
+func getUserByID(userID bson.ObjectID) (*User, error) {
     session := pie.Table[User](engine)
     
     var user User
@@ -149,7 +149,7 @@ func getUserByID(userID primitive.ObjectID) (*User, error) {
     return &user, nil
 }
 
-func updateUser(userID primitive.ObjectID, updates bson.D) error {
+func updateUser(userID bson.ObjectID, updates bson.D) error {
     session := pie.Table[User](engine)
     
     result, err := session.Where("_id", userID).Update(ctx, updates)
@@ -168,7 +168,7 @@ func updateUser(userID primitive.ObjectID, updates bson.D) error {
 ### 事务错误处理
 
 ```go
-func transferPoints(fromUserID, toUserID primitive.ObjectID, points int) error {
+func transferPoints(fromUserID, toUserID bson.ObjectID, points int) error {
     return engine.WithTransaction(ctx, func(txCtx context.Context) error {
         session := pie.Table[User](engine)
         

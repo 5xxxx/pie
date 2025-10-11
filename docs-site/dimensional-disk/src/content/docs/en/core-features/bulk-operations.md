@@ -213,7 +213,7 @@ func MigrateUserData(ctx context.Context) error {
 ### Batch Status Update
 
 ```go
-func UpdateUserStatus(ctx context.Context, userIDs []primitive.ObjectID, status string) error {
+func UpdateUserStatus(ctx context.Context, userIDs []bson.ObjectID, status string) error {
     bulkWrite := pie.NewBulkWrite[User](engine).
         CollectionForStruct(User{})
     

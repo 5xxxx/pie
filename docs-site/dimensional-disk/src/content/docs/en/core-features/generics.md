@@ -255,7 +255,7 @@ func ProcessUsersGeneric(session *pie.Session[interface{}], ctx context.Context)
 ```go
 // ✅ Recommended: Define clear models
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Age       int                `bson:"age"`
@@ -367,7 +367,7 @@ func ConvertSlice[T, U any](slice []T, converter func(T) U) []U {
 ```go
 // BSON tags work with generics
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Age       int                `bson:"age"`

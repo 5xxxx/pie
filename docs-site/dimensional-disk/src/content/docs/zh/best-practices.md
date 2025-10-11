@@ -117,11 +117,11 @@ package models
 
 import (
     "time"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type BaseModel struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+    ID        bson.ObjectID `bson:"_id,omitempty" json:"id"`
     CreatedAt time.Time          `bson:"created_at" json:"created_at"`
     UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty" pie:"soft_delete"`
@@ -149,7 +149,7 @@ package models
 import (
     "context"
     "time"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type User struct {
@@ -209,12 +209,12 @@ package models
 import (
     "context"
     "time"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Order struct {
     BaseModel
-    UserID      primitive.ObjectID `bson:"user_id" json:"user_id" pie:"index"`
+    UserID      bson.ObjectID `bson:"user_id" json:"user_id" pie:"index"`
     Items       []OrderItem        `bson:"items" json:"items"`
     Total       float64            `bson:"total" json:"total"`
     Status      string             `bson:"status" json:"status" pie:"index"`
@@ -223,7 +223,7 @@ type Order struct {
 }
 
 type OrderItem struct {
-    ProductID primitive.ObjectID `bson:"product_id" json:"product_id"`
+    ProductID bson.ObjectID `bson:"product_id" json:"product_id"`
     Name      string             `bson:"name" json:"name"`
     Price     float64            `bson:"price" json:"price"`
     Quantity  int                `bson:"quantity" json:"quantity"`
@@ -292,7 +292,7 @@ func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
     return err
 }
 
-func (r *BaseRepository[T]) GetByID(ctx context.Context, id primitive.ObjectID) (*T, error) {
+func (r *BaseRepository[T]) GetByID(ctx context.Context, id bson.ObjectID) (*T, error) {
     var entity T
     err := r.session.Where("_id", id).First(ctx, &entity)
     if err != nil {
@@ -301,7 +301,7 @@ func (r *BaseRepository[T]) GetByID(ctx context.Context, id primitive.ObjectID) 
     return &entity, nil
 }
 
-func (r *BaseRepository[T]) Update(ctx context.Context, id primitive.ObjectID, updates bson.D) error {
+func (r *BaseRepository[T]) Update(ctx context.Context, id bson.ObjectID, updates bson.D) error {
     result, err := r.session.Where("_id", id).Update(ctx, updates)
     if err != nil {
         return err
@@ -312,7 +312,7 @@ func (r *BaseRepository[T]) Update(ctx context.Context, id primitive.ObjectID, u
     return nil
 }
 
-func (r *BaseRepository[T]) Delete(ctx context.Context, id primitive.ObjectID) error {
+func (r *BaseRepository[T]) Delete(ctx context.Context, id bson.ObjectID) error {
     result, err := r.session.Where("_id", id).Delete(ctx)
     if err != nil {
         return err
@@ -323,7 +323,7 @@ func (r *BaseRepository[T]) Delete(ctx context.Context, id primitive.ObjectID) e
     return nil
 }
 
-func (r *BaseRepository[T]) SoftDelete(ctx context.Context, id primitive.ObjectID) error {
+func (r *BaseRepository[T]) SoftDelete(ctx context.Context, id bson.ObjectID) error {
     return r.session.Where("_id", id).SoftDelete(ctx)
 }
 ```
@@ -377,7 +377,7 @@ func (r *UserRepository) GetUsersByRole(ctx context.Context, role string) ([]mod
     return users, err
 }
 
-func (r *UserRepository) UpdateLastLogin(ctx context.Context, userID primitive.ObjectID) error {
+func (r *UserRepository) UpdateLastLogin(ctx context.Context, userID bson.ObjectID) error {
     now := time.Now()
     return r.Update(ctx, userID, bson.D{{"$set", bson.D{{"last_login", now}}}})
 }
@@ -434,11 +434,11 @@ func (s *UserService) CreateUser(ctx context.Context, userData *CreateUserReques
     return user, nil
 }
 
-func (s *UserService) GetUser(ctx context.Context, userID primitive.ObjectID) (*models.User, error) {
+func (s *UserService) GetUser(ctx context.Context, userID bson.ObjectID) (*models.User, error) {
     return s.userRepo.GetByID(ctx, userID)
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, userID primitive.ObjectID, updates *UpdateUserRequest) error {
+func (s *UserService) UpdateUser(ctx context.Context, userID bson.ObjectID, updates *UpdateUserRequest) error {
     updateDoc := bson.D{}
     
     if updates.Name != "" {
@@ -451,7 +451,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID primitive.ObjectID,
     return s.userRepo.Update(ctx, userID, updateDoc)
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, userID primitive.ObjectID) error {
+func (s *UserService) DeleteUser(ctx context.Context, userID bson.ObjectID) error {
     return s.userRepo.SoftDelete(ctx, userID)
 }
 

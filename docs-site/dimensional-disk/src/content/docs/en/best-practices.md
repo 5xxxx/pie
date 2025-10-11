@@ -58,11 +58,11 @@ package models
 
 import (
     "time"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type BaseModel struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+    ID        bson.ObjectID `bson:"_id,omitempty" json:"id"`
     CreatedAt time.Time          `bson:"created_at" json:"created_at"`
     UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
     DeletedAt *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty" pie:"soft_delete"`
@@ -111,7 +111,7 @@ func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
     return err
 }
 
-func (r *BaseRepository[T]) GetByID(ctx context.Context, id primitive.ObjectID) (*T, error) {
+func (r *BaseRepository[T]) GetByID(ctx context.Context, id bson.ObjectID) (*T, error) {
     var entity T
     err := r.session.Where("_id", id).First(ctx, &entity)
     if err != nil {

@@ -255,7 +255,7 @@ func ProcessUsersGeneric(session *pie.Session[interface{}], ctx context.Context)
 ```go
 // ✅ 推荐：定义清晰的模型
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Age       int                `bson:"age"`
@@ -367,7 +367,7 @@ func ConvertSlice[T, U any](slice []T, converter func(T) U) []U {
 ```go
 // BSON 标签与泛型配合使用
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Age       int                `bson:"age"`

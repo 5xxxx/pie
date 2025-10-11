@@ -74,11 +74,11 @@ engine, err := pie.NewEngine(ctx, "mydb",
 import (
     "context"
     "time"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Age       int                `bson:"age"`
@@ -116,7 +116,7 @@ Pie 支持多种模型标签来定义索引和约束：
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name" pie:"index"`
     Email     string             `bson:"email" pie:"unique"`
     Age       int                `bson:"age"`

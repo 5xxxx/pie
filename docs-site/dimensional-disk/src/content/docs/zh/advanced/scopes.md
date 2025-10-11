@@ -220,7 +220,7 @@ func RecentOrdersScope(days int) pie.ScopeFunc {
     }
 }
 
-func UserOrdersScope(userID primitive.ObjectID) pie.ScopeFunc {
+func UserOrdersScope(userID bson.ObjectID) pie.ScopeFunc {
     return func(q *pie.Query) {
         q.Where("user_id", userID)
     }
@@ -236,7 +236,7 @@ func getCompletedHighValueOrders(minAmount float64) ([]Order, error) {
     return orders, err
 }
 
-func getUserRecentOrders(userID primitive.ObjectID, days int) ([]Order, error) {
+func getUserRecentOrders(userID bson.ObjectID, days int) ([]Order, error) {
     var orders []Order
     err := session.Scopes(
         UserOrdersScope(userID),

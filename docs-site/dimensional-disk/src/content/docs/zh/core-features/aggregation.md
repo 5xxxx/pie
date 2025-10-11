@@ -418,7 +418,7 @@ func getSalesAnalysis() error {
 ### 产品推荐
 
 ```go
-func getProductRecommendations(userID primitive.ObjectID) error {
+func getProductRecommendations(userID bson.ObjectID) error {
     result, err := aggregate.
         MatchStage().Where("_id", userID).
         LookupStage("orders", "_id", "user_id", "user_orders").

@@ -103,7 +103,7 @@ func registerUser(ctx context.Context, userData *UserRegistrationData) error {
         
         // 3. 创建用户资料
         profile := &UserProfile{
-            UserID:   result.InsertedID.(primitive.ObjectID),
+            UserID:   result.InsertedID.(bson.ObjectID),
             Bio:      userData.Bio,
             Location: userData.Location,
         }
@@ -199,7 +199,7 @@ func processOrder(ctx context.Context, orderData *OrderData) error {
 ### 积分转账
 
 ```go
-func transferPoints(ctx context.Context, fromUserID, toUserID primitive.ObjectID, points int) error {
+func transferPoints(ctx context.Context, fromUserID, toUserID bson.ObjectID, points int) error {
     return engine.WithTransaction(ctx, func(txCtx context.Context) error {
         userSession := pie.Table[User](engine)
         

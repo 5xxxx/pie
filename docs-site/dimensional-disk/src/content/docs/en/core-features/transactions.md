@@ -34,7 +34,7 @@ err = tx.Execute(ctx, func(txCtx context.Context) error {
 ## Basic Transaction Usage
 
 ```go
-func TransferPoints(fromUserID, toUserID primitive.ObjectID, points int) error {
+func TransferPoints(fromUserID, toUserID bson.ObjectID, points int) error {
     return engine.WithTransaction(ctx, func(txCtx context.Context) error {
         session := pie.Table[User](engine)
         

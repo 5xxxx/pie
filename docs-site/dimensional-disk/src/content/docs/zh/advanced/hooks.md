@@ -13,7 +13,7 @@ Pie 提供了完整的生命周期钩子支持，允许您在数据操作的各�
 
 ```go
 type User struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
     Name      string             `bson:"name"`
     Email     string             `bson:"email"`
     Password  string             `bson:"password"`
@@ -418,8 +418,8 @@ func (ur *UserRegistration) AfterCreate(ctx context.Context) error {
 
 ```go
 type Order struct {
-    ID          primitive.ObjectID `bson:"_id,omitempty"`
-    UserID      primitive.ObjectID `bson:"user_id"`
+    ID          bson.ObjectID `bson:"_id,omitempty"`
+    UserID      bson.ObjectID `bson:"user_id"`
     Items       []OrderItem        `bson:"items"`
     Total       float64            `bson:"total"`
     Status      string             `bson:"status"`
@@ -479,12 +479,12 @@ func (o *Order) BeforeUpdate(ctx context.Context) error {
 
 ```go
 type AuditLog struct {
-    ID        primitive.ObjectID `bson:"_id,omitempty"`
-    EntityID  primitive.ObjectID `bson:"entity_id"`
+    ID        bson.ObjectID `bson:"_id,omitempty"`
+    EntityID  bson.ObjectID `bson:"entity_id"`
     EntityType string            `bson:"entity_type"`
     Action    string             `bson:"action"`
     Changes   map[string]interface{} `bson:"changes"`
-    UserID    primitive.ObjectID `bson:"user_id"`
+    UserID    bson.ObjectID `bson:"user_id"`
     Timestamp time.Time          `bson:"timestamp"`
 }
 
