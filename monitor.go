@@ -596,10 +596,10 @@ func (mc *MetricsCollector) CollectServer(event *ServerEvent) {
 }
 
 // GetCommandMetrics get command metrics
-func (mc *MetricsCollector) GetCommandMetrics() map[string]interface{} {
-	result := make(map[string]interface{})
+func (mc *MetricsCollector) GetCommandMetrics() map[string]any {
+	result := make(map[string]any)
 	for cmd, count := range mc.commandCounts {
-		result[cmd] = map[string]interface{}{
+		result[cmd] = map[string]any{
 			"count":     count,
 			"totalTime": mc.commandTimes[cmd],
 			"avgTime":   mc.commandTimes[cmd] / time.Duration(count),

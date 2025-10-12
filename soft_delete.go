@@ -38,7 +38,7 @@ func (sdm *SoftDeleteManager) Collection(name string) *SoftDeleteManager {
 }
 
 // CollectionForStruct set target collection by struct
-func (sdm *SoftDeleteManager) CollectionForStruct(v interface{}) *SoftDeleteManager {
+func (sdm *SoftDeleteManager) CollectionForStruct(v any) *SoftDeleteManager {
 	collection, err := sdm.engine.CollectionForStruct(v)
 	if err == nil {
 		sdm.collection = collection
@@ -482,13 +482,13 @@ func NewSoftDeleteHook(manager *SoftDeleteManager, options *SoftDeleteOptions) *
 }
 
 // BeforeDelete delete before hook
-func (sdh *SoftDeleteHook) BeforeDelete(ctx context.Context, doc interface{}) error {
+func (sdh *SoftDeleteHook) BeforeDelete(ctx context.Context, doc any) error {
 	// Can add validation logic before delete here
 	return nil
 }
 
 // AfterDelete delete after hook
-func (sdh *SoftDeleteHook) AfterDelete(ctx context.Context, doc interface{}) error {
+func (sdh *SoftDeleteHook) AfterDelete(ctx context.Context, doc any) error {
 	// Can add cleanup logic after delete here
 	if sdh.options.AutoCleanup {
 		go func() {
@@ -508,7 +508,7 @@ func NewSoftDeleteValidator() *SoftDeleteValidator {
 }
 
 // ValidateSoftDeleteable validate object implements soft delete interface
-func (sdv *SoftDeleteValidator) ValidateSoftDeleteable(obj interface{}) error {
+func (sdv *SoftDeleteValidator) ValidateSoftDeleteable(obj any) error {
 	if _, ok := obj.(SoftDeleteable); !ok {
 		return fmt.Errorf("object does not implement SoftDeleteable interface")
 	}

@@ -23,7 +23,7 @@ func NewOptionsManager(engine *Engine) *OptionsManager {
 // ArrayFiltersManager array filters manager
 type ArrayFiltersManager struct {
 	manager *OptionsManager
-	filters []interface{}
+	filters []any
 }
 
 // LetManager Let variables manager
@@ -47,7 +47,7 @@ type CollationManager struct {
 // HintManager index hint manager
 type HintManager struct {
 	manager *OptionsManager
-	hint    interface{}
+	hint    any
 }
 
 // MaxTimeManager max time manager
@@ -102,7 +102,7 @@ type ReturnDocumentManager struct {
 func (om *OptionsManager) NewArrayFiltersManager() *ArrayFiltersManager {
 	return &ArrayFiltersManager{
 		manager: om,
-		filters: make([]interface{}, 0),
+		filters: make([]any, 0),
 	}
 }
 
@@ -209,12 +209,12 @@ func (afm *ArrayFiltersManager) AddFilters(filters ...bson.D) *ArrayFiltersManag
 
 // Clear clear all filters
 func (afm *ArrayFiltersManager) Clear() *ArrayFiltersManager {
-	afm.filters = make([]interface{}, 0)
+	afm.filters = make([]any, 0)
 	return afm
 }
 
 // GetFilters get all filters
-func (afm *ArrayFiltersManager) GetFilters() []interface{} {
+func (afm *ArrayFiltersManager) GetFilters() []any {
 	return afm.filters
 }
 
@@ -226,7 +226,7 @@ func (afm *ArrayFiltersManager) Count() int {
 // LetManager methods
 
 // SetVariable set Let variable
-func (lm *LetManager) SetVariable(name string, value interface{}) *LetManager {
+func (lm *LetManager) SetVariable(name string, value any) *LetManager {
 	lm.variables = append(lm.variables, bson.E{Key: name, Value: value})
 	return lm
 }
@@ -238,7 +238,7 @@ func (lm *LetManager) SetVariables(variables bson.D) *LetManager {
 }
 
 // GetVariable get Let variable
-func (lm *LetManager) GetVariable(name string) (interface{}, bool) {
+func (lm *LetManager) GetVariable(name string) (any, bool) {
 	for _, elem := range lm.variables {
 		if elem.Key == name {
 			return elem.Value, true
@@ -347,7 +347,7 @@ func (cm *CollationManager) Clear() *CollationManager {
 // HintManager methods
 
 // SetHint set index hint
-func (hm *HintManager) SetHint(hint interface{}) *HintManager {
+func (hm *HintManager) SetHint(hint any) *HintManager {
 	hm.hint = hint
 	return hm
 }
@@ -365,7 +365,7 @@ func (hm *HintManager) SetDocumentHint(hint bson.D) *HintManager {
 }
 
 // GetHint get index hint
-func (hm *HintManager) GetHint() interface{} {
+func (hm *HintManager) GetHint() any {
 	return hm.hint
 }
 
@@ -849,7 +849,7 @@ func NewOptionsValidator() *OptionsValidator {
 }
 
 // ValidateArrayFilters validate array filters
-func (ov *OptionsValidator) ValidateArrayFilters(filters []interface{}) error {
+func (ov *OptionsValidator) ValidateArrayFilters(filters []any) error {
 	if len(filters) > 10 {
 		return fmt.Errorf("too many array filters: %d (max 10)", len(filters))
 	}

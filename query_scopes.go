@@ -75,7 +75,7 @@ func VisibleScope(visibilityField string, visibleValues ...string) ScopeFunc {
 }
 
 // DateRangeScope date range scope
-func DateRangeScope(field string, start, end interface{}) ScopeFunc {
+func DateRangeScope(field string, start, end any) ScopeFunc {
 	return func(q *Query) *Query {
 		return q.WhereBetween(field, start, end)
 	}

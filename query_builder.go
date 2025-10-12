@@ -7,19 +7,19 @@ import (
 )
 
 // WhereIn checks if field value is in specified range
-func (s *Session[T]) WhereIn(field string, values interface{}) *Session[T] {
+func (s *Session[T]) WhereIn(field string, values any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{Key: field, Value: bson.D{{Key: "$in", Value: values}}})
 	return s
 }
 
 // WhereNotIn checks if field value is not in specified range
-func (s *Session[T]) WhereNotIn(field string, values interface{}) *Session[T] {
+func (s *Session[T]) WhereNotIn(field string, values any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{Key: field, Value: bson.D{{Key: "$nin", Value: values}}})
 	return s
 }
 
 // WhereBetween checks if field value is between min and max
-func (s *Session[T]) WhereBetween(field string, min, max interface{}) *Session[T] {
+func (s *Session[T]) WhereBetween(field string, min, max any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{
 		Key: field,
 		Value: bson.D{
@@ -31,7 +31,7 @@ func (s *Session[T]) WhereBetween(field string, min, max interface{}) *Session[T
 }
 
 // WhereNotBetween checks if field value is not between min and max
-func (s *Session[T]) WhereNotBetween(field string, min, max interface{}) *Session[T] {
+func (s *Session[T]) WhereNotBetween(field string, min, max any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{
 		Key: "$or",
 		Value: []bson.D{
@@ -81,7 +81,7 @@ func (s *Session[T]) WhereNotExists(field string) *Session[T] {
 // WhereDate performs date comparisons on the specified field. When a string is
 // supplied it is parsed using several common layouts before falling back to the
 // original value.
-func (s *Session[T]) WhereDate(field string, operator string, value interface{}) *Session[T] {
+func (s *Session[T]) WhereDate(field string, operator string, value any) *Session[T] {
 	var op string
 	switch operator {
 	case ">", "gt":
@@ -131,7 +131,7 @@ func (s *Session[T]) WhereDate(field string, operator string, value interface{})
 }
 
 // WhereDateBetween constrains a date field to lie within the provided range.
-func (s *Session[T]) WhereDateBetween(field string, start, end interface{}) *Session[T] {
+func (s *Session[T]) WhereDateBetween(field string, start, end any) *Session[T] {
 	return s.WhereBetween(field, start, end)
 }
 
@@ -142,7 +142,7 @@ func (s *Session[T]) WhereMonth(field string, month int) *Session[T] {
 		Key: "$expr",
 		Value: bson.D{{
 			Key: "$eq",
-			Value: []interface{}{
+			Value: []any{
 				bson.D{{Key: "$month", Value: "$" + field}},
 				month,
 			},
@@ -157,7 +157,7 @@ func (s *Session[T]) WhereYear(field string, year int) *Session[T] {
 		Key: "$expr",
 		Value: bson.D{{
 			Key: "$eq",
-			Value: []interface{}{
+			Value: []any{
 				bson.D{{Key: "$year", Value: "$" + field}},
 				year,
 			},
@@ -231,7 +231,7 @@ func (s *Session[T]) WhereEndsWith(field string, suffix string) *Session[T] {
 
 // WhereArrayContains ensures that the provided element is present in the array
 // field.
-func (s *Session[T]) WhereArrayContains(field string, value interface{}) *Session[T] {
+func (s *Session[T]) WhereArrayContains(field string, value any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{Key: field, Value: value})
 	return s
 }
@@ -244,7 +244,7 @@ func (s *Session[T]) WhereArraySize(field string, size int) *Session[T] {
 
 // WhereArrayAll requires an array field to contain all elements provided by
 // values.
-func (s *Session[T]) WhereArrayAll(field string, values interface{}) *Session[T] {
+func (s *Session[T]) WhereArrayAll(field string, values any) *Session[T] {
 	s.query.filter = append(s.query.filter, bson.E{Key: field, Value: bson.D{{Key: "$all", Value: values}}})
 	return s
 }
@@ -292,19 +292,19 @@ func (s *Session[T]) AndWhere(callback func(*Query) *Query) *Session[T] {
 // Query extensions (allowing chainable Query usage)
 
 // WhereIn appends an $in condition for Query builders.
-func (q *Query) WhereIn(field string, values interface{}) *Query {
+func (q *Query) WhereIn(field string, values any) *Query {
 	q.filter = append(q.filter, bson.E{Key: field, Value: bson.D{{Key: "$in", Value: values}}})
 	return q
 }
 
 // WhereNotIn appends an $nin condition for Query builders.
-func (q *Query) WhereNotIn(field string, values interface{}) *Query {
+func (q *Query) WhereNotIn(field string, values any) *Query {
 	q.filter = append(q.filter, bson.E{Key: field, Value: bson.D{{Key: "$nin", Value: values}}})
 	return q
 }
 
 // WhereBetween adds a range constraint by combining $gte and $lte operators.
-func (q *Query) WhereBetween(field string, min, max interface{}) *Query {
+func (q *Query) WhereBetween(field string, min, max any) *Query {
 	q.filter = append(q.filter, bson.E{
 		Key: field,
 		Value: bson.D{

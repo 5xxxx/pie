@@ -10,7 +10,7 @@ import (
 )
 
 // WhereStruct generate query conditions based on struct
-func (s *Session[T]) WhereStruct(filter interface{}) *Session[T] {
+func (s *Session[T]) WhereStruct(filter any) *Session[T] {
 	conditions := parseStructToConditions(filter)
 	for _, cond := range conditions {
 		s.query.filter = append(s.query.filter, cond)
@@ -19,7 +19,7 @@ func (s *Session[T]) WhereStruct(filter interface{}) *Session[T] {
 }
 
 // parseStructToConditions parse struct to query conditions
-func parseStructToConditions(filter interface{}) []bson.E {
+func parseStructToConditions(filter any) []bson.E {
 	var conditions []bson.E
 
 	v := reflect.ValueOf(filter)
@@ -293,7 +293,7 @@ func isZeroValue(v reflect.Value) bool {
 // Query method extensions
 
 // WhereStruct generate query conditions based on struct
-func (q *Query) WhereStruct(filter interface{}) *Query {
+func (q *Query) WhereStruct(filter any) *Query {
 	conditions := parseStructToConditions(filter)
 	for _, cond := range conditions {
 		q.filter = append(q.filter, cond)
@@ -314,7 +314,7 @@ func (s *Session[T]) WhereStructFilter(filter StructFilter) *Session[T] {
 }
 
 // validateStructFilter validate struct filter
-func validateStructFilter(filter interface{}) error {
+func validateStructFilter(filter any) error {
 	v := reflect.ValueOf(filter)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -328,7 +328,7 @@ func validateStructFilter(filter interface{}) error {
 }
 
 // ParseStructToBSON parse struct to bson.D (exported for external use)
-func ParseStructToBSON(filter interface{}) (bson.D, error) {
+func ParseStructToBSON(filter any) (bson.D, error) {
 	if err := validateStructFilter(filter); err != nil {
 		return nil, err
 	}

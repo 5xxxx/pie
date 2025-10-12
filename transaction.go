@@ -31,7 +31,7 @@ func (t *Transaction) TransactionWithOptions(ctx context.Context, fn Transaction
 	}
 	defer session.EndSession(ctx)
 
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		return nil, fn(sessCtx)
 	})
 
@@ -52,7 +52,7 @@ func TransactionWithResult[T any](t *Transaction, ctx context.Context, fn func(c
 	defer session.EndSession(ctx)
 
 	var result T
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		var err error
 		result, err = fn(sessCtx)
 		return result, err
@@ -73,7 +73,7 @@ func TransactionWithResultAndOptions[T any](t *Transaction, ctx context.Context,
 	defer session.EndSession(ctx)
 
 	var result T
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		var err error
 		result, err = fn(sessCtx)
 		return result, err
@@ -136,7 +136,7 @@ func NewTransactionSession(session *mongo.Session, ctx context.Context) *Transac
 
 // WithTransaction execute transaction
 func (ts *TransactionSession) WithTransaction(fn TransactionFunc) error {
-	_, err := ts.session.WithTransaction(ts.ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err := ts.session.WithTransaction(ts.ctx, func(sessCtx context.Context) (any, error) {
 		return nil, fn(sessCtx)
 	})
 	return err
@@ -145,7 +145,7 @@ func (ts *TransactionSession) WithTransaction(fn TransactionFunc) error {
 // WithTransactionResult execute transaction and return result
 func WithTransactionResult[T any](ts *TransactionSession, fn func(context.Context) (T, error)) (*TransactionResult[T], error) {
 	var result T
-	_, err := ts.session.WithTransaction(ts.ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err := ts.session.WithTransaction(ts.ctx, func(sessCtx context.Context) (any, error) {
 		var err error
 		result, err = fn(sessCtx)
 		return result, err

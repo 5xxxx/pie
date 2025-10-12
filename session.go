@@ -213,8 +213,8 @@ func (s *Session[T]) InsertMany(ctx context.Context, docs []T) (InsertManyResult
 		}
 	}
 
-	// 2. Convert to interface{} slice
-	interfaceDocs := make([]interface{}, len(docs))
+	// 2. Convert to any slice
+	interfaceDocs := make([]any, len(docs))
 	for i, doc := range docs {
 		interfaceDocs[i] = doc
 	}
@@ -437,13 +437,13 @@ func (s *Session[T]) Count(ctx context.Context) (int64, error) {
 }
 
 // Distinct get distinct values
-func (s *Session[T]) Distinct(ctx context.Context, field string) ([]interface{}, error) {
+func (s *Session[T]) Distinct(ctx context.Context, field string) ([]any, error) {
 	if s.initErr != nil {
 		return nil, fmt.Errorf("session initialization failed: %w", s.initErr)
 	}
 
 	result := s.collection.Distinct(ctx, field, s.query.GetFilter())
-	var values []interface{}
+	var values []any
 	err := result.Decode(&values)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode distinct values: %w", err)
@@ -455,7 +455,7 @@ func (s *Session[T]) Distinct(ctx context.Context, field string) ([]interface{},
 // Chaining methods
 
 // Where add condition
-func (s *Session[T]) Where(field string, value interface{}) *Session[T] {
+func (s *Session[T]) Where(field string, value any) *Session[T] {
 	s.query.Where(field, value)
 	return s
 }
@@ -872,7 +872,7 @@ func (s *Session[T]) FindOneAndUpdate(ctx context.Context, update bson.D, return
 // Advanced query features - merged from advanced_query.go
 
 // Hint set index hint
-func (s *Session[T]) Hint(hint interface{}) *Session[T] {
+func (s *Session[T]) Hint(hint any) *Session[T] {
 	if s.options.FindOptions == nil {
 		s.options.FindOptions = options.Find()
 	}
@@ -944,7 +944,7 @@ func (s *Session[T]) Max(max bson.D) *Session[T] {
 }
 
 // ArrayFilters set array filters (for update operations)
-func (s *Session[T]) ArrayFilters(filters []interface{}) *Session[T] {
+func (s *Session[T]) ArrayFilters(filters []any) *Session[T] {
 	// Convert to []any for v2
 	anyFilters := make([]any, len(filters))
 	for i, filter := range filters {

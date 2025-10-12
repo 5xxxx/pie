@@ -181,7 +181,7 @@ func setupTestData(t *testing.T, collectionName string) []TestUser {
 	}
 
 	// 插入测试数据
-	docs := make([]interface{}, len(users))
+	docs := make([]any, len(users))
 	for i, u := range users {
 		docs[i] = u
 	}
@@ -239,7 +239,7 @@ func setupTestOrders(t *testing.T, collectionName string, users []TestUser) {
 		},
 	}
 
-	docs := make([]interface{}, len(orders))
+	docs := make([]any, len(orders))
 	for i, o := range orders {
 		docs[i] = o
 	}
@@ -263,7 +263,7 @@ func setupTestProducts(t *testing.T, collectionName string) {
 		{ID: "prod_4", Name: "Chair", Category: "Furniture", Price: 199.99, Stock: 45, Tags: []string{"office", "home"}},
 	}
 
-	docs := make([]interface{}, len(products))
+	docs := make([]any, len(products))
 	for i, p := range products {
 		docs[i] = p
 	}

@@ -30,12 +30,12 @@ func (d *Database) Collection(name string) *mongo.Collection {
 }
 
 // CollectionForStruct get collection by struct
-func (d *Database) CollectionForStruct(v interface{}) (*mongo.Collection, error) {
+func (d *Database) CollectionForStruct(v any) (*mongo.Collection, error) {
 	return d.engine.CollectionForStruct(v)
 }
 
 // ListCollections list all collections
-func (d *Database) ListCollections(ctx context.Context, filter interface{}) (*mongo.Cursor, error) {
+func (d *Database) ListCollections(ctx context.Context, filter any) (*mongo.Cursor, error) {
 	start := time.Now()
 
 	opts := options.ListCollections()
@@ -57,7 +57,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}) (*mo
 }
 
 // ListCollectionNames list all collection names
-func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}) ([]string, error) {
+func (d *Database) ListCollectionNames(ctx context.Context, filter any) ([]string, error) {
 	start := time.Now()
 
 	names, err := d.database.ListCollectionNames(ctx, filter)
@@ -128,7 +128,7 @@ func (d *Database) DropCollection(ctx context.Context, name string) error {
 }
 
 // RunCommand execute database command
-func (d *Database) RunCommand(ctx context.Context, command interface{}) (*mongo.SingleResult, error) {
+func (d *Database) RunCommand(ctx context.Context, command any) (*mongo.SingleResult, error) {
 	start := time.Now()
 
 	result := d.database.RunCommand(ctx, command)
@@ -149,7 +149,7 @@ func (d *Database) RunCommand(ctx context.Context, command interface{}) (*mongo.
 }
 
 // RunCommandCursor execute database command returning cursor
-func (d *Database) RunCommandCursor(ctx context.Context, command interface{}) (*mongo.Cursor, error) {
+func (d *Database) RunCommandCursor(ctx context.Context, command any) (*mongo.Cursor, error) {
 	start := time.Now()
 
 	cursor, err := d.database.RunCommandCursor(ctx, command)
@@ -170,7 +170,7 @@ func (d *Database) RunCommandCursor(ctx context.Context, command interface{}) (*
 }
 
 // Aggregate execute aggregation at database level
-func (d *Database) Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error) {
+func (d *Database) Aggregate(ctx context.Context, pipeline any) (*mongo.Cursor, error) {
 	start := time.Now()
 
 	cursor, err := d.database.Aggregate(ctx, pipeline)
@@ -191,7 +191,7 @@ func (d *Database) Aggregate(ctx context.Context, pipeline interface{}) (*mongo.
 }
 
 // Watch listen to database level changes
-func (d *Database) Watch(ctx context.Context, pipeline interface{}) (*mongo.ChangeStream, error) {
+func (d *Database) Watch(ctx context.Context, pipeline any) (*mongo.ChangeStream, error) {
 	start := time.Now()
 
 	stream, err := d.database.Watch(ctx, pipeline)
@@ -292,7 +292,7 @@ func (d *Database) SetProfilingLevel(ctx context.Context, level int32, slowMs in
 }
 
 // GetProfilingData get profiling data
-func (d *Database) GetProfilingData(ctx context.Context, filter interface{}) (*mongo.Cursor, error) {
+func (d *Database) GetProfilingData(ctx context.Context, filter any) (*mongo.Cursor, error) {
 	return d.Collection("system.profile").Find(ctx, filter)
 }
 
@@ -302,7 +302,7 @@ func (d *Database) ClearProfilingData(ctx context.Context) error {
 }
 
 // CreateView create view
-func (d *Database) CreateView(ctx context.Context, viewName, sourceCollection string, pipeline interface{}) error {
+func (d *Database) CreateView(ctx context.Context, viewName, sourceCollection string, pipeline any) error {
 	command := bson.D{
 		{Key: "create", Value: viewName},
 		{Key: "viewOn", Value: sourceCollection},

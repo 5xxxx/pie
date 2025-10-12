@@ -21,7 +21,7 @@ Pie 基于 Go 泛型构建，提供类型安全的 MongoDB 操作体验。本指
 // 创建类型安全的会话
 session := pie.Table[User](engine)
 
-// 查询操作返回 []User，而不是 []interface{}
+// 查询操作返回 []User，而不是 []any
 users, err := session.Find(context.Background())
 
 // 插入操作接受 *User 类型
@@ -60,7 +60,7 @@ for cursor.Next(context.Background()) {
     if err := cursor.Decode(&user); err != nil {
         // 处理错误
     }
-    // user 是 User 类型，不是 interface{}
+    // user 是 User 类型，不是 any
 }
 ```
 
@@ -90,7 +90,7 @@ session := pie.MustTableWithDefault[User]()           // 必须成功创建会�
 
 ```go
 // ❌ 传统方式 - 运行时可能出错
-var users []interface{}
+var users []any
 err := session.Find(context.Background(), &users)
 // 需要手动类型断言
 for _, u := range users {
@@ -232,7 +232,7 @@ func WatchUserChanges[T any](engine *pie.Engine) {
 
 ## 最佳实践
 
-### 何时使用泛型 vs 何时使用 interface{}
+### 何时使用泛型 vs 何时使用 any
 
 ```go
 // ✅ 推荐：使用泛型，类型安全
@@ -242,9 +242,9 @@ func ProcessUsers[T any](session *pie.Session[T], ctx context.Context) ([]T, err
     return users, err
 }
 
-// ❌ 不推荐：使用 interface{}，失去类型安全
-func ProcessUsersGeneric(session *pie.Session[interface{}], ctx context.Context) ([]interface{}, error) {
-    var users []interface{}
+// ❌ 不推荐：使用 any，失去类型安全
+func ProcessUsersGeneric(session *pie.Session[any], ctx context.Context) ([]any, error) {
+    var users []any
     err := session.Find(ctx, &users)
     return users, err
 }
@@ -287,8 +287,8 @@ func GetUserByEmail[T any](session *pie.Session[T], email string) (*T, error) {
 }
 
 // ❌ 不推荐：需要类型转换
-func GetUserByEmailGeneric(session *pie.Session[interface{}], email string) (interface{}, error) {
-    var user interface{}
+func GetUserByEmailGeneric(session *pie.Session[any], email string) (any, error) {
+    var user any
     err := session.Where("email", email).First(context.Background(), &user)
     if err != nil {
         return nil, err

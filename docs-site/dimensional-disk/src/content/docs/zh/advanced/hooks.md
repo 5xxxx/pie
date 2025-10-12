@@ -295,7 +295,7 @@ func (u *User) processUserData() error {
 
 func (u *User) saveUserMetadata() error {
     // 保存用户元数据
-    u.Metadata = map[string]interface{}{
+    u.Metadata = map[string]any{
         "created_by": getCurrentUserID(ctx),
         "created_ip": getClientIP(ctx),
         "user_agent": getUserAgent(ctx),
@@ -483,7 +483,7 @@ type AuditLog struct {
     EntityID  bson.ObjectID `bson:"entity_id"`
     EntityType string            `bson:"entity_type"`
     Action    string             `bson:"action"`
-    Changes   map[string]interface{} `bson:"changes"`
+    Changes   map[string]any `bson:"changes"`
     UserID    bson.ObjectID `bson:"user_id"`
     Timestamp time.Time          `bson:"timestamp"`
 }
@@ -560,7 +560,7 @@ func (u *User) AfterCreate(ctx context.Context) error {
 ```go
 func (u *User) BeforeCreate(ctx context.Context) error {
     // 在上下文中存储数据
-    ctx = context.WithValue(ctx, "user_metadata", map[string]interface{}{
+    ctx = context.WithValue(ctx, "user_metadata", map[string]any{
         "created_by": getCurrentUserID(ctx),
         "created_ip": getClientIP(ctx),
     })
@@ -570,7 +570,7 @@ func (u *User) BeforeCreate(ctx context.Context) error {
 
 func (u *User) AfterCreate(ctx context.Context) error {
     // 从上下文获取数据
-    if metadata, ok := ctx.Value("user_metadata").(map[string]interface{}); ok {
+    if metadata, ok := ctx.Value("user_metadata").(map[string]any); ok {
         u.Metadata = metadata
     }
     

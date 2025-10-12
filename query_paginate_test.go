@@ -43,7 +43,7 @@ func setupPaginateTestDB(t *testing.T) {
 	// 从环境变量获取MongoDB连接地址，默认为本地地址
 	mongoURI := os.Getenv("MONGO_TEST_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27018/pie-test"
+		mongoURI = "mongodb://admin:password@localhost:27017/pie-test?authSource=admin"
 	}
 
 	// 连接到MongoDB
@@ -86,7 +86,7 @@ func teardownPaginateTestDB(t *testing.T) {
 func createTestUsers(t *testing.T, count int) []PaginateTestUser {
 	users := make([]PaginateTestUser, count)
 	now := time.Now()
-	
+
 	for i := 0; i < count; i++ {
 		users[i] = PaginateTestUser{
 			Name:    fmt.Sprintf("User%d", i+1),
@@ -97,24 +97,24 @@ func createTestUsers(t *testing.T, count int) []PaginateTestUser {
 			Updated: now.Add(-time.Duration(i) * time.Hour),
 		}
 	}
-	
+
 	return users
 }
 
 func TestPaginate(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 25)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试第一页
 	result, err := session.Paginate(ctx, PaginateParams{
 		Page:     1,
@@ -123,7 +123,7 @@ func TestPaginate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate: %v", err)
 	}
-	
+
 	if result.Total != 25 {
 		t.Errorf("Expected total 25, got %d", result.Total)
 	}
@@ -145,7 +145,7 @@ func TestPaginate(t *testing.T) {
 	if result.HasPrev {
 		t.Error("Expected no previous page")
 	}
-	
+
 	// 测试第二页
 	result, err = session.Paginate(ctx, PaginateParams{
 		Page:     2,
@@ -154,7 +154,7 @@ func TestPaginate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate page 2: %v", err)
 	}
-	
+
 	if result.Page != 2 {
 		t.Errorf("Expected page 2, got %d", result.Page)
 	}
@@ -167,7 +167,7 @@ func TestPaginate(t *testing.T) {
 	if !result.HasPrev {
 		t.Error("Expected has previous page")
 	}
-	
+
 	// 测试最后一页
 	result, err = session.Paginate(ctx, PaginateParams{
 		Page:     3,
@@ -176,7 +176,7 @@ func TestPaginate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate page 3: %v", err)
 	}
-	
+
 	if result.Page != 3 {
 		t.Errorf("Expected page 3, got %d", result.Page)
 	}
@@ -194,17 +194,17 @@ func TestPaginate(t *testing.T) {
 func TestPaginateWithDefaultValues(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 5)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试默认值
 	result, err := session.Paginate(ctx, PaginateParams{
 		Page:     0, // 应该默认为1
@@ -213,7 +213,7 @@ func TestPaginateWithDefaultValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate with defaults: %v", err)
 	}
-	
+
 	if result.Page != 1 {
 		t.Errorf("Expected page 1 (default), got %d", result.Page)
 	}
@@ -225,17 +225,17 @@ func TestPaginateWithDefaultValues(t *testing.T) {
 func TestPaginateSimple(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 15)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试简单分页
 	result, err := session.PaginateSimple(ctx, PaginateParams{
 		Page:     1,
@@ -244,7 +244,7 @@ func TestPaginateSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate simple: %v", err)
 	}
-	
+
 	if result.Page != 1 {
 		t.Errorf("Expected page 1, got %d", result.Page)
 	}
@@ -257,7 +257,7 @@ func TestPaginateSimple(t *testing.T) {
 	if !result.HasNext {
 		t.Error("Expected has next page")
 	}
-	
+
 	// 测试最后一页
 	result, err = session.PaginateSimple(ctx, PaginateParams{
 		Page:     2,
@@ -266,7 +266,7 @@ func TestPaginateSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate simple page 2: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items on last page, got %d", len(result.Data))
 	}
@@ -278,17 +278,17 @@ func TestPaginateSimple(t *testing.T) {
 func TestPaginateCursor(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 15)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试游标分页
 	result, err := session.PaginateCursor(ctx, CursorPaginateParams{
 		PageSize:  5,
@@ -297,7 +297,7 @@ func TestPaginateCursor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate cursor: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items, got %d", len(result.Data))
 	}
@@ -310,7 +310,7 @@ func TestPaginateCursor(t *testing.T) {
 	if result.HasPrev {
 		t.Error("Expected no previous page")
 	}
-	
+
 	// 测试下一页
 	result, err = session.PaginateCursor(ctx, CursorPaginateParams{
 		PageSize:  5,
@@ -320,7 +320,7 @@ func TestPaginateCursor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate cursor next page: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items on next page, got %d", len(result.Data))
 	}
@@ -335,17 +335,17 @@ func TestPaginateCursor(t *testing.T) {
 func TestPaginateCursorByID(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 15)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试ID游标分页
 	result, err := session.PaginateCursorByID(ctx, IDCursorParams{
 		PageSize: 5,
@@ -353,7 +353,7 @@ func TestPaginateCursorByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate cursor by ID: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items, got %d", len(result.Data))
 	}
@@ -366,7 +366,7 @@ func TestPaginateCursorByID(t *testing.T) {
 	if result.HasPrev {
 		t.Error("Expected no previous page")
 	}
-	
+
 	// 测试下一页
 	result, err = session.PaginateCursorByID(ctx, IDCursorParams{
 		PageSize: 5,
@@ -375,7 +375,7 @@ func TestPaginateCursorByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate cursor by ID next page: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items on next page, got %d", len(result.Data))
 	}
@@ -387,10 +387,10 @@ func TestPaginateCursorByID(t *testing.T) {
 func TestPaginateEmptyResult(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 测试空结果
 	result, err := session.Paginate(ctx, PaginateParams{
 		Page:     1,
@@ -399,7 +399,7 @@ func TestPaginateEmptyResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate empty result: %v", err)
 	}
-	
+
 	if result.Total != 0 {
 		t.Errorf("Expected total 0, got %d", result.Total)
 	}
@@ -417,17 +417,17 @@ func TestPaginateEmptyResult(t *testing.T) {
 func TestPaginateWithFilter(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 20)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试带过滤条件的分页
 	result, err := session.Where("age", bson.D{{Key: "$gte", Value: 30}}).Paginate(ctx, PaginateParams{
 		Page:     1,
@@ -436,7 +436,7 @@ func TestPaginateWithFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate with filter: %v", err)
 	}
-	
+
 	// 验证过滤结果
 	for _, user := range result.Data {
 		if user.Age < 30 {
@@ -448,10 +448,10 @@ func TestPaginateWithFilter(t *testing.T) {
 func TestPaginateCursorInvalidCursor(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 测试无效游标
 	_, err := session.PaginateCursor(ctx, CursorPaginateParams{
 		PageSize:  5,
@@ -466,10 +466,10 @@ func TestPaginateCursorInvalidCursor(t *testing.T) {
 func TestPaginateCursorNoSortField(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 测试没有排序字段
 	_, err := session.PaginateCursor(ctx, CursorPaginateParams{
 		PageSize: 5,
@@ -482,17 +482,17 @@ func TestPaginateCursorNoSortField(t *testing.T) {
 func TestPaginateCursorMultiFieldSort(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 10)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试多字段排序
 	result, err := session.PaginateCursor(ctx, CursorPaginateParams{
 		PageSize:   5,
@@ -501,7 +501,7 @@ func TestPaginateCursorMultiFieldSort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate cursor with multi-field sort: %v", err)
 	}
-	
+
 	if len(result.Data) != 5 {
 		t.Errorf("Expected 5 items, got %d", len(result.Data))
 	}
@@ -512,29 +512,29 @@ func TestPaginateCursorMultiFieldSort(t *testing.T) {
 
 func TestPaginateCursorDecode(t *testing.T) {
 	// 测试游标编码解码
-	cursorMap := map[string]interface{}{
+	cursorMap := map[string]any{
 		"created": time.Now(),
 		"age":     25,
 	}
-	
+
 	cursorJSON, err := json.Marshal(cursorMap)
 	if err != nil {
 		t.Fatalf("Failed to marshal cursor: %v", err)
 	}
-	
+
 	encoded := base64.StdEncoding.EncodeToString(cursorJSON)
-	
+
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		t.Fatalf("Failed to decode cursor: %v", err)
 	}
-	
-	var decodedMap map[string]interface{}
+
+	var decodedMap map[string]any
 	err = json.Unmarshal(decoded, &decodedMap)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal cursor: %v", err)
 	}
-	
+
 	if len(decodedMap) != 2 {
 		t.Errorf("Expected 2 fields in decoded cursor, got %d", len(decodedMap))
 	}
@@ -543,17 +543,17 @@ func TestPaginateCursorDecode(t *testing.T) {
 func TestPaginateBoundaryValues(t *testing.T) {
 	setupPaginateTestDB(t)
 	defer teardownPaginateTestDB(t)
-	
+
 	ctx := context.Background()
 	session := Table[PaginateTestUser](paginateTestEngine)
-	
+
 	// 创建测试数据
 	users := createTestUsers(t, 3)
 	_, err := session.InsertMany(ctx, users)
 	if err != nil {
 		t.Fatalf("Failed to insert test data: %v", err)
 	}
-	
+
 	// 测试边界值
 	result, err := session.Paginate(ctx, PaginateParams{
 		Page:     1,
@@ -562,14 +562,14 @@ func TestPaginateBoundaryValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate with page size 1: %v", err)
 	}
-	
+
 	if len(result.Data) != 1 {
 		t.Errorf("Expected 1 item, got %d", len(result.Data))
 	}
 	if result.TotalPages != 3 {
 		t.Errorf("Expected 3 total pages, got %d", result.TotalPages)
 	}
-	
+
 	// 测试大页面大小
 	result, err = session.Paginate(ctx, PaginateParams{
 		Page:     1,
@@ -578,7 +578,7 @@ func TestPaginateBoundaryValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to paginate with large page size: %v", err)
 	}
-	
+
 	if len(result.Data) != 3 {
 		t.Errorf("Expected 3 items, got %d", len(result.Data))
 	}

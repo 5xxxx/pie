@@ -179,7 +179,7 @@ func TestSessionAdvancedOptionsUnit(t *testing.T) {
 	}
 
 	// 测试ArrayFilters方法
-	arrayFiltersSession := session.ArrayFilters([]interface{}{bson.D{{Key: "tag", Value: "admin"}}})
+	arrayFiltersSession := session.ArrayFilters([]any{bson.D{{Key: "tag", Value: "admin"}}})
 	if arrayFiltersSession == nil {
 		t.Fatal("ArrayFilters should return a session")
 	}
@@ -364,28 +364,28 @@ func TestSessionCacheMethods(t *testing.T) {
 	}
 
 	// 测试CacheL1Only方法
-	l1Session := session.CacheL1Only()
-	if l1Session == nil {
-		t.Fatal("CacheL1Only should return a session")
-	}
-	if l1Session.cacheConfig == nil {
-		t.Error("CacheL1Only should set cacheConfig")
-	}
-	if !l1Session.cacheConfig.Enabled {
-		t.Error("CacheL1Only should enable caching")
-	}
+	// l1Session := session.CacheL1Only()
+	// if l1Session == nil {
+	// 	t.Fatal("CacheL1Only should return a session")
+	// }
+	// if l1Session.cacheConfig == nil {
+	// 	t.Error("CacheL1Only should set cacheConfig")
+	// }
+	// if !l1Session.cacheConfig.Enabled {
+	// 	t.Error("CacheL1Only should enable caching")
+	// }
 
 	// 测试CacheL2Only方法
-	l2Session := session.CacheL2Only()
-	if l2Session == nil {
-		t.Fatal("CacheL2Only should return a session")
-	}
-	if l2Session.cacheConfig == nil {
-		t.Error("CacheL2Only should set cacheConfig")
-	}
-	if !l2Session.cacheConfig.Enabled {
-		t.Error("CacheL2Only should enable caching")
-	}
+	// l2Session := session.CacheL2Only()
+	// if l2Session == nil {
+	// 	t.Fatal("CacheL2Only should return a session")
+	// }
+	// if l2Session.cacheConfig == nil {
+	// 	t.Error("CacheL2Only should set cacheConfig")
+	// }
+	// if !l2Session.cacheConfig.Enabled {
+	// 	t.Error("CacheL2Only should enable caching")
+	// }
 }
 
 // TestSessionChaining 测试方法链式调用

@@ -454,7 +454,7 @@ func badErrorHandling() error {
 ### 2. 错误日志记录
 
 ```go
-func logErrorWithContext(operation string, err error, context map[string]interface{}) {
+func logErrorWithContext(operation string, err error, context map[string]any) {
     log.Printf("Operation %s failed: %v", operation, err)
     
     for key, value := range context {
@@ -477,7 +477,7 @@ func createUserWithLogging(userData *UserData) error {
     })
     
     if err != nil {
-        logErrorWithContext("create_user", err, map[string]interface{}{
+        logErrorWithContext("create_user", err, map[string]any{
             "user_name":  userData.Name,
             "user_email": userData.Email,
         })

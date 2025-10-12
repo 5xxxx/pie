@@ -60,7 +60,7 @@ func (w *ChangeStreamWatcher[T]) Collection(name string) *ChangeStreamWatcher[T]
 }
 
 // CollectionForStruct set the collection to watch (by struct)
-func (w *ChangeStreamWatcher[T]) CollectionForStruct(v interface{}) *ChangeStreamWatcher[T] {
+func (w *ChangeStreamWatcher[T]) CollectionForStruct(v any) *ChangeStreamWatcher[T] {
 	collection, err := w.engine.CollectionForStruct(v)
 	if err == nil {
 		w.collection = collection

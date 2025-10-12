@@ -525,7 +525,7 @@ func TestUpdateColumns(t *testing.T) {
 	}
 
 	// 测试UpdateColumns
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"age":   40,
 		"score": 95.0,
 	}

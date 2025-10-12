@@ -453,7 +453,7 @@ type PrecompiledMapper struct {
     fieldNames map[string]string
 }
 
-func NewPrecompiledMapper(structs ...interface{}) *PrecompiledMapper {
+func NewPrecompiledMapper(structs ...any) *PrecompiledMapper {
     mapper := &PrecompiledMapper{
         tableNames: make(map[string]string),
         fieldNames: make(map[string]string),

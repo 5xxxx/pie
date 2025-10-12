@@ -33,7 +33,7 @@ func (i *Indexes) Collection(name string) *Indexes {
 }
 
 // CollectionForStruct set collection by struct
-func (i *Indexes) CollectionForStruct(v interface{}) *Indexes {
+func (i *Indexes) CollectionForStruct(v any) *Indexes {
 	collection, err := i.engine.CollectionForStruct(v)
 	if err != nil {
 		// Here we can log the error but don't interrupt the chain call

@@ -10,19 +10,19 @@ import (
 
 // TestStruct 用于测试结构体查询
 type TestStruct struct {
-	Name     string                 `pie:"name"`
-	Age      int                    `pie:"age,gt"`
-	Email    string                 `pie:"email,like"`
-	Status   string                 `pie:"status,in"`
-	Score    float64                `pie:"score,gte"`
-	Created  time.Time              `pie:"created_at,between"`
-	Tags     []string               `pie:"tags,all"`
-	Active   bool                   `pie:"active,eq"`
-	Deleted  *time.Time             `pie:"deleted_at,null"`
-	Profile  map[string]interface{} `pie:"profile,exists"`
-	Count    int                    `pie:"count,size"`
-	Priority int                    `pie:"priority,omitempty"`
-	Empty    string                 `pie:"empty,omitempty"`
+	Name     string         `pie:"name"`
+	Age      int            `pie:"age,gt"`
+	Email    string         `pie:"email,like"`
+	Status   string         `pie:"status,in"`
+	Score    float64        `pie:"score,gte"`
+	Created  time.Time      `pie:"created_at,between"`
+	Tags     []string       `pie:"tags,all"`
+	Active   bool           `pie:"active,eq"`
+	Deleted  *time.Time     `pie:"deleted_at,null"`
+	Profile  map[string]any `pie:"profile,exists"`
+	Count    int            `pie:"count,size"`
+	Priority int            `pie:"priority,omitempty"`
+	Empty    string         `pie:"empty,omitempty"`
 }
 
 // TestStructWithCustomTags 测试自定义标签
@@ -60,7 +60,7 @@ type TestSessionStruct struct {
 	query *Query
 }
 
-func (s *TestSessionStruct) WhereStruct(filter interface{}) *TestSessionStruct {
+func (s *TestSessionStruct) WhereStruct(filter any) *TestSessionStruct {
 	conditions := parseStructToConditions(filter)
 	for _, cond := range conditions {
 		s.query.filter = append(s.query.filter, cond)
@@ -259,7 +259,7 @@ func TestBuildCondition(t *testing.T) {
 	// 测试各种操作符
 	tests := []struct {
 		operator string
-		value    interface{}
+		value    any
 		expected bson.E
 	}{
 		{"eq", "test", bson.E{Key: "field", Value: "test"}},
@@ -322,7 +322,7 @@ func TestBuildCondition(t *testing.T) {
 func TestIsZeroValue(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected bool
 	}{
 		{"bool false", false, true},
@@ -526,17 +526,17 @@ func TestStructWithComplexTypes(t *testing.T) {
 
 	// 测试复杂类型
 	type ComplexStruct struct {
-		CreatedAt []time.Time            `pie:"created_at,between"`
-		Tags      []string               `pie:"tags,all"`
-		Metadata  map[string]interface{} `pie:"metadata,exists"`
-		Count     int                    `pie:"count,size"`
+		CreatedAt []time.Time    `pie:"created_at,between"`
+		Tags      []string       `pie:"tags,all"`
+		Metadata  map[string]any `pie:"metadata,exists"`
+		Count     int            `pie:"count,size"`
 	}
 
 	now := time.Now()
 	filter := ComplexStruct{
 		CreatedAt: []time.Time{now.Add(-24 * time.Hour), now},
 		Tags:      []string{"tag1", "tag2"},
-		Metadata:  map[string]interface{}{"key": "value"},
+		Metadata:  map[string]any{"key": "value"},
 		Count:     5,
 	}
 

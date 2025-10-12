@@ -28,7 +28,7 @@ func TestGenerateQueryKey(t *testing.T) {
 	ckg := NewCacheKeyGenerator("pie:")
 	collection := "users"
 	filter := bson.D{{"name", "John"}, {"age", 25}}
-	options := map[string]interface{}{"limit": 10, "skip": 0}
+	options := map[string]any{"limit": 10, "skip": 0}
 
 	key := ckg.GenerateQueryKey(collection, filter, options)
 
@@ -62,7 +62,7 @@ func TestGenerateQueryKey(t *testing.T) {
 	}
 
 	// 验证不同选项产生不同键
-	options2 := map[string]interface{}{"limit": 20}
+	options2 := map[string]any{"limit": 20}
 	key5 := ckg.GenerateQueryKey(collection, filter, options2)
 	if key == key5 {
 		t.Error("Expected different options to generate different key")
@@ -278,7 +278,7 @@ func TestKeyConsistency(t *testing.T) {
 	ckg := NewCacheKeyGenerator("pie:")
 	collection := "users"
 	filter := bson.D{{"name", "John"}, {"age", 25}}
-	options := map[string]interface{}{"limit": 10, "sort": bson.D{{"created_at", -1}}}
+	options := map[string]any{"limit": 10, "sort": bson.D{{"created_at", -1}}}
 
 	// 多次生成相同键，确保一致性
 	keys := make([]string, 10)
@@ -310,7 +310,7 @@ func TestKeyLength(t *testing.T) {
 	}
 
 	// 测试长选项
-	longOptions := make(map[string]interface{})
+	longOptions := make(map[string]any)
 	for i := 0; i < 100; i++ {
 		longOptions[fmt.Sprintf("option%d", i)] = fmt.Sprintf("value%d", i)
 	}
@@ -352,7 +352,7 @@ func TestKeyWithNilValues(t *testing.T) {
 	// 测试nil选项
 	filter := bson.D{{"name", "John"}}
 	key1 := ckg.GenerateQueryKey(collection, filter, nil)
-	key2 := ckg.GenerateQueryKey(collection, filter, map[string]interface{}{})
+	key2 := ckg.GenerateQueryKey(collection, filter, map[string]any{})
 
 	// nil选项和空选项应该产生不同的键
 	if key1 == key2 {
@@ -375,7 +375,7 @@ func TestKeyWithComplexDataTypes(t *testing.T) {
 
 	// 测试复杂数据类型
 	complexFilter := bson.D{
-		{"array", []interface{}{1, 2, 3}},
+		{"array", []any{1, 2, 3}},
 		{"nested", bson.D{{"inner", "value"}}},
 		{"boolean", true},
 		{"float", 3.14},

@@ -21,11 +21,11 @@ type LogEntry struct {
 	Timestamp  time.Time
 	Collection string
 	Operation  string
-	Filter     interface{}
-	Update     interface{}
-	Document   interface{}
-	Pipeline   interface{}
-	Options    interface{}
+	Filter     any
+	Update     any
+	Document   any
+	Pipeline   any
+	Options    any
 	Duration   time.Duration
 	Error      error
 }
@@ -181,7 +181,7 @@ func (f *JSONFormatter) Format(entry *LogEntry) string {
 }
 
 // formatDocument format document to MongoDB Shell format
-func formatDocument(doc interface{}) string {
+func formatDocument(doc any) string {
 	if doc == nil {
 		return "null"
 	}
@@ -193,9 +193,9 @@ func formatDocument(doc interface{}) string {
 		return formatBSOND(v)
 	case bson.A:
 		return formatBSONArray(v)
-	case map[string]interface{}:
+	case map[string]any:
 		return formatMap(v)
-	case []interface{}:
+	case []any:
 		return formatArray(v)
 	default:
 		// For struct, try to convert to bson.M
@@ -210,13 +210,13 @@ func formatDocument(doc interface{}) string {
 }
 
 // formatDocuments format multiple documents
-func formatDocuments(docs interface{}) string {
+func formatDocuments(docs any) string {
 	if docs == nil {
 		return "[]"
 	}
 
 	switch v := docs.(type) {
-	case []interface{}:
+	case []any:
 		var parts []string
 		for _, doc := range v {
 			parts = append(parts, formatDocument(doc))
@@ -254,8 +254,8 @@ func formatBSONArray(a bson.A) string {
 	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
 }
 
-// formatMap format map[string]interface{}
-func formatMap(m map[string]interface{}) string {
+// formatMap format map[string]any
+func formatMap(m map[string]any) string {
 	var parts []string
 	for k, v := range m {
 		parts = append(parts, fmt.Sprintf("%s: %s", k, formatValue(v)))
@@ -263,8 +263,8 @@ func formatMap(m map[string]interface{}) string {
 	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
 }
 
-// formatArray format []interface{}
-func formatArray(a []interface{}) string {
+// formatArray format []any
+func formatArray(a []any) string {
 	var parts []string
 	for _, v := range a {
 		parts = append(parts, formatValue(v))
@@ -273,7 +273,7 @@ func formatArray(a []interface{}) string {
 }
 
 // formatValue format value
-func formatValue(v interface{}) string {
+func formatValue(v any) string {
 	if v == nil {
 		return "null"
 	}
@@ -291,9 +291,9 @@ func formatValue(v interface{}) string {
 		return formatBSOND(val)
 	case bson.A:
 		return formatBSONArray(val)
-	case map[string]interface{}:
+	case map[string]any:
 		return formatMap(val)
-	case []interface{}:
+	case []any:
 		return formatArray(val)
 	default:
 		return fmt.Sprintf("%v", val)
@@ -301,7 +301,7 @@ func formatValue(v interface{}) string {
 }
 
 // formatFindOptions format FindOptions
-func formatFindOptions(opts interface{}) string {
+func formatFindOptions(opts any) string {
 	if opts == nil {
 		return ""
 	}
@@ -313,7 +313,7 @@ func formatFindOptions(opts interface{}) string {
 }
 
 // formatFindOneOptions format FindOneOptions
-func formatFindOneOptions(opts interface{}) string {
+func formatFindOneOptions(opts any) string {
 	if opts == nil {
 		return ""
 	}
@@ -324,7 +324,7 @@ func formatFindOneOptions(opts interface{}) string {
 }
 
 // formatUpdateOptions format UpdateOptions
-func formatUpdateOptions(opts interface{}) string {
+func formatUpdateOptions(opts any) string {
 	if opts == nil {
 		return ""
 	}
@@ -335,13 +335,13 @@ func formatUpdateOptions(opts interface{}) string {
 }
 
 // formatPipeline format aggregation pipeline
-func formatPipeline(pipeline interface{}) string {
+func formatPipeline(pipeline any) string {
 	if pipeline == nil {
 		return "[]"
 	}
 
 	switch v := pipeline.(type) {
-	case []interface{}:
+	case []any:
 		var parts []string
 		for _, stage := range v {
 			parts = append(parts, formatDocument(stage))

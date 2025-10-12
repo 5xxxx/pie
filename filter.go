@@ -13,7 +13,7 @@ type Operator interface {
 type ComparisonOperator struct {
 	Field string
 	Op    string
-	Value interface{}
+	Value any
 }
 
 func (op ComparisonOperator) ToBSON() bson.D {
@@ -38,7 +38,7 @@ func (op LogicalOperator) ToBSON() bson.D {
 type FieldOperator struct {
 	Field string
 	Op    string
-	Value interface{}
+	Value any
 }
 
 func (op FieldOperator) ToBSON() bson.D {
@@ -48,42 +48,42 @@ func (op FieldOperator) ToBSON() bson.D {
 // Predefined operator functions
 
 // Eq equal
-func Eq(field string, value interface{}) FieldOperator {
+func Eq(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$eq", Value: value}
 }
 
 // Ne not equal
-func Ne(field string, value interface{}) FieldOperator {
+func Ne(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$ne", Value: value}
 }
 
 // Gt greater than
-func Gt(field string, value interface{}) FieldOperator {
+func Gt(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$gt", Value: value}
 }
 
 // Gte greater than or equal
-func Gte(field string, value interface{}) FieldOperator {
+func Gte(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$gte", Value: value}
 }
 
 // Lt less than
-func Lt(field string, value interface{}) FieldOperator {
+func Lt(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$lt", Value: value}
 }
 
 // Lte less than or equal
-func Lte(field string, value interface{}) FieldOperator {
+func Lte(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$lte", Value: value}
 }
 
 // In in range
-func In(field string, values interface{}) FieldOperator {
+func In(field string, values any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$in", Value: values}
 }
 
 // Nin not in range
-func Nin(field string, values interface{}) FieldOperator {
+func Nin(field string, values any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$nin", Value: values}
 }
 
@@ -121,12 +121,12 @@ func Nor(operators ...Operator) LogicalOperator {
 }
 
 // Not logical not
-func Not(field string, value interface{}) FieldOperator {
+func Not(field string, value any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$not", Value: value}
 }
 
 // All array contains all elements
-func All(field string, values interface{}) FieldOperator {
+func All(field string, values any) FieldOperator {
 	return FieldOperator{Field: field, Op: "$all", Value: values}
 }
 
@@ -161,7 +161,7 @@ func Where(expression string) FieldOperator {
 }
 
 // ID according to ID query
-func ID(id interface{}) FieldOperator {
+func ID(id any) FieldOperator {
 	var objectID bson.ObjectID
 
 	switch v := id.(type) {
@@ -182,7 +182,7 @@ func ID(id interface{}) FieldOperator {
 }
 
 // Between range query
-func Between(field string, min, max interface{}) LogicalOperator {
+func Between(field string, min, max any) LogicalOperator {
 	return And(
 		Gte(field, min),
 		Lte(field, max),

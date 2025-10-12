@@ -329,7 +329,7 @@ func getActiveVerifiedRecentUsers() ([]User, error) {
 
 ```go
 // 动态构建作用域
-func buildDynamicScopes(filters map[string]interface{}) []pie.ScopeFunc {
+func buildDynamicScopes(filters map[string]any) []pie.ScopeFunc {
     var scopes []pie.ScopeFunc
     
     if status, ok := filters["status"]; ok {
@@ -353,7 +353,7 @@ func buildDynamicScopes(filters map[string]interface{}) []pie.ScopeFunc {
 }
 
 // 使用动态作用域
-func searchUsersWithFilters(filters map[string]interface{}) ([]User, error) {
+func searchUsersWithFilters(filters map[string]any) ([]User, error) {
     var users []User
     scopes := buildDynamicScopes(filters)
     err := session.Scopes(scopes...).Find(ctx, &users)

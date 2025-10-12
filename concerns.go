@@ -86,7 +86,7 @@ func (rcm *ReadConcernManager) GetReadConcern(collectionName string) (string, er
 }
 
 // SetReadConcernForStruct set read concern for struct
-func (rcm *ReadConcernManager) SetReadConcernForStruct(v interface{}, level string) error {
+func (rcm *ReadConcernManager) SetReadConcernForStruct(v any, level string) error {
 	collection, err := rcm.engine.CollectionForStruct(v)
 	if err != nil {
 		return fmt.Errorf("failed to get collection for struct: %w", err)
@@ -130,7 +130,7 @@ func (wcm *WriteConcernManager) GetWriteConcern(collectionName string) (string, 
 }
 
 // SetWriteConcernForStruct set write concern for struct
-func (wcm *WriteConcernManager) SetWriteConcernForStruct(v interface{}, level string) error {
+func (wcm *WriteConcernManager) SetWriteConcernForStruct(v any, level string) error {
 	collection, err := wcm.engine.CollectionForStruct(v)
 	if err != nil {
 		return fmt.Errorf("failed to get collection for struct: %w", err)
@@ -174,7 +174,7 @@ func (rpm *ReadPreferenceManager) GetReadPreference(collectionName string) (stri
 }
 
 // SetReadPreferenceForStruct set read preference for struct
-func (rpm *ReadPreferenceManager) SetReadPreferenceForStruct(v interface{}, mode string) error {
+func (rpm *ReadPreferenceManager) SetReadPreferenceForStruct(v any, mode string) error {
 	collection, err := rpm.engine.CollectionForStruct(v)
 	if err != nil {
 		return fmt.Errorf("failed to get collection for struct: %w", err)
@@ -233,7 +233,7 @@ func (cm *ConcernManager) SetCollectionConcerns(collectionName string, readConce
 }
 
 // SetStructConcerns set all concerns for struct
-func (cm *ConcernManager) SetStructConcerns(v interface{}, readConcern, writeConcern, readPreference string) error {
+func (cm *ConcernManager) SetStructConcerns(v any, readConcern, writeConcern, readPreference string) error {
 	if err := cm.readConcern.SetReadConcernForStruct(v, readConcern); err != nil {
 		return fmt.Errorf("failed to set read concern: %w", err)
 	}
@@ -411,7 +411,7 @@ func (cb *ConcernBuilder) ApplyToCollection(collectionName string) error {
 }
 
 // ApplyToStruct apply to struct
-func (cb *ConcernBuilder) ApplyToStruct(v interface{}) error {
+func (cb *ConcernBuilder) ApplyToStruct(v any) error {
 	return cb.manager.SetStructConcerns(
 		v,
 		cb.options.ReadConcern,

@@ -60,7 +60,7 @@ func NewTagParser(mapper NameMapper) *TagParser {
 }
 
 // ParseStruct parse struct information
-func (p *TagParser) ParseStruct(v interface{}) (*CollectionInfo, error) {
+func (p *TagParser) ParseStruct(v any) (*CollectionInfo, error) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()

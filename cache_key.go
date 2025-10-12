@@ -20,7 +20,7 @@ func NewCacheKeyGenerator(prefix string) *CacheKeyGenerator {
 }
 
 // GenerateQueryKey generate query cache key
-func (ckg *CacheKeyGenerator) GenerateQueryKey(collection string, filter bson.D, options interface{}) string {
+func (ckg *CacheKeyGenerator) GenerateQueryKey(collection string, filter bson.D, options any) string {
 	// Serialize filter and options
 	filterJSON, _ := json.Marshal(filter)
 	optionsJSON, _ := json.Marshal(options)
@@ -58,7 +58,7 @@ func (ckg *CacheKeyGenerator) GenerateCountKey(collection string, filter bson.D)
 }
 
 // GenerateDocumentKey generate document cache key
-func (ckg *CacheKeyGenerator) GenerateDocumentKey(collection string, id interface{}) string {
+func (ckg *CacheKeyGenerator) GenerateDocumentKey(collection string, id any) string {
 	return fmt.Sprintf("%s:doc:%s:%v", ckg.prefix, collection, id)
 }
 

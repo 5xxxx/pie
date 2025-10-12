@@ -53,8 +53,8 @@ type CursorPaginateResult[T any] struct {
 
 // IDCursorParams ID-based cursor pagination parameters
 type IDCursorParams struct {
-	AfterID  interface{} // Last ID of previous page
-	PageSize int         // Page size
+	AfterID  any // Last ID of previous page
+	PageSize int // Page size
 }
 
 // Paginate offset-based pagination (with total count)
@@ -158,7 +158,7 @@ func (s *Session[T]) PaginateCursor(ctx context.Context, params CursorPaginatePa
 	}
 
 	// Parse cursor
-	var cursorValue map[string]interface{}
+	var cursorValue map[string]any
 	if params.Cursor != "" {
 		decoded, err := base64.StdEncoding.DecodeString(params.Cursor)
 		if err != nil {
@@ -196,7 +196,7 @@ func (s *Session[T]) PaginateCursor(ctx context.Context, params CursorPaginatePa
 	var nextCursor string
 	if hasNext && len(data) > 0 {
 		lastDoc := data[len(data)-1]
-		cursorMap := make(map[string]interface{})
+		cursorMap := make(map[string]any)
 
 		// Use reflection to get sort field values
 		docValue := bson.M{}
@@ -264,7 +264,7 @@ func (s *Session[T]) PaginateCursorByID(ctx context.Context, params IDCursorPara
 		bson.Unmarshal(bsonBytes, &docValue)
 
 		if id, ok := docValue["_id"]; ok {
-			cursorMap := map[string]interface{}{"_id": id}
+			cursorMap := map[string]any{"_id": id}
 			cursorJSON, _ := json.Marshal(cursorMap)
 			nextCursor = base64.StdEncoding.EncodeToString(cursorJSON)
 		}

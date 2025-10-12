@@ -21,7 +21,7 @@ Generics are a feature introduced in Go 1.18 that allows writing reusable code w
 // Create type-safe session
 session := pie.Table[User](engine)
 
-// Query operations return []User, not []interface{}
+// Query operations return []User, not []any
 users, err := session.Find(context.Background())
 
 // Insert operations accept *User type
@@ -60,7 +60,7 @@ for cursor.Next(context.Background()) {
     if err := cursor.Decode(&user); err != nil {
         // Handle error
     }
-    // user is User type, not interface{}
+    // user is User type, not any
 }
 ```
 
@@ -90,7 +90,7 @@ Generics provide compile-time type checking, preventing runtime type errors:
 
 ```go
 // ❌ Traditional approach - runtime errors possible
-var users []interface{}
+var users []any
 err := session.Find(context.Background(), &users)
 // Manual type assertion required
 for _, u := range users {
@@ -232,7 +232,7 @@ func WatchUserChanges[T any](engine *pie.Engine) {
 
 ## Best Practices
 
-### When to Use Generics vs interface{}
+### When to Use Generics vs any
 
 ```go
 // ✅ Recommended: Use generics for type safety
@@ -242,9 +242,9 @@ func ProcessUsers[T any](session *pie.Session[T], ctx context.Context) ([]T, err
     return users, err
 }
 
-// ❌ Not recommended: Use interface{}, loses type safety
-func ProcessUsersGeneric(session *pie.Session[interface{}], ctx context.Context) ([]interface{}, error) {
-    var users []interface{}
+// ❌ Not recommended: Use any, loses type safety
+func ProcessUsersGeneric(session *pie.Session[any], ctx context.Context) ([]any, error) {
+    var users []any
     err := session.Find(ctx, &users)
     return users, err
 }
@@ -287,8 +287,8 @@ func GetUserByEmail[T any](session *pie.Session[T], email string) (*T, error) {
 }
 
 // ❌ Not recommended: Requires type conversion
-func GetUserByEmailGeneric(session *pie.Session[interface{}], email string) (interface{}, error) {
-    var user interface{}
+func GetUserByEmailGeneric(session *pie.Session[any], email string) (any, error) {
+    var user any
     err := session.Where("email", email).First(context.Background(), &user)
     if err != nil {
         return nil, err

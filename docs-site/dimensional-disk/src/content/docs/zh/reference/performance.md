@@ -189,7 +189,7 @@ const (
     SessionCacheTTL   = 5 * time.Minute   // 会话信息，更新频率高
 )
 
-func getCachedData(dataType string) (interface{}, error) {
+func getCachedData(dataType string) (any, error) {
     session := pie.Table[User](engine)
     
     var ttl time.Duration
@@ -206,7 +206,7 @@ func getCachedData(dataType string) (interface{}, error) {
         ttl = 5 * time.Minute
     }
     
-    var data interface{}
+    var data any
     err := session.WithCache(ttl).Cache(dataType).Find(ctx, &data)
     return data, err
 }

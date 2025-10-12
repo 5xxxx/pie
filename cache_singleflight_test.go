@@ -160,16 +160,16 @@ func TestSingleFlightPanicRecovery(t *testing.T) {
 }
 
 func TestNewCacheWithSingleFlight(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
 
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	if csf == nil {
 		t.Error("Expected CacheWithSingleFlight to be created")
 	}
-	if csf.cache != mockCache {
+	if csf.cache != singleFlightMockCache {
 		t.Error("Expected cache to be set correctly")
 	}
 	if csf.singleFlight == nil {
@@ -178,15 +178,15 @@ func TestNewCacheWithSingleFlight(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightGet(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置缓存
-	mockCache.data["testkey"] = []byte("testvalue")
+	singleFlightMockCache.data["testkey"] = []byte("testvalue")
 
 	// 测试获取缓存
 	val, err := csf.Get(ctx, "testkey")
@@ -208,11 +208,11 @@ func TestCacheWithSingleFlightGet(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightSet(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 测试设置缓存
@@ -222,7 +222,7 @@ func TestCacheWithSingleFlightSet(t *testing.T) {
 	}
 
 	// 验证缓存已设置
-	if val, exists := mockCache.data["testkey"]; !exists {
+	if val, exists := singleFlightMockCache.data["testkey"]; !exists {
 		t.Error("Expected key to be set")
 	} else if string(val) != "testvalue" {
 		t.Errorf("Expected 'testvalue', got %s", string(val))
@@ -230,15 +230,15 @@ func TestCacheWithSingleFlightSet(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightDelete(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置测试数据
-	mockCache.data["testkey"] = []byte("testvalue")
+	singleFlightMockCache.data["testkey"] = []byte("testvalue")
 
 	// 测试删除
 	err := csf.Delete(ctx, "testkey")
@@ -247,23 +247,23 @@ func TestCacheWithSingleFlightDelete(t *testing.T) {
 	}
 
 	// 验证已删除
-	if _, exists := mockCache.data["testkey"]; exists {
+	if _, exists := singleFlightMockCache.data["testkey"]; exists {
 		t.Error("Expected key to be deleted")
 	}
 }
 
 func TestCacheWithSingleFlightDeleteByPattern(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置测试数据
-	mockCache.data["testkey1"] = []byte("value1")
-	mockCache.data["testkey2"] = []byte("value2")
-	mockCache.data["otherkey"] = []byte("value3")
+	singleFlightMockCache.data["testkey1"] = []byte("value1")
+	singleFlightMockCache.data["testkey2"] = []byte("value2")
+	singleFlightMockCache.data["otherkey"] = []byte("value3")
 
 	// 测试按模式删除
 	err := csf.DeleteByPattern(ctx, "test")
@@ -272,23 +272,23 @@ func TestCacheWithSingleFlightDeleteByPattern(t *testing.T) {
 	}
 
 	// 验证删除结果
-	if _, exists := mockCache.data["testkey1"]; exists {
+	if _, exists := singleFlightMockCache.data["testkey1"]; exists {
 		t.Error("Expected testkey1 to be deleted")
 	}
-	if _, exists := mockCache.data["testkey2"]; exists {
+	if _, exists := singleFlightMockCache.data["testkey2"]; exists {
 		t.Error("Expected testkey2 to be deleted")
 	}
-	if _, exists := mockCache.data["otherkey"]; !exists {
+	if _, exists := singleFlightMockCache.data["otherkey"]; !exists {
 		t.Error("Expected otherkey to remain")
 	}
 }
 
 func TestCacheWithSingleFlightDeleteByTags(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 测试按标签删除
@@ -299,15 +299,15 @@ func TestCacheWithSingleFlightDeleteByTags(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightExists(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置测试数据
-	mockCache.data["testkey"] = []byte("testvalue")
+	singleFlightMockCache.data["testkey"] = []byte("testvalue")
 
 	// 测试存在
 	exists, err := csf.Exists(ctx, "testkey")
@@ -329,16 +329,16 @@ func TestCacheWithSingleFlightExists(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightClear(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置测试数据
-	mockCache.data["testkey1"] = []byte("value1")
-	mockCache.data["testkey2"] = []byte("value2")
+	singleFlightMockCache.data["testkey1"] = []byte("value1")
+	singleFlightMockCache.data["testkey2"] = []byte("value2")
 
 	// 测试清空
 	err := csf.Clear(ctx)
@@ -347,23 +347,23 @@ func TestCacheWithSingleFlightClear(t *testing.T) {
 	}
 
 	// 验证已清空
-	if len(mockCache.data) != 0 {
+	if len(singleFlightMockCache.data) != 0 {
 		t.Error("Expected cache to be cleared")
 	}
 }
 
 func TestCacheWithSingleFlightStats(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 
 	// 设置一些统计数据
-	mockCache.stats.Hits = 10
-	mockCache.stats.Misses = 5
-	mockCache.stats.Total = 15
-	mockCache.stats.HitRate = 66.67
+	singleFlightMockCache.stats.Hits = 10
+	singleFlightMockCache.stats.Misses = 5
+	singleFlightMockCache.stats.Total = 15
+	singleFlightMockCache.stats.HitRate = 66.67
 
 	stats := csf.Stats()
 	if stats.Hits != 10 {
@@ -381,15 +381,15 @@ func TestCacheWithSingleFlightStats(t *testing.T) {
 }
 
 func TestCacheWithSingleFlightConcurrentGet(t *testing.T) {
-	mockCache := &mockCache{
+	singleFlightMockCache := &singleFlightMockCache{
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	csf := NewCacheWithSingleFlight(mockCache)
+	csf := NewCacheWithSingleFlight(singleFlightMockCache)
 	ctx := context.Background()
 
 	// 设置缓存
-	mockCache.data["testkey"] = []byte("testvalue")
+	singleFlightMockCache.data["testkey"] = []byte("testvalue")
 
 	var wg sync.WaitGroup
 	numGoroutines := 10
@@ -447,13 +447,13 @@ func TestSingleFlightCleanup(t *testing.T) {
 	sf.mu.Unlock()
 }
 
-// mockCache 用于测试CacheWithSingleFlight
-type mockCache struct {
+// singleFlightMockCache 用于测试CacheWithSingleFlight
+type singleFlightMockCache struct {
 	data  map[string][]byte
 	stats *CacheStats
 }
 
-func (m *mockCache) Get(ctx context.Context, key string) ([]byte, error) {
+func (m *singleFlightMockCache) Get(ctx context.Context, key string) ([]byte, error) {
 	m.stats.Total++
 	if val, exists := m.data[key]; exists {
 		m.stats.Hits++
@@ -464,19 +464,19 @@ func (m *mockCache) Get(ctx context.Context, key string) ([]byte, error) {
 	return nil, ErrCacheNotFound
 }
 
-func (m *mockCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+func (m *singleFlightMockCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
 	m.data[key] = value
 	m.stats.Keys = int64(len(m.data))
 	return nil
 }
 
-func (m *mockCache) Delete(ctx context.Context, key string) error {
+func (m *singleFlightMockCache) Delete(ctx context.Context, key string) error {
 	delete(m.data, key)
 	m.stats.Keys = int64(len(m.data))
 	return nil
 }
 
-func (m *mockCache) DeleteByPattern(ctx context.Context, pattern string) error {
+func (m *singleFlightMockCache) DeleteByPattern(ctx context.Context, pattern string) error {
 	// 简单实现，删除包含pattern的key
 	for key := range m.data {
 		if strings.Contains(key, pattern) {
@@ -487,24 +487,24 @@ func (m *mockCache) DeleteByPattern(ctx context.Context, pattern string) error {
 	return nil
 }
 
-func (m *mockCache) DeleteByTags(ctx context.Context, tags ...string) error {
+func (m *singleFlightMockCache) DeleteByTags(ctx context.Context, tags ...string) error {
 	m.data = make(map[string][]byte)
 	m.stats.Keys = 0
 	return nil
 }
 
-func (m *mockCache) Exists(ctx context.Context, key string) (bool, error) {
+func (m *singleFlightMockCache) Exists(ctx context.Context, key string) (bool, error) {
 	_, exists := m.data[key]
 	return exists, nil
 }
 
-func (m *mockCache) Clear(ctx context.Context) error {
+func (m *singleFlightMockCache) Clear(ctx context.Context) error {
 	m.data = make(map[string][]byte)
 	m.stats.Keys = 0
 	return nil
 }
 
-func (m *mockCache) Stats() *CacheStats {
+func (m *singleFlightMockCache) Stats() *CacheStats {
 	stats := *m.stats
 	return &stats
 }

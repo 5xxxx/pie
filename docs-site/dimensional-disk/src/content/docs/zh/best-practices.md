@@ -529,7 +529,7 @@ func ErrorHandler(next http.Handler) http.Handler {
     })
 }
 
-func handleError(w http.ResponseWriter, err interface{}) {
+func handleError(w http.ResponseWriter, err any) {
     w.Header().Set("Content-Type", "application/json")
     
     switch e := err.(type) {

@@ -94,7 +94,7 @@ func (e *Engine) Collection(name string) *mongo.Collection {
 }
 
 // CollectionForStruct gets a collection based on struct
-func (e *Engine) CollectionForStruct(v interface{}) (*mongo.Collection, error) {
+func (e *Engine) CollectionForStruct(v any) (*mongo.Collection, error) {
 	info, err := e.tagParser.ParseStruct(v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse struct: %w", err)
@@ -189,7 +189,7 @@ func (e *Engine) WithTransaction(ctx context.Context, fn func(context.Context) e
 	}
 	defer session.EndSession(ctx)
 
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		return nil, fn(sessCtx)
 	})
 
@@ -204,7 +204,7 @@ func (e *Engine) WithTransactionOptions(ctx context.Context, fn func(context.Con
 	}
 	defer session.EndSession(ctx)
 
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		return nil, fn(sessCtx)
 	})
 

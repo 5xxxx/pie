@@ -924,7 +924,7 @@ func TestSessionArrayFilters(t *testing.T) {
 	// 测试ArrayFilters
 	result, err := session.
 		Where("name", "John Doe").
-		ArrayFilters([]interface{}{bson.D{{"tag", "admin"}}}).
+		ArrayFilters([]any{bson.D{{"tag", "admin"}}}).
 		Update(ctx, bson.D{
 			{"$set", bson.D{{"tags.$[tag]", "superadmin"}}},
 		})
@@ -1260,7 +1260,7 @@ func TestSessionWithCache(t *testing.T) {
 		data:  make(map[string][]byte),
 		stats: &CacheStats{},
 	}
-	NewCacheManager(mockCache, nil)
+	NewCacheManager([]Cache{mockCache}, nil)
 	testEngine.UseCache(mockCache, nil)
 
 	session := Table[SessionTestUser](sessionTestEngine)

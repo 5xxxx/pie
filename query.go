@@ -26,7 +26,7 @@ func NewQuery() *Query {
 }
 
 // Where add condition
-func (q *Query) Where(field string, value interface{}) *Query {
+func (q *Query) Where(field string, value any) *Query {
 	q.filter = append(q.filter, bson.E{Key: field, Value: value})
 	return q
 }
@@ -247,7 +247,7 @@ func (q *Query) Build() bson.D {
 }
 
 // WhereArrayAll array contains all specified elements
-func (q *Query) WhereArrayAll(field string, values interface{}) *Query {
+func (q *Query) WhereArrayAll(field string, values any) *Query {
 	q.filter = append(q.filter, bson.E{Key: field, Value: bson.D{{Key: "$all", Value: values}}})
 	return q
 }

@@ -26,7 +26,7 @@ func NewBulkWrite[T any](engine *Engine) *BulkWrite[T] {
 }
 
 // CollectionForStruct set target collection (by struct)
-func (b *BulkWrite[T]) CollectionForStruct(v interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) CollectionForStruct(v any) *BulkWrite[T] {
 	collection, err := b.engine.CollectionForStruct(v)
 	if err == nil {
 		b.collection = collection
@@ -54,35 +54,35 @@ func (b *BulkWrite[T]) InsertOne(doc *T) *BulkWrite[T] {
 }
 
 // UpdateOne add update single document operation
-func (b *BulkWrite[T]) UpdateOne(filter interface{}, update interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) UpdateOne(filter any, update any) *BulkWrite[T] {
 	model := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
 	b.models = append(b.models, model)
 	return b
 }
 
 // UpdateMany add update multiple documents operation
-func (b *BulkWrite[T]) UpdateMany(filter interface{}, update interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) UpdateMany(filter any, update any) *BulkWrite[T] {
 	model := mongo.NewUpdateManyModel().SetFilter(filter).SetUpdate(update)
 	b.models = append(b.models, model)
 	return b
 }
 
 // ReplaceOne add replace document operation
-func (b *BulkWrite[T]) ReplaceOne(filter interface{}, replacement *T) *BulkWrite[T] {
+func (b *BulkWrite[T]) ReplaceOne(filter any, replacement *T) *BulkWrite[T] {
 	model := mongo.NewReplaceOneModel().SetFilter(filter).SetReplacement(replacement)
 	b.models = append(b.models, model)
 	return b
 }
 
 // DeleteOne add delete single document operation
-func (b *BulkWrite[T]) DeleteOne(filter interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) DeleteOne(filter any) *BulkWrite[T] {
 	model := mongo.NewDeleteOneModel().SetFilter(filter)
 	b.models = append(b.models, model)
 	return b
 }
 
 // DeleteMany add delete multiple documents operation
-func (b *BulkWrite[T]) DeleteMany(filter interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) DeleteMany(filter any) *BulkWrite[T] {
 	model := mongo.NewDeleteManyModel().SetFilter(filter)
 	b.models = append(b.models, model)
 	return b
@@ -104,7 +104,7 @@ func (b *BulkWrite[T]) Upsert(upsert bool) *BulkWrite[T] {
 }
 
 // ArrayFilters set array filters for last added Update operation
-func (b *BulkWrite[T]) ArrayFilters(filters []interface{}) *BulkWrite[T] {
+func (b *BulkWrite[T]) ArrayFilters(filters []any) *BulkWrite[T] {
 	if len(b.models) > 0 {
 		// Convert to []any for v2
 		anyFilters := make([]any, len(filters))
@@ -229,7 +229,7 @@ type BulkWriteResult struct {
 	ModifiedCount int64
 	DeletedCount  int64
 	UpsertedCount int64
-	UpsertedIDs   map[int64]interface{}
+	UpsertedIDs   map[int64]any
 }
 
 // FromMongoBulkWriteResult convert from MongoDB's BulkWriteResult

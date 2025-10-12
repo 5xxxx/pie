@@ -34,7 +34,7 @@ func (a *Aggregate[T]) Collection(name string) *Aggregate[T] {
 }
 
 // CollectionForStruct set collection by struct
-func (a *Aggregate[T]) CollectionForStruct(v interface{}) *Aggregate[T] {
+func (a *Aggregate[T]) CollectionForStruct(v any) *Aggregate[T] {
 	collection, err := a.engine.CollectionForStruct(v)
 	if err != nil {
 		// Here we can log the error but don't interrupt the chain call
@@ -408,7 +408,7 @@ func (a *Aggregate[T]) SetComment(comment string) *Aggregate[T] {
 }
 
 // SetHint set hint
-func (a *Aggregate[T]) SetHint(hint interface{}) *Aggregate[T] {
+func (a *Aggregate[T]) SetHint(hint any) *Aggregate[T] {
 	a.options.SetHint(hint)
 	return a
 }

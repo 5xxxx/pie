@@ -7,7 +7,7 @@ import (
 )
 
 // HookFunc hook function type
-type HookFunc func(ctx context.Context, doc interface{}) error
+type HookFunc func(ctx context.Context, doc any) error
 
 // Hook interface definitions
 
@@ -130,7 +130,7 @@ func (hm *HookManager) RegisterAfterSave(fn HookFunc) {
 }
 
 // executeBeforeCreate execute global before create hook
-func (hm *HookManager) executeBeforeCreate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeBeforeCreate(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalBeforeCreate {
 		if err := hook(ctx, doc); err != nil {
 			return fmt.Errorf("global before create hook failed: %w", err)
@@ -140,7 +140,7 @@ func (hm *HookManager) executeBeforeCreate(ctx context.Context, doc interface{})
 }
 
 // executeAfterCreate execute global after create hook
-func (hm *HookManager) executeAfterCreate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeAfterCreate(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalAfterCreate {
 		if err := hook(ctx, doc); err != nil {
 			// After hook errors don't interrupt the flow, just log
@@ -151,7 +151,7 @@ func (hm *HookManager) executeAfterCreate(ctx context.Context, doc interface{}) 
 }
 
 // executeBeforeUpdate execute global before update hook
-func (hm *HookManager) executeBeforeUpdate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeBeforeUpdate(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalBeforeUpdate {
 		if err := hook(ctx, doc); err != nil {
 			return fmt.Errorf("global before update hook failed: %w", err)
@@ -161,7 +161,7 @@ func (hm *HookManager) executeBeforeUpdate(ctx context.Context, doc interface{})
 }
 
 // executeAfterUpdate execute global after update hook
-func (hm *HookManager) executeAfterUpdate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeAfterUpdate(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalAfterUpdate {
 		if err := hook(ctx, doc); err != nil {
 			fmt.Fprintf(os.Stderr, "global after update hook failed: %v\n", err)
@@ -171,7 +171,7 @@ func (hm *HookManager) executeAfterUpdate(ctx context.Context, doc interface{}) 
 }
 
 // executeBeforeDelete execute global before delete hook
-func (hm *HookManager) executeBeforeDelete(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeBeforeDelete(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalBeforeDelete {
 		if err := hook(ctx, doc); err != nil {
 			return fmt.Errorf("global before delete hook failed: %w", err)
@@ -181,7 +181,7 @@ func (hm *HookManager) executeBeforeDelete(ctx context.Context, doc interface{})
 }
 
 // executeAfterDelete execute global after delete hook
-func (hm *HookManager) executeAfterDelete(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeAfterDelete(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalAfterDelete {
 		if err := hook(ctx, doc); err != nil {
 			fmt.Fprintf(os.Stderr, "global after delete hook failed: %v\n", err)
@@ -191,7 +191,7 @@ func (hm *HookManager) executeAfterDelete(ctx context.Context, doc interface{}) 
 }
 
 // executeAfterFind execute global after find hook
-func (hm *HookManager) executeAfterFind(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeAfterFind(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalAfterFind {
 		if err := hook(ctx, doc); err != nil {
 			fmt.Fprintf(os.Stderr, "global after find hook failed: %v\n", err)
@@ -201,7 +201,7 @@ func (hm *HookManager) executeAfterFind(ctx context.Context, doc interface{}) er
 }
 
 // executeBeforeSave execute global before save hook
-func (hm *HookManager) executeBeforeSave(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeBeforeSave(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalBeforeSave {
 		if err := hook(ctx, doc); err != nil {
 			return fmt.Errorf("global before save hook failed: %w", err)
@@ -211,7 +211,7 @@ func (hm *HookManager) executeBeforeSave(ctx context.Context, doc interface{}) e
 }
 
 // executeAfterSave execute global after save hook
-func (hm *HookManager) executeAfterSave(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeAfterSave(ctx context.Context, doc any) error {
 	for _, hook := range hm.globalAfterSave {
 		if err := hook(ctx, doc); err != nil {
 			fmt.Fprintf(os.Stderr, "global after save hook failed: %v\n", err)
@@ -221,7 +221,7 @@ func (hm *HookManager) executeAfterSave(ctx context.Context, doc interface{}) er
 }
 
 // executeModelBeforeCreate execute model before create hook
-func (hm *HookManager) executeModelBeforeCreate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelBeforeCreate(ctx context.Context, doc any) error {
 	if hook, ok := doc.(BeforeSaver); ok {
 		if err := hook.BeforeSave(ctx); err != nil {
 			return fmt.Errorf("model before save failed: %w", err)
@@ -236,7 +236,7 @@ func (hm *HookManager) executeModelBeforeCreate(ctx context.Context, doc interfa
 }
 
 // executeModelAfterCreate execute model after create hook
-func (hm *HookManager) executeModelAfterCreate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelAfterCreate(ctx context.Context, doc any) error {
 	if hook, ok := doc.(AfterCreator); ok {
 		if err := hook.AfterCreate(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "model after create failed: %v\n", err)
@@ -251,7 +251,7 @@ func (hm *HookManager) executeModelAfterCreate(ctx context.Context, doc interfac
 }
 
 // executeModelBeforeUpdate execute model before update hook
-func (hm *HookManager) executeModelBeforeUpdate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelBeforeUpdate(ctx context.Context, doc any) error {
 	if hook, ok := doc.(BeforeSaver); ok {
 		if err := hook.BeforeSave(ctx); err != nil {
 			return fmt.Errorf("model before save failed: %w", err)
@@ -266,7 +266,7 @@ func (hm *HookManager) executeModelBeforeUpdate(ctx context.Context, doc interfa
 }
 
 // executeModelAfterUpdate execute model after update hook
-func (hm *HookManager) executeModelAfterUpdate(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelAfterUpdate(ctx context.Context, doc any) error {
 	if hook, ok := doc.(AfterUpdater); ok {
 		if err := hook.AfterUpdate(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "model after update failed: %v\n", err)
@@ -281,7 +281,7 @@ func (hm *HookManager) executeModelAfterUpdate(ctx context.Context, doc interfac
 }
 
 // executeModelBeforeDelete execute model before delete hook
-func (hm *HookManager) executeModelBeforeDelete(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelBeforeDelete(ctx context.Context, doc any) error {
 	if hook, ok := doc.(BeforeDeleter); ok {
 		if err := hook.BeforeDelete(ctx); err != nil {
 			return fmt.Errorf("model before delete failed: %w", err)
@@ -291,7 +291,7 @@ func (hm *HookManager) executeModelBeforeDelete(ctx context.Context, doc interfa
 }
 
 // executeModelAfterDelete execute model after delete hook
-func (hm *HookManager) executeModelAfterDelete(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelAfterDelete(ctx context.Context, doc any) error {
 	if hook, ok := doc.(AfterDeleter); ok {
 		if err := hook.AfterDelete(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "model after delete failed: %v\n", err)
@@ -301,7 +301,7 @@ func (hm *HookManager) executeModelAfterDelete(ctx context.Context, doc interfac
 }
 
 // executeModelAfterFind execute model after find hook
-func (hm *HookManager) executeModelAfterFind(ctx context.Context, doc interface{}) error {
+func (hm *HookManager) executeModelAfterFind(ctx context.Context, doc any) error {
 	if hook, ok := doc.(AfterFinder); ok {
 		if err := hook.AfterFind(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "model after find failed: %v\n", err)

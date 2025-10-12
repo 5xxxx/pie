@@ -13,12 +13,12 @@ import (
 // ========== Query convenience methods ==========
 
 // FindByID find single document by ID
-func (s *Session[T]) FindByID(ctx context.Context, id interface{}) (*T, error) {
+func (s *Session[T]) FindByID(ctx context.Context, id any) (*T, error) {
 	return s.Where("_id", id).FindOne(ctx)
 }
 
 // FindByIDs find documents by multiple IDs
-func (s *Session[T]) FindByIDs(ctx context.Context, ids interface{}) ([]T, error) {
+func (s *Session[T]) FindByIDs(ctx context.Context, ids any) ([]T, error) {
 	return s.WhereIn("_id", ids).Find(ctx)
 }
 
@@ -66,7 +66,7 @@ func (s *Session[T]) FindAndCount(ctx context.Context) ([]T, int64, error) {
 }
 
 // Pluck extract single field to slice
-func (s *Session[T]) Pluck(ctx context.Context, field string, results interface{}) error {
+func (s *Session[T]) Pluck(ctx context.Context, field string, results any) error {
 	// Set projection, only return specified field
 	s.query.Project(bson.D{{Key: field, Value: 1}})
 
@@ -110,7 +110,7 @@ func (s *Session[T]) Pluck(ctx context.Context, field string, results interface{
 }
 
 // Value get value of single field
-func (s *Session[T]) Value(ctx context.Context, field string, result interface{}) error {
+func (s *Session[T]) Value(ctx context.Context, field string, result any) error {
 	s.query.Project(bson.D{{Key: field, Value: 1}})
 	s.query.Limit(1)
 
@@ -249,30 +249,30 @@ func (s *Session[T]) UpdateOrCreate(ctx context.Context, doc *T) (*T, error) {
 // ========== Update convenience methods ==========
 
 // UpdateColumn update single field
-func (s *Session[T]) UpdateColumn(ctx context.Context, field string, value interface{}) error {
+func (s *Session[T]) UpdateColumn(ctx context.Context, field string, value any) error {
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: field, Value: value}}}}
 	_, err := s.UpdateMany(ctx, update)
 	return err
 }
 
 // UpdateColumns update multiple fields
-func (s *Session[T]) UpdateColumns(ctx context.Context, data map[string]interface{}) error {
+func (s *Session[T]) UpdateColumns(ctx context.Context, data map[string]any) error {
 	update := bson.D{{Key: "$set", Value: data}}
 	_, err := s.UpdateMany(ctx, update)
 	return err
 }
 
 // Increment field increment
-func (s *Session[T]) Increment(ctx context.Context, field string, value interface{}) error {
+func (s *Session[T]) Increment(ctx context.Context, field string, value any) error {
 	update := bson.D{{Key: "$inc", Value: bson.D{{Key: field, Value: value}}}}
 	_, err := s.UpdateMany(ctx, update)
 	return err
 }
 
 // Decrement field decrement
-func (s *Session[T]) Decrement(ctx context.Context, field string, value interface{}) error {
+func (s *Session[T]) Decrement(ctx context.Context, field string, value any) error {
 	// Convert value to negative for decrement
-	var negValue interface{}
+	var negValue any
 	switch v := value.(type) {
 	case int:
 		negValue = -v
@@ -313,13 +313,13 @@ func (s *Session[T]) Toggle(ctx context.Context, field string) error {
 // ========== Delete convenience methods ==========
 
 // DeleteByID delete by ID
-func (s *Session[T]) DeleteByID(ctx context.Context, id interface{}) error {
+func (s *Session[T]) DeleteByID(ctx context.Context, id any) error {
 	_, err := s.Where("_id", id).Delete(ctx)
 	return err
 }
 
 // DeleteByIDs delete by multiple IDs
-func (s *Session[T]) DeleteByIDs(ctx context.Context, ids interface{}) (int64, error) {
+func (s *Session[T]) DeleteByIDs(ctx context.Context, ids any) (int64, error) {
 	result, err := s.WhereIn("_id", ids).DeleteMany(ctx)
 	if err != nil {
 		return 0, err
@@ -421,7 +421,7 @@ func (s *Session[T]) Avg(ctx context.Context, field string) (float64, error) {
 }
 
 // MaxValue max value
-func (s *Session[T]) MaxValue(ctx context.Context, field string) (interface{}, error) {
+func (s *Session[T]) MaxValue(ctx context.Context, field string) (any, error) {
 	if s.collection == nil {
 		collection, err := s.engine.CollectionForStruct((*T)(nil))
 		if err != nil {
@@ -447,7 +447,7 @@ func (s *Session[T]) MaxValue(ctx context.Context, field string) (interface{}, e
 	defer cursor.Close(ctx)
 
 	var result struct {
-		Max interface{} `bson:"max"`
+		Max any `bson:"max"`
 	}
 
 	if cursor.Next(ctx) {
@@ -461,7 +461,7 @@ func (s *Session[T]) MaxValue(ctx context.Context, field string) (interface{}, e
 }
 
 // MinValue min value
-func (s *Session[T]) MinValue(ctx context.Context, field string) (interface{}, error) {
+func (s *Session[T]) MinValue(ctx context.Context, field string) (any, error) {
 	if s.collection == nil {
 		collection, err := s.engine.CollectionForStruct((*T)(nil))
 		if err != nil {
@@ -487,7 +487,7 @@ func (s *Session[T]) MinValue(ctx context.Context, field string) (interface{}, e
 	defer cursor.Close(ctx)
 
 	var result struct {
-		Min interface{} `bson:"min"`
+		Min any `bson:"min"`
 	}
 
 	if cursor.Next(ctx) {

@@ -111,17 +111,17 @@ func main() {
 
 	// 2. Register global hooks
 	fmt.Println("\n=== Register global hooks ===")
-	engine.Hooks().RegisterAfterCreate(func(ctx context.Context, doc interface{}) error {
+	engine.Hooks().RegisterAfterCreate(func(ctx context.Context, doc any) error {
 		fmt.Printf("📊 Global AfterCreate: Document created: %T\n", doc)
 		return nil
 	})
 
-	engine.Hooks().RegisterAfterUpdate(func(ctx context.Context, doc interface{}) error {
+	engine.Hooks().RegisterAfterUpdate(func(ctx context.Context, doc any) error {
 		fmt.Printf("📊 Global AfterUpdate: Document updated: %T\n", doc)
 		return nil
 	})
 
-	engine.Hooks().RegisterAfterDelete(func(ctx context.Context, doc interface{}) error {
+	engine.Hooks().RegisterAfterDelete(func(ctx context.Context, doc any) error {
 		fmt.Printf("📊 Global AfterDelete: Document deleted: %T\n", doc)
 		return nil
 	})
