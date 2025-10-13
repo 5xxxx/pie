@@ -78,15 +78,27 @@ func parseStructToConditions(filter any) []bson.E {
 
 		// Generate conditions based on operators
 		if len(operators) > 0 {
-			condition := buildCondition(fieldName, operators[0], value)
-			if condition.Key != "" {
-				conditions = append(conditions, condition)
+			operator := ""
+			for _, op := range operators {
+				if op == "" || op == "omitempty" {
+					continue
+				}
+				operator = op
+				break
 			}
-		} else {
-			// No operator, use exact match by default
-			if !isZeroValue(value) {
-				conditions = append(conditions, bson.E{Key: fieldName, Value: value.Interface()})
+
+			if operator != "" {
+				condition := buildCondition(fieldName, operator, value)
+				if condition.Key != "" {
+					conditions = append(conditions, condition)
+				}
+				continue
 			}
+		}
+
+		// No operator, use exact match by default
+		if !isZeroValue(value) {
+			conditions = append(conditions, bson.E{Key: fieldName, Value: value.Interface()})
 		}
 	}
 

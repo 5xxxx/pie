@@ -25,6 +25,15 @@ type TestStruct struct {
 	Empty    string         `pie:"empty,omitempty"`
 }
 
+type TestStructOmitOrder struct {
+	Greater int    `pie:"greater,omitempty,gt"`
+	Pattern string `pie:"pattern,omitempty,like"`
+}
+
+type TestStructOmitOnly struct {
+	Value int `pie:"value,omitempty"`
+}
+
 // TestStructWithCustomTags 测试自定义标签
 type TestStructWithCustomTags struct {
 	ID           string   `pie:"_id"`
@@ -172,6 +181,64 @@ func TestSessionWhereStructWithOmitEmpty(t *testing.T) {
 	}
 	if foundFields["empty"] {
 		t.Error("Expected 'empty' field to be omitted (zero value with omitempty)")
+	}
+}
+
+func TestParseStructToConditionsWithOmitEmptyOnly(t *testing.T) {
+	filter := TestStructOmitOnly{Value: 42}
+
+	conditions := parseStructToConditions(filter)
+
+	if len(conditions) != 1 {
+		t.Fatalf("expected 1 condition, got %d", len(conditions))
+	}
+
+	condition := conditions[0]
+	if condition.Key != "value" {
+		t.Fatalf("expected condition key 'value', got %q", condition.Key)
+	}
+
+	if condition.Value != 42 {
+		t.Fatalf("expected equality condition with value 42, got %#v", condition.Value)
+	}
+}
+
+func TestParseStructToConditionsWithOmitEmptyOrder(t *testing.T) {
+	filter := TestStructOmitOrder{
+		Greater: 10,
+		Pattern: "foo",
+	}
+
+	conditions := parseStructToConditions(filter)
+
+	if len(conditions) != 2 {
+		t.Fatalf("expected 2 conditions, got %d", len(conditions))
+	}
+
+	var greaterCond, patternCond bson.E
+	for _, cond := range conditions {
+		switch cond.Key {
+		case "greater":
+			greaterCond = cond
+		case "pattern":
+			patternCond = cond
+		}
+	}
+
+	if greaterCond.Key == "" {
+		t.Fatal("expected condition for 'greater'")
+	}
+
+	if gt, ok := greaterCond.Value.(bson.D); !ok || len(gt) == 0 || gt[0].Key != "$gt" || gt[0].Value != 10 {
+		t.Fatalf("expected $gt condition for 'greater', got %#v", greaterCond.Value)
+	}
+
+	if patternCond.Key == "" {
+		t.Fatal("expected condition for 'pattern'")
+	}
+
+	if like, ok := patternCond.Value.(bson.D); !ok || len(like) == 0 || like[0].Key != "$regex" || like[0].Value != "foo" {
+		t.Fatalf("expected $regex condition for 'pattern', got %#v", patternCond.Value)
 	}
 }
 
