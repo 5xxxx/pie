@@ -69,12 +69,10 @@ err := session.Where("status", "inactive").ForceDeleteMany(ctx)
 
 ```go
 // 普通查询自动排除软删除的记录
-var users []User
-err := session.Find(ctx, &users) // 自动过滤 deleted_at 不为 null 的记录
+users, err := session.Find(ctx) // 自动过滤 deleted_at 不为 null 的记录
 
 // 条件查询也自动过滤
-var activeUsers []User
-err = session.Where("status", "active").Find(ctx, &activeUsers)
+activeUsers, err := session.Where("status", "active").Find(ctx)
 
 // 聚合查询也自动过滤
 result, err := session.
@@ -89,19 +87,16 @@ result, err := session.
 
 ```go
 // 使用 WithTrashed 包含软删除的记录
-var allUsers []User
-err := session.WithTrashed().Find(ctx, &allUsers)
+allUsers, err := session.WithTrashed().Find(ctx)
 
 // 只查询软删除的记录
-var deletedUsers []User
-err := session.OnlyTrashed().Find(ctx, &deletedUsers)
+deletedUsers, err := session.OnlyTrashed().Find(ctx)
 
 // 在条件查询中包含软删除
-var users []User
-err := session.
+users, err := session.
     WithTrashed().
     Where("email", "test@example.com").
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## 实际应用场景
@@ -205,11 +200,10 @@ func cleanupOldSoftDeletedData() error {
     // 查找30天前软删除的用户
     cutoffDate := time.Now().AddDate(0, 0, -30)
     
-    var deletedUsers []User
-    err := session.
+    deletedUsers, err := session.
         OnlyTrashed().
         Where("deleted_at", pie.Lt("deleted_at", cutoffDate)).
-        Find(ctx, &deletedUsers)
+        Find(ctx)
     
     if err != nil {
         return err
@@ -419,12 +413,11 @@ func createSoftDeleteIndexes() error {
 // 使用投影减少数据传输
 func getActiveUsers() ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    err := session.
+
+    users, err := session.
         Select("name", "email", "status"). // 只选择需要的字段
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     return users, err
 }
 
@@ -447,12 +440,11 @@ func getActiveUsersPaginated(page, pageSize int) (*PaginatedResult[User], error)
 ```go
 func getCachedActiveUsers() ([]User, error) {
     session := pie.Table[User](engine).WithCache(5 * time.Minute)
-    
-    var users []User
-    err := session.
+
+    users, err := session.
         Cache("active_users").
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     return users, err
 }
 

@@ -18,14 +18,13 @@ func ActiveScope(field string) pie.ScopeFunc {
 }
 
 // Use scope
-var users []User
-err := session.Scopes(ActiveScope("status")).Find(ctx, &users)
+users, err := session.Scopes(ActiveScope("status")).Find(ctx)
 
 // Multiple scopes
-err = session.Scopes(
+users, err = session.Scopes(
     ActiveScope("status"),
     RecentScope("created_at", 30),
-).Find(ctx, &users)
+).Find(ctx)
 ```
 
 ## Next Steps

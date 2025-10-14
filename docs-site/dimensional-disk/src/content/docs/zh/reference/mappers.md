@@ -399,8 +399,7 @@ func TestMapperIntegration(t *testing.T) {
     require.NotNil(t, result.InsertedID)
     
     // 测试查询
-    var users []User
-    err = session.Find(ctx, &users)
+    users, err := session.Find(ctx)
     require.NoError(t, err)
     require.Len(t, users, 1)
     assert.Equal(t, "John", users[0].FirstName)

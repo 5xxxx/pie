@@ -342,21 +342,20 @@ func AdultScope(field string) pie.ScopeFunc {
 
 ```go
 // 应用单个作用域
-var users []User
-err := session.Scopes(ActiveScope("status")).Find(ctx, &users)
+users, err := session.Scopes(ActiveScope("status")).Find(ctx)
 
 // 应用多个作用域
-err = session.Scopes(
+users, err = session.Scopes(
     ActiveScope("status"),
     RecentScope("created_at", 30),
     AdultScope("age"),
-).Find(ctx, &users)
+).Find(ctx)
 
 // 作用域与普通条件组合
-err = session.
+users, err = session.
     Scopes(ActiveScope("status")).
     Where("email", pie.Like("email", "%@company.com")).
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## 查询链式调用
@@ -364,8 +363,7 @@ err = session.
 Pie 的查询构建器支持链式调用，让您能够构建复杂的查询：
 
 ```go
-var users []User
-err := session.
+users, err := session.
     Where("status", "active").
     Where("age", pie.Between("age", 18, 65)).
     WhereIn("role", []string{"user", "premium"}).
@@ -373,7 +371,7 @@ err := session.
     WhereLike("name", "%张%").
     OrderBy("created_at").
     Limit(20).
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## 性能优化
@@ -390,22 +388,20 @@ session.Where("status", "active").OrderBy("created_at") // 复合索引 (status,
 
 ```go
 // 只选择需要的字段，减少数据传输
-var users []User
-err := session.
+users, err := session.
     Select("name", "email", "status").
     Where("status", "active").
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ### 限制结果数量
 
 ```go
 // 使用 Limit 避免返回过多数据
-var users []User
-err := session.
+users, err := session.
     Where("status", "active").
     Limit(100).
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## 下一步

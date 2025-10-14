@@ -112,12 +112,11 @@ func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
 }
 
 func (r *BaseRepository[T]) GetByID(ctx context.Context, id bson.ObjectID) (*T, error) {
-    var entity T
-    err := r.session.Where("_id", id).First(ctx, &entity)
+    entity, err := r.session.Where("_id", id).FindOne(ctx)
     if err != nil {
         return nil, err
     }
-    return &entity, nil
+    return entity, nil
 }
 ```
 

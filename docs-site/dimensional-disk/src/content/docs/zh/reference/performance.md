@@ -83,13 +83,12 @@ func createOptimizedIndexes() error {
 // 只选择需要的字段
 func getUsersOptimized() ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    err := session.
+
+    users, err := session.
         Select("name", "email", "status"). // 只选择需要的字段
         Where("status", "active").
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     return users, err
 }
 ```
@@ -100,14 +99,13 @@ func getUsersOptimized() ([]User, error) {
 // 使用 LIMIT 避免返回过多数据
 func getRecentUsers(limit int) ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    err := session.
+
+    users, err := session.
         Where("status", "active").
         OrderByDesc("created_at").
         Limit(limit).
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     return users, err
 }
 ```
@@ -161,8 +159,8 @@ func warmupCache(ctx context.Context, engine *pie.Engine) {
     }
 
     for _, q := range queries {
-        var users []User
-        if err := q.query().Find(ctx, &users); err != nil {
+        users, err := q.query().Cache(q.name).Find(ctx)
+        if err != nil {
             log.Printf("Failed to warmup cache for %s: %v", q.name, err)
         } else {
             log.Printf("Warmed up cache for %s: %d users", q.name, len(users))
@@ -197,9 +195,9 @@ func getCachedUsers(ctx context.Context, dataType string) ([]User, error) {
         ttl = SessionCacheTTL
     }
 
-    var users []User
-    err := session.Cache(ttl).Find(ctx, &users)
-    return users, err
+    users, err := session.WithCache(ttl).Cache(dataType).Find(ctx)
+    return any(users), err
+
 }
 ```
 
@@ -412,12 +410,11 @@ func analyzeQueryPerformance() error {
     
     start := time.Now()
     
-    var users []User
-    err := session.
+    users, err := session.
         Where("status", "active").
         Where("age", pie.Gte("age", 18)).
         OrderBy("created_at").
-        Find(ctx, &users)
+        Find(ctx)
     
     duration := time.Since(start)
     
@@ -446,21 +443,19 @@ func goodQueryPractices() error {
     session := pie.Table[User](engine)
     
     // 使用索引字段进行查询
-    var users []User
-    err := session.
+    users, err := session.
         Where("email", "test@example.com"). // email 有索引
-        Find(ctx, &users)
+        Find(ctx)
     
     if err != nil {
         return err
     }
     
     // 使用投影减少数据传输
-    var userNames []string
-    err = session.
+    userNames, err := session.
         Select("name"). // 只选择需要的字段
         Where("status", "active").
-        Find(ctx, &userNames)
+        Find(ctx)
     
     return err
 }
@@ -470,16 +465,14 @@ func badQueryPractices() error {
     session := pie.Table[User](engine)
     
     // 避免全表扫描
-    var users []User
-    err := session.Find(ctx, &users) // 没有 WHERE 条件
+    users, err := session.Find(ctx) // 没有 WHERE 条件
     
     if err != nil {
         return err
     }
     
     // 避免选择所有字段
-    var allUsers []User
-    err = session.Find(ctx, &allUsers) // 没有 Select 限制
+    allUsers, err = session.Find(ctx) // 没有 Select 限制
     
     return err
 }
@@ -493,23 +486,21 @@ func reasonableCachingStrategy() error {
     session := pie.Table[User](engine)
     
     // 静态数据长时间缓存
-    var configs []Config
-    err := session.
+    configs, err := session.
         WithCache(1 * time.Hour).
         Cache("configs").
-        Find(ctx, &configs)
+        Find(ctx)
     
     if err != nil {
         return err
     }
     
     // 动态数据短时间缓存
-    var recentUsers []User
-    err = session.
+    recentUsers, err := session.
         WithCache(5 * time.Minute).
         Cache("recent_users").
         WhereRecentDays("created_at", 1).
-        Find(ctx, &recentUsers)
+        Find(ctx)
     
     return err
 }

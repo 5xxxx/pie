@@ -54,12 +54,8 @@ if err != nil {
 engine.UseCache(redisCache)
 
 // Use cache in queries
-session := pie.Table[User](engine)
-var users []User
-err = session.
-    Where("status", "active").
-    Cache(5 * time.Minute).
-    Find(ctx, &users)
+users, err := session.WithCache(5 * time.Minute).Cache("active_users").Find(ctx)
+
 ```
 
 ## 4. Projection
@@ -67,11 +63,12 @@ err = session.
 Only query the fields you need, avoiding unnecessary data transmission.
 
 ```go
-var users []struct {
+type UserProjection struct {
     Name  string `bson:"name"`
     Email string `bson:"email"`
 }
-err := session.Project("name", "email").Find(ctx, &users)
+
+users, err := session.Project("name", "email").Find(ctx)
 ```
 
 ## 5. Limit and Skip
@@ -80,7 +77,7 @@ In pagination queries, avoid using large `Skip` values as they cause MongoDB to 
 
 ```go
 // Avoid large Skip
-// session.Skip(100000).Limit(10).Find(ctx, &users)
+// session.Skip(100000).Limit(10).Find(ctx)
 
 // Use cursor
 cursor, err := session.Where("status", "active").FindCursor(ctx)
