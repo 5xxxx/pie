@@ -43,7 +43,7 @@ if err != nil {
 tx := pie.MustTransaction(engine)
 
 // 执行事务
-err := tx.Execute(ctx, func(txCtx context.Context) error {
+err := tx.Transaction(ctx, func(txCtx context.Context) error {
     // 事务操作
     session := pie.Table[User](engine)
     
