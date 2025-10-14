@@ -136,17 +136,16 @@ func createUser(userData *UserData) error {
 
 func getUserByID(userID bson.ObjectID) (*User, error) {
     session := pie.Table[User](engine)
-    
-    var user User
-    err := session.Where("_id", userID).First(ctx, &user)
+
+    user, err := session.Where("_id", userID).FindOne(ctx)
     if err != nil {
         if pie.IsNotFoundError(err) {
             return nil, errors.New("user not found")
         }
         return nil, fmt.Errorf("failed to get user: %w", err)
     }
-    
-    return &user, nil
+
+    return user, nil
 }
 
 func updateUser(userID bson.ObjectID, updates bson.D) error {
@@ -424,9 +423,8 @@ func monitoredOperation() error {
 // 好的错误处理
 func goodErrorHandling() error {
     session := pie.Table[User](engine)
-    
-    var user User
-    err := session.Where("email", "test@example.com").First(ctx, &user)
+
+    _, err := session.Where("email", "test@example.com").FindOne(ctx)
     if err != nil {
         if pie.IsNotFoundError(err) {
             return errors.New("user not found")
@@ -440,9 +438,8 @@ func goodErrorHandling() error {
 // 避免的错误处理
 func badErrorHandling() error {
     session := pie.Table[User](engine)
-    
-    var user User
-    err := session.Where("email", "test@example.com").First(ctx, &user)
+
+    _, err := session.Where("email", "test@example.com").FindOne(ctx)
     if err != nil {
         return err // 没有提供上下文信息
     }
@@ -496,8 +493,7 @@ func TestErrorHandling(t *testing.T) {
     t.Run("NotFoundError", func(t *testing.T) {
         session := pie.Table[User](engine)
         
-        var user User
-        err := session.Where("_id", primitive.NewObjectID()).First(ctx, &user)
+        _, err := session.Where("_id", primitive.NewObjectID()).FindOne(ctx)
         
         assert.Error(t, err)
         assert.True(t, pie.IsNotFoundError(err))

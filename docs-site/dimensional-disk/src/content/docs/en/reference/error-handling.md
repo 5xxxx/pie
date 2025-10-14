@@ -18,8 +18,7 @@ Pie defines some common error types for easy error checking:
 - `pie.ErrTransactionAborted`: Transaction aborted
 
 ```go
-var user User
-err := session.Where("email", "nonexistent@example.com").First(ctx, &user)
+_, err := session.Where("email", "nonexistent@example.com").FindOne(ctx)
 if err != nil {
     if errors.Is(err, pie.ErrNotFound) {
         log.Println("User not found")

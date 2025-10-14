@@ -129,8 +129,7 @@ type Model interface {
 
 // 使用约束
 func ProcessModel[T Model](session *pie.Session[T], ctx context.Context) error {
-    var models []T
-    err := session.Find(ctx, &models)
+    models, err := session.Find(ctx)
     if err != nil {
         return err
     }
@@ -148,10 +147,9 @@ Pie 提供了多种泛型返回类型：
 
 ```go
 // Result[T] - 通用结果类型
-func GetUser[T any](session *pie.Session[T], id string) *pie.Result[T] {
-    var user T
-    err := session.FindByID(context.Background(), id, &user)
-    return &pie.Result[T]{
+func GetUser[T any](session *pie.Session[T], id string) *pie.Result[*T] {
+    user, err := session.FindByID(context.Background(), id)
+    return &pie.Result[*T]{
         Data:  user,
         Error: err,
     }
@@ -237,15 +235,13 @@ func WatchUserChanges[T any](engine *pie.Engine) {
 ```go
 // ✅ 推荐：使用泛型，类型安全
 func ProcessUsers[T any](session *pie.Session[T], ctx context.Context) ([]T, error) {
-    var users []T
-    err := session.Find(ctx, &users)
+    users, err := session.Find(ctx)
     return users, err
 }
 
 // ❌ 不推荐：使用 any，失去类型安全
 func ProcessUsersGeneric(session *pie.Session[any], ctx context.Context) ([]any, error) {
-    var users []any
-    err := session.Find(ctx, &users)
+    users, err := session.Find(ctx)
     return users, err
 }
 ```

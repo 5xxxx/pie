@@ -36,21 +36,20 @@ func AdultScope(field string) pie.ScopeFunc {
 
 ```go
 // 应用单个作用域
-var users []User
-err := session.Scopes(ActiveScope("status")).Find(ctx, &users)
+users, err := session.Scopes(ActiveScope("status")).Find(ctx)
 
 // 应用多个作用域
-err = session.Scopes(
+users, err = session.Scopes(
     ActiveScope("status"),
     RecentScope("created_at", 30),
     AdultScope("age"),
-).Find(ctx, &users)
+).Find(ctx)
 
 // 作用域与普通条件组合
-err = session.
+users, err = session.
     Scopes(ActiveScope("status")).
     Where("email", pie.Like("email", "%@company.com")).
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## 高级用法
@@ -78,11 +77,11 @@ func DateRangeScope(field string, startDate, endDate time.Time) pie.ScopeFunc {
 }
 
 // 使用参数化作用域
-err := session.Scopes(
+users, err := session.Scopes(
     StatusScope("active"),
     AgeRangeScope(18, 65),
     DateRangeScope("created_at", startDate, endDate),
-).Find(ctx, &users)
+).Find(ctx)
 ```
 
 ### 条件作用域
@@ -100,10 +99,10 @@ func ConditionalScope(condition bool, scope pie.ScopeFunc) pie.ScopeFunc {
 
 // 使用条件作用域
 includeInactive := false
-err := session.Scopes(
+users, err := session.Scopes(
     ConditionalScope(includeInactive, ActiveScope("status")),
     RecentScope("created_at", 30),
-).Find(ctx, &users)
+).Find(ctx)
 ```
 
 ### 复合作用域
@@ -133,7 +132,7 @@ func UserScope(userType string, includeInactive bool) pie.ScopeFunc {
 err := session.Scopes(
     UserScope("premium", false),
     RecentScope("created_at", 90),
-).Find(ctx, &users)
+).Find(ctx)
 ```
 
 ## 实际应用场景
@@ -174,20 +173,18 @@ func PremiumUsersScope() pie.ScopeFunc {
 
 // 使用用户作用域
 func getActiveVerifiedUsers() ([]User, error) {
-    var users []User
-    err := session.Scopes(
+    users, err := session.Scopes(
         ActiveUsersScope(),
         VerifiedUsersScope(),
-    ).Find(ctx, &users)
+    ).Find(ctx)
     return users, err
 }
 
 func getRecentAdminUsers(days int) ([]User, error) {
-    var users []User
-    err := session.Scopes(
+    users, err := session.Scopes(
         AdminUsersScope(),
         RecentUsersScope(days),
-    ).Find(ctx, &users)
+    ).Find(ctx)
     return users, err
 }
 ```
@@ -232,7 +229,7 @@ func getCompletedHighValueOrders(minAmount float64) ([]Order, error) {
     err := session.Scopes(
         CompletedOrdersScope(),
         HighValueOrdersScope(minAmount),
-    ).Find(ctx, &orders)
+    ).Find(ctx)
     return orders, err
 }
 
@@ -241,7 +238,7 @@ func getUserRecentOrders(userID bson.ObjectID, days int) ([]Order, error) {
     err := session.Scopes(
         UserOrdersScope(userID),
         RecentOrdersScope(days),
-    ).Find(ctx, &orders)
+    ).Find(ctx)
     return orders, err
 }
 ```
@@ -288,7 +285,7 @@ func getFeaturedElectronics() ([]Product, error) {
         AvailableProductsScope(),
         FeaturedProductsScope(),
         CategoryScope("electronics"),
-    ).Find(ctx, &products)
+    ).Find(ctx)
     return products, err
 }
 
@@ -298,7 +295,7 @@ func searchProducts(keyword string, minPrice, maxPrice float64) ([]Product, erro
         AvailableProductsScope(),
         SearchScope(keyword),
         PriceRangeScope(minPrice, maxPrice),
-    ).Find(ctx, &products)
+    ).Find(ctx)
     return products, err
 }
 ```
@@ -319,8 +316,7 @@ func createUserQueryScopes() []pie.ScopeFunc {
 
 // 使用作用域链
 func getActiveVerifiedRecentUsers() ([]User, error) {
-    var users []User
-    err := session.Scopes(createUserQueryScopes()...).Find(ctx, &users)
+    users, err := session.Scopes(createUserQueryScopes()...).Find(ctx)
     return users, err
 }
 ```
@@ -354,9 +350,8 @@ func buildDynamicScopes(filters map[string]any) []pie.ScopeFunc {
 
 // 使用动态作用域
 func searchUsersWithFilters(filters map[string]any) ([]User, error) {
-    var users []User
     scopes := buildDynamicScopes(filters)
-    err := session.Scopes(scopes...).Find(ctx, &users)
+    users, err := session.Scopes(scopes...).Find(ctx)
     return users, err
 }
 ```
@@ -400,12 +395,11 @@ var (
 )
 
 func getCachedScopedUsers() ([]User, error) {
-    var users []User
-    err := session.Scopes(
+    users, err := session.Scopes(
         activeUsersScope,
         verifiedUsersScope,
         recentUsersScope,
-    ).Find(ctx, &users)
+    ).Find(ctx)
     return users, err
 }
 ```
@@ -423,8 +417,7 @@ func precompileScopedQuery() *pie.Query {
 }
 
 func usePrecompiledQuery() ([]User, error) {
-    var users []User
-    err := precompileScopedQuery().Find(ctx, &users)
+    users, err := precompileScopedQuery().Find(ctx)
     return users, err
 }
 ```

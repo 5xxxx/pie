@@ -348,18 +348,17 @@ for i, cache := range caches {
 ```go
 func getUserWithCache(userID bson.ObjectID) (*User, error) {
     session := pie.Table[User](engine)
-    
-    var user User
-    err := session.
+
+    user, err := session.
         Where("_id", userID).
         Cache(10 * time.Minute).
-        First(ctx, &user)
-    
+        FindOne(ctx)
+
     if err != nil {
         return nil, err
     }
-    
-    return &user, nil
+
+    return user, nil
 }
 
 func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
@@ -417,17 +416,16 @@ func getCachedUserStats() (*UserStats, error) {
 ```go
 func getCachedConfig(key string) (string, error) {
     session := pie.Table[Config](engine)
-    
-    var config Config
-    err := session.
+
+    config, err := session.
         Where("key", key).
         CacheWithTags("config").
-        First(ctx, &config)
-    
+        FindOne(ctx)
+
     if err != nil {
         return "", err
     }
-    
+
     return config.Value, nil
 }
 
@@ -481,8 +479,7 @@ func warmupCache() error {
     }
     
     for _, q := range queries {
-        var users []User
-        err := q.query().Find(ctx, &users)
+        users, err := q.query().Find(ctx)
         if err != nil {
             log.Printf("预热缓存失败 %s: %v", q.name, err)
         } else {
@@ -507,8 +504,7 @@ func getUsersWithConditionalCache(useCache bool) ([]User, error) {
         query = query.Cache(5 * time.Minute)
     }
     
-    var users []User
-    err := query.Find(ctx, &users)
+    users, err := query.Find(ctx)
     return users, err
 }
 ```
@@ -631,23 +627,21 @@ func handleCacheError(err error) {
 ```go
 func getUsersWithFallback() ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    
+
     // 尝试从缓存获取
-    err := session.
+    users, err := session.
         Where("status", "active").
         Cache(5 * time.Minute).
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     if err != nil {
         // 缓存未命中，降级到数据库
         log.Printf("缓存未命中，降级到数据库: %v", err)
-        
-        err = session.
+
+        users, err = session.
             Where("status", "active").
-            Find(ctx, &users)
-        
+            Find(ctx)
+
         if err != nil {
             return nil, err
         }

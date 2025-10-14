@@ -312,8 +312,7 @@ user, err := session.
     FirstOrFail(ctx)
 
 // 获取最新记录
-var latestUsers []User
-err := session.Latest("created_at", 10).Find(ctx, &latestUsers)
+latestUsers, err := session.Latest("created_at", 10).Find(ctx)
 ```
 
 ## 下一步

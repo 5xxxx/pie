@@ -293,12 +293,11 @@ func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
 }
 
 func (r *BaseRepository[T]) GetByID(ctx context.Context, id bson.ObjectID) (*T, error) {
-    var entity T
-    err := r.session.Where("_id", id).First(ctx, &entity)
+    entity, err := r.session.Where("_id", id).FindOne(ctx)
     if err != nil {
         return nil, err
     }
-    return &entity, nil
+    return entity, nil
 }
 
 func (r *BaseRepository[T]) Update(ctx context.Context, id bson.ObjectID, updates bson.D) error {
@@ -351,29 +350,26 @@ func NewUserRepository(engine *pie.Engine) *UserRepository {
 }
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-    var user models.User
-    err := r.session.Where("email", email).First(ctx, &user)
+    user, err := r.session.Where("email", email).FindOne(ctx)
     if err != nil {
         return nil, err
     }
-    return &user, nil
+    return user, nil
 }
 
 func (r *UserRepository) GetActiveUsers(ctx context.Context) ([]models.User, error) {
-    var users []models.User
-    err := r.session.
+    users, err := r.session.
         Where("status", "active").
         OrderBy("created_at").
-        Find(ctx, &users)
+        Find(ctx)
     return users, err
 }
 
 func (r *UserRepository) GetUsersByRole(ctx context.Context, role string) ([]models.User, error) {
-    var users []models.User
-    err := r.session.
+    users, err := r.session.
         Where("role", role).
         Where("status", "active").
-        Find(ctx, &users)
+        Find(ctx)
     return users, err
 }
 

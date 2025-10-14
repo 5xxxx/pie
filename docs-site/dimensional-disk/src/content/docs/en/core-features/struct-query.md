@@ -25,8 +25,7 @@ query := UserQuery{
     Status: []string{"active", "pending"},
 }
 
-var users []User
-err := session.WhereStruct(query).Find(ctx, &users)
+users, err := session.WhereStruct(query).Find(ctx)
 ```
 
 ## Tag Syntax
@@ -118,8 +117,7 @@ query := UserQuery{
     },
 }
 
-var users []User
-err := session.WhereStruct(query).Find(ctx, &users)
+users, err := session.WhereStruct(query).Find(ctx)
 ```
 
 ### Custom Mappers
@@ -174,8 +172,7 @@ if err := query.Validate(); err != nil {
     return err
 }
 
-var users []User
-err := session.WhereStruct(query).Find(ctx, &users)
+users, err := session.WhereStruct(query).Find(ctx)
 ```
 
 ## Real-world Examples
@@ -217,8 +214,7 @@ func SearchUsers(ctx context.Context, req UserSearchRequest) ([]User, error) {
         query = query.Offset((req.Page - 1) * req.PageSize).Limit(req.PageSize)
     }
     
-    var users []User
-    err := query.Find(ctx, &users)
+    users, err := query.Find(ctx)
     return users, err
 }
 ```
@@ -241,8 +237,7 @@ type ProductFilter struct {
 func FilterProducts(ctx context.Context, filter ProductFilter) ([]Product, error) {
     session := pie.Table[Product](engine)
     
-    var products []Product
-    err := session.WhereStruct(filter).Find(ctx, &products)
+    products, err := session.WhereStruct(filter).Find(ctx)
     return products, err
 }
 ```
@@ -263,8 +258,7 @@ type OrderQuery struct {
 func QueryOrders(ctx context.Context, query OrderQuery) ([]Order, error) {
     session := pie.Table[Order](engine)
     
-    var orders []Order
-    err := session.WhereStruct(query).Find(ctx, &orders)
+    orders, err := session.WhereStruct(query).Find(ctx)
     return orders, err
 }
 ```

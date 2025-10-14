@@ -129,8 +129,7 @@ type Model interface {
 
 // Use constraints
 func ProcessModel[T Model](session *pie.Session[T], ctx context.Context) error {
-    var models []T
-    err := session.Find(ctx, &models)
+    models, err := session.Find(ctx)
     if err != nil {
         return err
     }
@@ -148,10 +147,9 @@ Pie provides various generic return types:
 
 ```go
 // Result[T] - Generic result type
-func GetUser[T any](session *pie.Session[T], id string) *pie.Result[T] {
-    var user T
-    err := session.FindByID(context.Background(), id, &user)
-    return &pie.Result[T]{
+func GetUser[T any](session *pie.Session[T], id string) *pie.Result[*T] {
+    user, err := session.FindByID(context.Background(), id)
+    return &pie.Result[*T]{
         Data:  user,
         Error: err,
     }
@@ -237,15 +235,13 @@ func WatchUserChanges[T any](engine *pie.Engine) {
 ```go
 // ✅ Recommended: Use generics for type safety
 func ProcessUsers[T any](session *pie.Session[T], ctx context.Context) ([]T, error) {
-    var users []T
-    err := session.Find(ctx, &users)
+    users, err := session.Find(ctx)
     return users, err
 }
 
 // ❌ Not recommended: Use any, loses type safety
 func ProcessUsersGeneric(session *pie.Session[any], ctx context.Context) ([]any, error) {
-    var users []any
-    err := session.Find(ctx, &users)
+    users, err := session.Find(ctx)
     return users, err
 }
 ```

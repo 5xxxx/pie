@@ -538,12 +538,11 @@ func testIndexPerformance() error {
     // 测试查询性能
     start := time.Now()
     
-    var users []User
-    err := session.
+    users, err := session.
         Where("status", "active").
         Where("created_at", pie.Gte("created_at", time.Now().AddDate(0, -1, 0))).
         OrderByDesc("created_at").
-        Find(ctx, &users)
+        Find(ctx)
     
     duration := time.Since(start)
     

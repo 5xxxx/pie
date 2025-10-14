@@ -81,8 +81,7 @@ func GetUsers(c *gin.Context) {
     }
     
     session := pie.Table[User](engine)
-    var users []User
-    err := session.WhereStruct(query).Find(context.Background(), &users)
+    users, err := session.WhereStruct(query).Find(context.Background())
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
@@ -104,8 +103,7 @@ query := UserQuery{
 }
 
 session := pie.Table[User](engine)
-var users []User
-err := session.WhereStruct(query).Find(ctx, &users)
+users, err := session.WhereStruct(query).Find(ctx)
 ```
 
 ## 高级用法
@@ -125,7 +123,7 @@ type SearchQuery struct {
 // 使用嵌套查询
 var searchQuery SearchQuery
 // ... 填充数据
-err := session.WhereStruct(searchQuery).Find(ctx, &results)
+results, err := session.WhereStruct(searchQuery).Find(ctx)
 ```
 
 ### 自定义字段映射

@@ -67,16 +67,13 @@ err := session.Where("status", "inactive").ForceDeleteMany(ctx)
 
 ```go
 // Query automatically excludes soft deleted records
-var users []User
-err := session.Find(ctx, &users) // Automatically filters deleted records
+users, err := session.Find(ctx) // Automatically filters deleted records
 
 // Include soft deleted records in query
-var allUsers []User
-err := session.IncludeDeleted().Find(ctx, &allUsers)
+allUsers, err := session.IncludeDeleted().Find(ctx)
 
 // Query only soft deleted records
-var deletedUsers []User
-err := session.OnlyDeleted().Find(ctx, &deletedUsers)
+deletedUsers, err := session.OnlyDeleted().Find(ctx)
 ```
 
 ## Advanced Usage
@@ -235,22 +232,20 @@ func reactivateUser(userID bson.ObjectID) error {
 // Get active users (excludes soft deleted)
 func getActiveUsers() ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    err := session.
+
+    users, err := session.
         Where("status", "active").
-        Find(ctx, &users)
-    
+        Find(ctx)
+
     return users, err
 }
 
 // Get all users including soft deleted
 func getAllUsers() ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var users []User
-    err := session.IncludeDeleted().Find(ctx, &users)
-    
+
+    users, err := session.IncludeDeleted().Find(ctx)
+
     return users, err
 }
 ```
@@ -310,12 +305,11 @@ func reintroduceProduct(productID bson.ObjectID) error {
 // Get available products (excludes discontinued)
 func getAvailableProducts() ([]Product, error) {
     session := pie.Table[Product](engine)
-    
-    var products []Product
-    err := session.
+
+    products, err := session.
         Where("status", "available").
-        Find(ctx, &products)
-    
+        Find(ctx)
+
     return products, err
 }
 ```

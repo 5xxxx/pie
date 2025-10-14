@@ -196,24 +196,22 @@ session.AggregateRaw(bson.A{
 
 ```go
 // Find all
-var users []User
-err := session.Find(ctx, &users)
+users, err := session.Find(ctx)
 
 // Find first
-var user User
-err := session.First(ctx, &user)
+user, err := session.FindOne(ctx)
+
+// Find first without error when not found
+user, err := session.FirstOne(ctx)
 
 // Find with limit
-var users []User
-err := session.Limit(10).Find(ctx, &users)
+users, err := session.Limit(10).Find(ctx)
 
 // Find with offset
-var users []User
-err := session.Offset(20).Find(ctx, &users)
+users, err := session.Offset(20).Find(ctx)
 
 // Find with order
-var users []User
-err := session.OrderBy("name").Find(ctx, &users)
+users, err := session.OrderBy("name").Find(ctx)
 ```
 
 ### Count Operations
@@ -276,29 +274,26 @@ session.Where("created_at", pie.Gte("created_at", time.Now().AddDate(0, -1, 0)))
 
 ```go
 // Use projection to limit returned fields
-var users []User
-err := session.
+users, err := session.
     Select("name", "email"). // Only select needed fields
     Where("status", "active").
-    Find(ctx, &users)
+    Find(ctx)
 
 // Use limit to avoid large result sets
-var users []User
-err := session.
+users, err := session.
     Where("status", "active").
     Limit(100). // Limit result size
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ### Caching
 
 ```go
 // Cache query results
-var users []User
-err := session.
+users, err := session.
     Where("status", "active").
     Cache("active_users", 5*time.Minute). // Cache for 5 minutes
-    Find(ctx, &users)
+    Find(ctx)
 ```
 
 ## Next Steps
