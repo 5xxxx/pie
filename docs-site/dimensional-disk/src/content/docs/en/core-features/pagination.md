@@ -99,18 +99,29 @@ if err != nil {
 nextCursor := result.NextCursor
 ```
 
-### Offset-based Pagination
+### Offset-style Pagination
+
+You can express a traditional offset/limit request by mapping it to the existing
+`Paginate` (or `PaginateSimple`) helpers. For example, to skip the first 20
+records and return 10 results per page you would set `Page` to
+`offset/pageSize + 1` and `PageSize` to the desired limit:
 
 ```go
-// Traditional offset-based pagination
+offset := 20
+pageSize := 10
+
 result, err := session.
     Where("status", "active").
     OrderBy("created_at").
-    PaginateOffset(ctx, pie.OffsetPaginateParams{
-        Offset:   20, // Skip first 20 items
-        PageSize: 10,
+    Paginate(ctx, pie.PaginateParams{
+        Page:     offset/pageSize + 1,
+        PageSize: pageSize,
     })
 ```
+
+If you do not need the total count you can call `PaginateSimple` with the same
+parameters. For real cursor-based pagination support, prefer
+`PaginateCursor` instead of relying on offsets.
 
 ## Real-world Examples
 
