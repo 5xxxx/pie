@@ -41,13 +41,21 @@ Leverage Pie's built-in caching mechanism (memory cache or Redis cache) to cache
 
 ```go
 // Enable Redis cache
-redisCache := pie.NewRedisCache("localhost:6379", "", 0)
-engine.UseCache(redisCache, &pie.CacheConfig{
-    TTL: 10 * time.Minute,
-})
+cfg := &pie.RedisCacheConfig{
+    Addr:     "localhost:6379",
+    Password: "",
+    DB:       0,
+    PoolSize: 10,
+}
+redisCache, err := pie.NewRedisCache(cfg)
+if err != nil {
+    log.Fatal(err)
+}
+engine.UseCache(redisCache)
 
 // Use cache in queries
 users, err := session.WithCache(5 * time.Minute).Cache("active_users").Find(ctx)
+
 ```
 
 ## 4. Projection

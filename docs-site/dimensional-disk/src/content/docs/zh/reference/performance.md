@@ -117,22 +117,19 @@ func getRecentUsers(limit int) ([]User, error) {
 ```go
 // 配置多级缓存
 func setupMultiLevelCache() error {
-    // L1 缓存（内存）
-    memoryCache := pie.NewMemoryCache()
-    
-    // L2 缓存（Redis）
-    redisCache := pie.NewRedisCache("localhost:6379", "", 0)
-    
-    // 配置二级缓存
-    engine.UseTwoLevelCache(
-        memoryCache,
-        redisCache,
-        &pie.TwoLevelCacheConfig{
-            L1TTL: 1 * time.Minute,  // L1 缓存 1 分钟
-            L2TTL: 10 * time.Minute, // L2 缓存 10 分钟
-        },
-    )
-    
+    ristrettoCache, err := pie.NewRistrettoCache(nil)
+    if err != nil {
+        return err
+    }
+
+    redisCache, err := pie.NewRedisCache(&pie.RedisCacheConfig{
+        Addr: "localhost:6379",
+    })
+    if err != nil {
+        return err
+    }
+
+    engine.UseCache(ristrettoCache, redisCache)
     return nil
 }
 ```
@@ -140,28 +137,27 @@ func setupMultiLevelCache() error {
 ### 缓存预热
 
 ```go
-func warmupCache() error {
-    session := pie.Table[User](engine).WithCache(1 * time.Hour)
-    
-    // 预热常用查询
+func warmupCache(ctx context.Context, engine *pie.Engine) {
+    session := pie.Table[User](engine)
+
     queries := []struct {
-        name string
-        query func() *pie.Query
+        name  string
+        query func() *pie.Session[User]
     }{
         {
             name: "active_users",
-            query: func() *pie.Query {
-                return session.Where("status", "active")
+            query: func() *pie.Session[User] {
+                return session.Where("status", "active").Cache(1 * time.Hour)
             },
         },
         {
             name: "admin_users",
-            query: func() *pie.Query {
-                return session.Where("role", "admin")
+            query: func() *pie.Session[User] {
+                return session.Where("role", "admin").Cache(1 * time.Hour)
             },
         },
     }
-    
+
     for _, q := range queries {
         users, err := q.query().Cache(q.name).Find(ctx)
         if err != nil {
@@ -170,8 +166,6 @@ func warmupCache() error {
             log.Printf("Warmed up cache for %s: %d users", q.name, len(users))
         }
     }
-    
-    return nil
 }
 ```
 
@@ -180,16 +174,16 @@ func warmupCache() error {
 ```go
 // 根据数据更新频率设置不同的缓存时间
 const (
-    UserCacheTTL      = 10 * time.Minute  // 用户信息，更新频率中等
-    ConfigCacheTTL    = 1 * time.Hour     // 配置信息，更新频率低
-    StatsCacheTTL     = 30 * time.Minute  // 统计数据，更新频率中等
-    SessionCacheTTL   = 5 * time.Minute   // 会话信息，更新频率高
+    UserCacheTTL    = 10 * time.Minute  // 用户信息，更新频率中等
+    ConfigCacheTTL  = 1 * time.Hour     // 配置信息，更新频率低
+    StatsCacheTTL   = 30 * time.Minute  // 统计数据，更新频率中等
+    SessionCacheTTL = 5 * time.Minute   // 会话信息，更新频率高
 )
 
-func getCachedData(dataType string) (any, error) {
+func getCachedUsers(ctx context.Context, dataType string) ([]User, error) {
     session := pie.Table[User](engine)
-    
-    var ttl time.Duration
+
+    ttl := 5 * time.Minute
     switch dataType {
     case "user":
         ttl = UserCacheTTL
@@ -199,12 +193,11 @@ func getCachedData(dataType string) (any, error) {
         ttl = StatsCacheTTL
     case "session":
         ttl = SessionCacheTTL
-    default:
-        ttl = 5 * time.Minute
     }
-    
+
     users, err := session.WithCache(ttl).Cache(dataType).Find(ctx)
     return any(users), err
+
 }
 ```
 

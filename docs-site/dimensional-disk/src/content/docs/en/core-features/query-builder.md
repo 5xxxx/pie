@@ -294,6 +294,7 @@ users, err := session.
     Where("status", "active").
     Cache("active_users", 5*time.Minute). // Cache for 5 minutes
     Find(ctx)
+
 ```
 
 ## Next Steps

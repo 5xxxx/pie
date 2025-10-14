@@ -25,7 +25,7 @@ err := engine.WithTransaction(ctx, func(txCtx context.Context) error {
 
 // Use transaction manager
 tx := pie.MustTransaction(engine)
-err = tx.Execute(ctx, func(txCtx context.Context) error {
+err = tx.Transaction(ctx, func(txCtx context.Context) error {
     // Transaction operations
     return nil
 })
@@ -39,20 +39,18 @@ func TransferPoints(fromUserID, toUserID bson.ObjectID, points int) error {
         session := pie.Table[User](engine)
         
         // Check sender user
-        var fromUser User
-        err := session.Where("_id", fromUserID).First(txCtx, &fromUser)
+        fromUser, err := session.Where("_id", fromUserID).FindOne(txCtx)
         if err != nil {
             return err
         }
-        
+
         // Check if user has enough points
         if fromUser.Points < points {
             return errors.New("insufficient points")
         }
         
         // Check receiver user
-        var toUser User
-        err = session.Where("_id", toUserID).First(txCtx, &toUser)
+        _, err = session.Where("_id", toUserID).FindOne(txCtx)
         if err != nil {
             return err
         }
@@ -81,8 +79,8 @@ func TransferPoints(fromUserID, toUserID bson.ObjectID, points int) error {
 ```go
 func UseTransactionManager() error {
     tx := pie.MustTransaction(engine)
-    
-    return tx.Execute(ctx, func(txCtx context.Context) error {
+
+    return tx.Transaction(ctx, func(txCtx context.Context) error {
         session := pie.Table[User](engine)
         
         // Insert user
