@@ -238,7 +238,7 @@ users, err := session.Cache(5 * time.Minute).Find(ctx)
 users, err := session.CacheWithTags("users", "active").Find(ctx)
 
 // Invalidate by tags
-engine.Cache().DeleteByTags("users")
+_ = engine.Cache().DeleteByTags(ctx, "users")
 ```
 
 ### Cache with TTL Jitter
@@ -281,16 +281,14 @@ users, err := session.Cache(5*time.Minute).Find(ctx)
 
 ### Write Operations
 
-When writing to a cache chain:
+When you execute a query with caching enabled (for example `Find`, `First`, `Count`), Pie automatically serializes the result and writes it to every cache layer. You typically don't need to write to the cache manually.
 
-1. **Write All**: Write to all cache layers simultaneously
-2. **Error Handling**: Continue on individual cache errors
-3. **Consistency**: All layers get the same data
+If you have non-query data to store, you can interact with the cache manager directly:
 
 ```go
-// Write to all cache layers
-err := session.Cache(5*time.Minute).Set(ctx, "key", data)
-// Writes to both Ristretto and Redis
+// Manually store a payload in all cache layers
+payload, _ := json.Marshal(users)
+err := engine.Cache().Set(ctx, "users:active", payload, 5*time.Minute)
 ```
 
 ### Delete Operations
@@ -303,13 +301,13 @@ When deleting from a cache chain:
 
 ```go
 // Delete from all layers
-engine.Cache().Delete("key")
+_ = engine.Cache().Delete(ctx, "users:active")
 
 // Pattern deletion
-engine.Cache().DeleteByPattern("users:*")
+_ = engine.Cache().DeleteByPattern(ctx, "users:*")
 
 // Tag-based deletion
-engine.Cache().DeleteByTags("users", "active")
+_ = engine.Cache().DeleteByTags(ctx, "users", "active")
 ```
 
 ## Performance Monitoring
@@ -375,7 +373,7 @@ func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
     }
     
     // Clear related cache
-    engine.Cache().DeleteByPattern("user:*")
+    _ = engine.Cache().DeleteByPattern(ctx, "user:*")
     
     return nil
 }
@@ -447,7 +445,7 @@ func setConfigWithCache(key, value string) error {
     }
     
     // Clear config cache by tags
-    engine.Cache().DeleteByTags("config")
+    _ = engine.Cache().DeleteByTags(ctx, "config")
     
     return nil
 }
@@ -519,11 +517,11 @@ func invalidateUserCache(userID bson.ObjectID) error {
     cache := engine.Cache()
     
     // Clear specific user cache
-    cache.Delete(fmt.Sprintf("user:%s", userID.Hex()))
-    
+    _ = cache.Delete(ctx, fmt.Sprintf("user:%s", userID.Hex()))
+
     // Clear related list cache
-    cache.DeleteByPattern("users:*")
-    cache.DeleteByPattern("active_users:*")
+    _ = cache.DeleteByPattern(ctx, "users:*")
+    _ = cache.DeleteByPattern(ctx, "active_users:*")
     
     return nil
 }
@@ -532,7 +530,7 @@ func invalidateAllUserCache() error {
     cache := engine.Cache()
     
     // Clear all user-related cache using tags
-    cache.DeleteByTags("users", "user_stats")
+    _ = cache.DeleteByTags(ctx, "users", "user_stats")
     
     return nil
 }

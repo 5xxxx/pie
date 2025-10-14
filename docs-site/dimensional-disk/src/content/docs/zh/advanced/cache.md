@@ -238,7 +238,7 @@ users, err := session.Cache(5 * time.Minute).Find(ctx)
 users, err := session.CacheWithTags("users", "active").Find(ctx)
 
 // 按标签失效
-engine.Cache().DeleteByTags("users")
+_ = engine.Cache().DeleteByTags(ctx, "users")
 ```
 
 ### 带 TTL 抖动的缓存
@@ -281,16 +281,14 @@ users, err := session.Cache(5*time.Minute).Find(ctx)
 
 ### 写操作
 
-写入缓存链时：
+当你在启用缓存的情况下执行查询（例如 `Find`、`First`、`Count`）时，Pie 会自动序列化结果并写入每一层缓存，大多数场景下无需手动写入。
 
-1. **写入全部**：同时写入所有缓存层
-2. **错误处理**：单个缓存错误时继续执行
-3. **一致性**：所有层都获得相同数据
+如果需要缓存非查询的数据，可以直接操作缓存管理器：
 
 ```go
-// 写入所有缓存层
-err := session.Cache(5*time.Minute).Set(ctx, "key", data)
-// 同时写入 Ristretto 和 Redis
+// 手动向所有缓存层写入数据
+payload, _ := json.Marshal(users)
+err := engine.Cache().Set(ctx, "users:active", payload, 5*time.Minute)
 ```
 
 ### 删除操作
@@ -303,13 +301,13 @@ err := session.Cache(5*time.Minute).Set(ctx, "key", data)
 
 ```go
 // 从所有层删除
-engine.Cache().Delete("key")
+_ = engine.Cache().Delete(ctx, "users:active")
 
 // 模式删除
-engine.Cache().DeleteByPattern("users:*")
+_ = engine.Cache().DeleteByPattern(ctx, "users:*")
 
 // 基于标签的删除
-engine.Cache().DeleteByTags("users", "active")
+_ = engine.Cache().DeleteByTags(ctx, "users", "active")
 ```
 
 ## 性能监控
@@ -375,7 +373,7 @@ func updateUserWithCache(userID bson.ObjectID, updates bson.D) error {
     }
     
     // 清除相关缓存
-    engine.Cache().DeleteByPattern("user:*")
+    _ = engine.Cache().DeleteByPattern(ctx, "user:*")
     
     return nil
 }
@@ -447,7 +445,7 @@ func setConfigWithCache(key, value string) error {
     }
     
     // 按标签清除配置缓存
-    engine.Cache().DeleteByTags("config")
+    _ = engine.Cache().DeleteByTags(ctx, "config")
     
     return nil
 }
@@ -520,11 +518,11 @@ func invalidateUserCache(userID bson.ObjectID) error {
     cache := engine.Cache()
     
     // 清除特定用户缓存
-    cache.Delete(fmt.Sprintf("user:%s", userID.Hex()))
-    
+    _ = cache.Delete(ctx, fmt.Sprintf("user:%s", userID.Hex()))
+
     // 清除相关列表缓存
-    cache.DeleteByPattern("users:*")
-    cache.DeleteByPattern("active_users:*")
+    _ = cache.DeleteByPattern(ctx, "users:*")
+    _ = cache.DeleteByPattern(ctx, "active_users:*")
     
     return nil
 }
@@ -533,7 +531,7 @@ func invalidateAllUserCache() error {
     cache := engine.Cache()
     
     // 使用标签清除所有用户相关缓存
-    cache.DeleteByTags("users", "user_stats")
+    _ = cache.DeleteByTags(ctx, "users", "user_stats")
     
     return nil
 }

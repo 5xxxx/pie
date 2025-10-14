@@ -297,7 +297,13 @@ err := session.
 var users []User
 err := session.
     Where("status", "active").
-    Cache("active_users", 5*time.Minute). // Cache for 5 minutes
+    Cache(5 * time.Minute). // Cache for 5 minutes
+    Find(ctx, &users)
+
+// Or attach tags for targeted invalidation
+err = session.
+    Where("status", "active").
+    CacheWithTags("users", "active").
     Find(ctx, &users)
 ```
 
